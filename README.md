@@ -1,36 +1,33 @@
 # Quant Trading System — Intraday FX Strategy
 
-A systematic, fully backtested intraday FX trading strategy with realistic execution modeling and portfolio-level risk management.
+A fully systematic intraday FX trading strategy with realistic execution modeling, portfolio-level risk management, and rigorous out-of-sample validation.
 
-This project develops and validates a fully systematic intraday forex trading strategy across EURUSD, GBPUSD, and USDJPY, including a complete backtesting, execution cost modeling, and portfolio simulation pipeline.
+Unlike most backtests, this system explicitly models **spread, stochastic slippage, and shared capital constraints**, producing results that better approximate live trading conditions.
 
 ---
 
 ## Key Results
 
 **Realistic Execution:**
-* Return: **+136.71%**
-* Sharpe Ratio: **1.60**
-* Max Drawdown: **-5.36%**
+- Return: **+136.71%**
+- Sharpe Ratio: **1.60**
+- Max Drawdown: **-5.36%**
 
 **Worst-Case Execution (2× spread + slippage):**
+- Return: **+62.97%**
+- Sharpe Ratio: **0.867**
+- Max Drawdown: **-8.74%**
 
-* Return: **+62.97%**
-* Sharpe Ratio: **0.867**
-* Max Drawdown: **-8.74%**
-
-These results are generated using a deterministic, event-driven backtesting engine with realistic spread and stochastic slippage modeling.
+Returns are generated from a moderate trade frequency (~170 trades total) with controlled per-trade risk (1–1.5%), resulting in steady compounding rather than high-frequency overfitting.
 
 ---
 
 ## Performance
 
 ### Equity Curve
-
 ![Equity Curve](results/equity_curve.png)
 
 ### Drawdown
-
 ![Drawdown](results/drawdown.png)
 
 ---
@@ -39,9 +36,9 @@ These results are generated using a deterministic, event-driven backtesting engi
 
 ### Walk-Forward Performance
 
-Walk-forward validation tests the strategy on sequential out-of-sample periods using parameters fixed from prior data.
+Walk-forward validation evaluates the strategy on unseen data using parameters fixed from prior periods.
 
-Performance remains consistently positive across these out-of-sample segments, supporting the robustness of the strategy and reducing the likelihood of overfitting.
+Performance remains consistently positive across out-of-sample segments, supporting robustness and reducing the likelihood of overfitting.
 
 ![Walk Forward](results/walkforward.png)
 
@@ -49,7 +46,9 @@ Performance remains consistently positive across these out-of-sample segments, s
 
 ## Parameter Robustness
 
-The heatmap below shows strategy performance (Sharpe ratio) across nearby TP parameter combinations.
+The heatmap below shows Sharpe ratio sensitivity across nearby TP parameter combinations.
+
+Performance remains stable across the parameter grid, indicating low sensitivity to precise parameter selection.
 
 ![Robustness](results/robustness_sharpe.png)
 
@@ -57,61 +56,72 @@ The heatmap below shows strategy performance (Sharpe ratio) across nearby TP par
 
 ## Strategy Overview
 
-The strategy combines three core components:
+The strategy combines three components:
 
-* **Multi-timeframe trend alignment** (1H + 4H)
-* **Momentum confirmation** (15m break of structure)
-* **Pullback entries** using price imbalance zones (5m)
+- **Multi-timeframe trend alignment** (1H + 4H)
+- **Momentum confirmation** (15m break of structure)
+- **Pullback entries** via price imbalance zones (5m)
 
-Entries are executed via limit orders, with structure-based stops and a two-stage profit-taking model.
+Entries are executed via limit orders into short-term inefficiencies, improving risk-reward by reducing entry distance to structural invalidation.
+
+A two-stage exit model:
+- **TP1 @ 0.75R** → partial profit (60%), stop moves to breakeven  
+- **TP2 @ 1.5R** → full exit (remaining 40%)
+
+This creates **asymmetric payoff** while eliminating downside risk after partial profit.
 
 ---
 
 ## Portfolio Construction
 
-* Trades are executed across three pairs using **shared capital**
-* Position sizing scales with portfolio equity
-* A **5.5% open-risk cap** limits total exposure
+- Trades executed across three pairs using **shared capital**
+- Position sizing scales with portfolio equity
+- **5.5% open-risk cap** limits total exposure
 
-This produces more realistic portfolio behavior than independent per-pair backtests.
+Trades are processed chronologically at the event level, ensuring equity is updated before new positions are sized.
+
+This produces realistic portfolio behavior, unlike independent per-pair backtests.
 
 ---
 
-## Sysytem Features
+## System Features
 
-* Deterministic backtesting engine
-* Realistic execution modeling (spread + stochastic slippage)
-* Portfolio-level simulation with shared capital
-* Walk-forward validation and robustness testing
+- Deterministic event-driven backtesting engine  
+- Realistic execution modeling (spread + stochastic slippage)  
+- Portfolio simulation with shared capital and risk constraints  
+- Walk-forward validation and parameter robustness testing  
 
 ---
 
 ## Project Structure
 
-* `/src` — core backtesting and simulation code
-* `/docs` — research papers
-* `/results` — charts and outputs
+- `/src` — core backtesting and simulation engine  
+- `/docs` — research papers  
+- `/results` — charts and performance outputs  
 
 ---
 
 ## Papers
 
-* **Condensed paper (5–8 min read):**
+- **Condensed Paper (5–8 min read):**  
   [Condensed Paper](docs/quant_trading_condensed.docx)
-  
-* **Full research paper (technical):**
+
+- **Full Research Paper (Technical):**  
   [Full Research Paper](docs/full_paper.pdf)
 
 ---
 
 ## Limitations
 
-* Performs best in trending markets
-* Performance declines in low-volatility or choppy conditions
-* Sensitive to execution costs
+- Performs best in trending market regimes  
+- Performance degrades in low-volatility or mean-reverting conditions  
+- Sensitive to execution costs and spread assumptions  
+- Limited to three major FX pairs  
 
 ---
 
 ## Takeaway
 
-This project demonstrates how combining structural market logic with disciplined execution and rigorous validation can produce a repeatable trading framework with measurable edge.
+The strategy’s edge is driven by **conditional participation in structurally aligned momentum regimes**, combined with **asymmetric trade management** that locks in partial gains while eliminating downside risk after TP1.
+
+Portfolio-level risk constraints further stabilize returns by preventing overexposure during correlated market conditions.

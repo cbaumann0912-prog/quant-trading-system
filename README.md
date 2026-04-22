@@ -111,6 +111,8 @@ This produces more realistic portfolio behavior than independent per-pair backte
 
 ## Papers
 
+For readers who want more detail, the project includes both a concise summary and a full technical research paper covering methodology, validation, and results.
+
 - **Condensed Paper (5–8 min read):**  
   [Condensed Paper](docs/condensed_paper.pdf)
 

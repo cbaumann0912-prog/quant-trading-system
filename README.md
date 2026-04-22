@@ -6,6 +6,12 @@ Unlike most backtests, this system explicitly models **spread, stochastic slippa
 
 ---
 
+## Architecture Overview
+
+1m Data → Resampling → Signal Engine → Backtest → Portfolio Simulator → Results
+
+---
+
 ## Key Results
 
 Tested on **15 years of intraday data (2011–2026)** across **EURUSD, GBPUSD, and USDJPY**.

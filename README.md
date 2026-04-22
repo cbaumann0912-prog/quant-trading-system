@@ -8,6 +8,8 @@ Unlike most backtests, this system explicitly models **spread, stochastic slippa
 
 ## Key Results
 
+Tested on **15 years of intraday data (2011–2026)** across **EURUSD, GBPUSD, and USDJPY**.
+
 **Realistic Execution:**
 - Return: **+136.71%**
 - Sharpe Ratio: **1.60**
@@ -38,7 +40,7 @@ Returns are generated from a moderate trade frequency (~170 trades total) with c
 
 Walk-forward validation evaluates the strategy on unseen data using parameters fixed from prior periods.
 
-Performance remains consistently positive across out-of-sample segments, supporting robustness and reducing the likelihood of overfitting.
+Performance remains positive across all out-of-sample segments, supporting robustness and reducing the likelihood of overfitting.
 
 ![Walk Forward](results/walkforward.png)
 
@@ -65,10 +67,10 @@ The strategy combines three components:
 Entries are executed via limit orders into short-term inefficiencies, improving risk-reward by reducing entry distance to structural invalidation.
 
 A two-stage exit model:
-- **TP1 @ 0.75R** → partial profit (60%), stop moves to breakeven  
+- **TP1 @ 0.75R** → partial profit (60%), stop moves to breakeven
 - **TP2 @ 1.5R** → full exit (remaining 40%)
 
-This creates **asymmetric payoff** while eliminating downside risk after partial profit.
+This creates an **asymmetric payoff profile** while eliminating downside risk after partial profit.
 
 ---
 
@@ -80,48 +82,76 @@ This creates **asymmetric payoff** while eliminating downside risk after partial
 
 Trades are processed chronologically at the event level, ensuring equity is updated before new positions are sized.
 
-This produces realistic portfolio behavior, unlike independent per-pair backtests.
+This produces more realistic portfolio behavior than independent per-pair backtests.
 
 ---
 
-## System Features
+## Technical Features
 
-- Deterministic event-driven backtesting engine  
-- Realistic execution modeling (spread + stochastic slippage)  
-- Portfolio simulation with shared capital and risk constraints  
-- Walk-forward validation and parameter robustness testing  
+- Deterministic event-driven backtesting engine
+- Realistic execution modeling (spread + stochastic slippage)
+- Portfolio simulation with shared capital and risk constraints
+- Walk-forward validation and parameter robustness testing
 
 ---
 
 ## Project Structure
 
-- `/src` — core backtesting and simulation engine  
-- `/docs` — research papers  
-- `/results` — charts and performance outputs  
+- `/src` — core backtesting and simulation engine
+- `/docs` — research papers
+- `/results` — charts and performance outputs
+
+---
+
+## Architecture Overview
+
+1m Data → Resampling → Signal Engine → Backtest → Portfolio Simulator → Results
 
 ---
 
 ## Papers
 
 - **Condensed Paper (5–8 min read):**  
-  [Condensed Paper](docs/quant_trading_condensed.docx)
+  [Condensed Paper](docs/condensed_paper.pdf)
 
 - **Full Research Paper (Technical):**  
   [Full Research Paper](docs/full_paper.pdf)
 
 ---
 
+## Key Insights
+
+- Strategy performance is strongly **regime-dependent**, with highest returns during sustained directional (trending) market conditions  
+- **Execution costs (spread + slippage)** materially reduce Sharpe ratio, highlighting the importance of realistic modeling in intraday strategies  
+- **Asymmetric trade management** (partial TP + breakeven stop) improves win rate and reduces drawdowns by removing downside risk after initial profit  
+- **Portfolio-level risk constraints** (shared capital + risk cap) prevent overexposure during periods of correlated signals across FX pairs  
+
+---
+
 ## Limitations
 
-- Performs best in trending market regimes  
-- Performance degrades in low-volatility or mean-reverting conditions  
-- Sensitive to execution costs and spread assumptions  
-- Limited to three major FX pairs  
+- Performs best in **trending market regimes**; edge weakens in choppy or mean-reverting environments  
+- **Sensitive to execution costs**, particularly in lower-liquidity conditions or wider spreads  
+- Limited to **three major FX pairs** (EURUSD, GBPUSD, USDJPY); may not generalize to other assets  
+- Does not model **latency, order book dynamics, or market impact**  
+- Strategy performance may vary under **different broker conditions or execution environments**  
 
 ---
 
 ## Takeaway
 
-The strategy’s edge is driven by **conditional participation in structurally aligned momentum regimes**, combined with **asymmetric trade management** that locks in partial gains while eliminating downside risk after TP1.
+The strategy’s edge is driven by **selective participation in structurally aligned momentum regimes**, rather than prediction.
 
-Portfolio-level risk constraints further stabilize returns by preventing overexposure during correlated market conditions.
+This is combined with **asymmetric trade management**, which locks in partial gains while eliminating downside risk after TP1, creating a favorable risk-return profile.
+
+At the portfolio level, **risk constraints and dynamic position sizing** stabilize performance and prevent overexposure, making results more representative of real trading conditions.
+
+---
+
+## How to Run
+
+```bash
+git clone https://github.com/cbaumann0912-prog/quant-trading-system.git
+cd quant-trading-system
+pip install -r requirements.txt
+python src/run_portfolio.py

@@ -1,8 +1,10 @@
 # Quant Trading System — Intraday FX Strategy
 
-A fully systematic intraday FX trading strategy with realistic execution modeling, portfolio-level risk management, and rigorous out-of-sample validation.
+A production-style backtesting and portfolio simulation system for evaluating intraday FX strategies under realistic trading conditions.
 
-Unlike most backtests, this system explicitly models **spread, stochastic slippage, and shared capital constraints**, producing results that better approximate live trading conditions.
+The system implements a fully systematic intraday FX strategy with realistic execution modeling, portfolio-level risk management, and rigorous out-of-sample validation.
+
+Unlike most backtests, it explicitly models **spread, stochastic slippage, and shared capital constraints**, producing results that better approximate live trading conditions.
 
 ---
 
@@ -109,9 +111,14 @@ This produces more realistic portfolio behavior than independent per-pair backte
 
 ---
 
-## Architecture Overview
+## How to Run
 
-1m Data → Resampling → Signal Engine → Backtest → Portfolio Simulator → Results
+```bash
+git clone https://github.com/cbaumann0912-prog/quant-trading-system.git
+cd quant-trading-system
+pip install -r requirements.txt
+python src/run_portfolio.py
+```
 
 ---
 
@@ -153,13 +160,3 @@ The strategy’s edge is driven by **selective participation in structurally ali
 This is combined with **asymmetric trade management**, which locks in partial gains while eliminating downside risk after TP1, creating a favorable risk-return profile.
 
 At the portfolio level, **risk constraints and dynamic position sizing** stabilize performance and prevent overexposure, making results more representative of real trading conditions.
-
----
-
-## How to Run
-
-```bash
-git clone https://github.com/cbaumann0912-prog/quant-trading-system.git
-cd quant-trading-system
-pip install -r requirements.txt
-python src/run_portfolio.py

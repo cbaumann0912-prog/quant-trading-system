@@ -1,8 +1,5 @@
 # Distribution Assumption Audit — Day 1
 
-**Pairs in scope:** EURUSD, GBPUSD, USDJPY  
-**Files inspected:** analytics.py, robustness.py, monte_carlo.py, trailing.py, sim_costs.py
-
 ---
 
 ## Files Inspected

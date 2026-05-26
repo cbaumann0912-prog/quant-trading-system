@@ -86,7 +86,6 @@ class TestRollingCorrelation:
             )
 
     def test_perfect_correlation_with_self(self, sample_returns):
-        """A series rolled against itself should always give 1.0."""
         result = rolling_correlation(
             sample_returns["EURUSD"],
             sample_returns["EURUSD"],

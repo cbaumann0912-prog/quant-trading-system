@@ -88,7 +88,8 @@ class PerformanceAnalyzer:
 
 
     def compute_sharpe(self) -> float:
-        """Compute the annualized Sharpe ratio.
+        """
+        Compute the annualized Sharpe ratio.
 
         Uses the returns series and risk_free_rate provided at construction.
         Excess returns are divided by their standard deviation, then scaled
@@ -98,16 +99,14 @@ class PerformanceAnalyzer:
         -------
         float
             Annualized Sharpe ratio. Returns NaN if standard deviation is zero.
-
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("compute_sharpe is not yet implemented.")
+
+        sharpe = (((self.returns.mean() - self.risk_free_rate) / self.returns.std()) * np.sqrt(self.ann_factor))
+        return sharpe
 
     def compute_sortino(self) -> float:
-        """Compute the annualized Sortino ratio.
+        """
+        Compute the annualized Sortino ratio.
 
         Like Sharpe, but the denominator uses only downside deviation
         (returns below the risk-free rate), penalizing harmful volatility only.
@@ -124,28 +123,41 @@ class PerformanceAnalyzer:
         """
         raise NotImplementedError("compute_sortino is not yet implemented.")
 
-    def compute_max_drawdown(self) -> float:
-        """Compute the maximum peak-to-trough drawdown.
+    def compute_max_drawdown(self) -> dict:
+        """
+        Compute the maximum peak-to-trough drawdown.
 
-        Reconstructs the cumulative equity curve from self.returns, then
-        measures the largest percentage decline from any rolling peak to
-        any subsequent trough.
+         Reconstructs the cumulative equity curve from self.returns, then
+         measures the largest percentage decline from any rolling peak to
+         any subsequent trough.
 
         Returns
         -------
-        float
-            Max drawdown as a negative decimal (e.g. -0.23 means -23%).
-            Returns 0.0 if the equity curve never declines.
+        dict with keys:
+            value : float
+                 Max drawdown as a negative decimal (e.g. -0.23 means -23%).
+                 Returns 0.0 if the equity curve never declines.
+            duration_days : int
+                 Number of days from peak to trough.
+             start_date : any
+                 Index value of the peak.
+             end_date : any
+                 Index value of the trough.
+    """
+        equity_curve = (1 + self.returns).cumprod()
+        rolling_peak = equity_curve.cummax()
+        drawdown = (equity_curve - rolling_peak) / rolling_peak
+        Min = drawdown.min()
+        end_date = drawdown.idxmin()
+        start_date = equity_curve[:end_date].idxmax()
 
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
-        """
-        raise NotImplementedError("compute_max_drawdown is not yet implemented.")
+        return {"value": Min, "duration_days":(end_date - start_date).days, "start_date": start_date , "end_date": end_date}
+
+            
 
     def compute_win_rate(self) -> float:
-        """Compute the fraction of trades with positive PnL.
+        """
+        Compute the fraction of trades with positive PnL.
 
         Requires self.trades to be set and contain a 'pnl' column.
 
@@ -164,7 +176,8 @@ class PerformanceAnalyzer:
         raise NotImplementedError("compute_win_rate is not yet implemented.")
 
     def compute_calmar(self) -> float:
-        """Compute the Calmar ratio.
+        """
+        Compute the Calmar ratio.
 
         Defined as annualized return divided by the absolute value of max
         drawdown. A higher Calmar indicates better return per unit of
@@ -183,7 +196,8 @@ class PerformanceAnalyzer:
         raise NotImplementedError("compute_calmar is not yet implemented.")
 
     def compute_t_stat(self) -> float:
-        """Compute the t-statistic for mean return > 0.
+        """
+        Compute the t-statistic for mean return > 0.
 
         Tests the null hypothesis that the mean daily return equals zero.
         t = mean(returns) / (std(returns) / sqrt(n)).
@@ -202,7 +216,8 @@ class PerformanceAnalyzer:
         raise NotImplementedError("compute_t_stat is not yet implemented.")
 
     def run_report(self) -> PerformanceReport:
-        """Compute all metrics and return a populated PerformanceReport.
+        """
+        Compute all metrics and return a populated PerformanceReport.
 
         Calls each compute_* method in sequence and assembles results into
         a PerformanceReport dataclass. Metadata includes the date range of

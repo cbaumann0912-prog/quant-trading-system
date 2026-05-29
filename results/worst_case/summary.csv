@@ -1,0 +1,13 @@
+metric,value
+n_trades,171.0
+wins,119.0
+losses,52.0
+win_rate_pct,69.59
+total_pnl,49776.76
+final_equity,149776.75
+total_return_pct,49.78
+max_drawdown_pct,-9.31
+sharpe,0.699
+profit_factor,1.516
+avg_win_$,1229.25
+avg_loss_$,-1855.84

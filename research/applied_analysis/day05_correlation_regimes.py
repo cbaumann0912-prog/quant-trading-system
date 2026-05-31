@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import sys
-sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\quant-stats')
+sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026')
 
 from src.stats.correlation import rolling_correlation
 

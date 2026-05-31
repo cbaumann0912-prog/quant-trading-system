@@ -4,11 +4,11 @@ from scipy import stats
 
 import sys
 import os
-sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\quant-stats')
+sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026')
 from src.stats.hypothesis_tests import t_test_mean
 
 df = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\01_ict_fx_strategy\results\portfolio\realistic\daily_balance.csv',
+    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\summer2026\results\OG_results\realistic\daily_balance.csv',
     parse_dates=['date']
 )
 df = df.set_index('date')

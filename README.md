@@ -160,3 +160,5 @@ The strategy’s edge is driven by **selective participation in structurally ali
 This is combined with **asymmetric trade management**, which locks in partial gains while eliminating downside risk after TP1, creating a favorable risk-return profile.
 
 At the portfolio level, **risk constraints and dynamic position sizing** stabilize performance and prevent overexposure, making results more representative of real trading conditions.
+=======
+

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from src.stats.hypothesis_tests import t_test_mean
+from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d
 
 @pytest.fixture
 def eurusd_returns():
@@ -82,3 +82,14 @@ def test_raises_on_insufficient_data():
     """t_test_mean must raise ValueError when n < 2."""
     with pytest.raises(ValueError):
         t_test_mean(pd.Series([0.001]), null_mean=0.0, confidence=0.95)
+
+
+def test_interpretation_returns_string():
+    """test_interpretation_returns_string must be a string"""
+    result = p_value_interpretation(0.012, 0.05)
+    assert isinstance(result,str)
+
+def test_cohens_d_known_value():
+    np.random.seed(8)
+    result = compute_effect_size_cohens_d(pd.Series(np.random.normal(0,1,56)),(pd.Series(np.random.normal(1,1,28))))
+    assert abs(result) == pytest.approx(1, 0.1)

@@ -15,25 +15,23 @@ def t_test_mean(
     Parameters
     ----------
     returns : pd.Series
-        Series of observed returns.
     null_mean : float
-        Hypothesised mean under H0 (e.g. 0.0).
     confidence : float
-        Confidence level, e.g. 0.95 for 95%.
 
     Returns
     -------
     dict with keys:
-        t_stat          : float  - the t-test statistic
-        p_value         : float  - two-sided p-value
-        reject_null     : bool   - True if H0 is rejected at given confidence
-        confidence_interval : tuple[float, float] - (lower, upper) CI for the mean
+        t_stat          : float 
+        p_value         : float
+        reject_null     : bool
+        confidence_interval : tuple[float, float]
 
     Raises
     ------
     ValueError
         If n < 2 (cannot compute sample std with fewer than 2 observations).
     """
+
     if len(returns) < 2:
         raise ValueError("cannot compute std with fewer than 2 observations")
 
@@ -55,3 +53,39 @@ def t_test_mean(
     CI = (x_bar - t_crit * se, x_bar + t_crit * se)
 
     return {"t_stat": W, "p_value": p_value, "reject_null": reject_null, "confidence_interval": CI }
+
+
+def p_value_interpretation(p: float, alpha: float) -> str:
+    """Returns a precise statistical interpretation of a p-value given a significance level."""
+    
+    if p < alpha:
+        return (
+        f"Given the significance level {alpha} and that the null hypothesis is true, "
+        f"there is a {p} probability that the observed value or more extrem to occur." 
+        f"The observed value is statistically significant and we reject the null"
+        )
+    else:
+        return (
+        f"Given the significance level {alpha} and that the null hypothesis is true, "
+        f"there is a {p} probability that the observed value or more extrem to occur. We fail to "
+        f"reject the null" 
+        )
+   
+
+def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
+    """Returns Cohen's d effect size measuring the standardized difference between two groups."""
+    
+    mean1 = group1.mean()
+    mean2 = group2.mean()
+
+    n1 = len(group1)
+    n2 = len(group2)
+    var1 = group1.var()
+    var2 = group2.var()
+
+    s_pooled = np.sqrt((((n1-1)*var1)+((n2-1)*var2)) / (n1 + n2 - 2))
+
+    d = (mean1 - mean2) / s_pooled
+
+    return d
+    

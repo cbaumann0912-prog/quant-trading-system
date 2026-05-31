@@ -98,7 +98,7 @@ MC_SEED_DEFAULT    = 42
 MC_N_SIM_DEFAULT   = 1000
 
 _BACKTEST_DIR      = os.path.dirname(os.path.abspath(__file__))
-_PROJECT_ROOT      = os.path.dirname(_BACKTEST_DIR)
+_PROJECT_ROOT      = os.path.dirname(os.path.dirname(_BACKTEST_DIR))  # quant-trading-system/
 # Each validation section writes its CSVs + paper-ready PNGs into its own
 # subfolder under this root.
 DEFAULT_EXPORT_DIR = os.path.join(_PROJECT_ROOT, "results", "validation")

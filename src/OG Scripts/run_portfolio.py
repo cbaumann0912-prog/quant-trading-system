@@ -46,8 +46,9 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Path setup
 # ---------------------------------------------------------------------------
-_BACKTEST_DIR = os.path.dirname(os.path.abspath(__file__))   # .../quant/backtest/
-_PROJECT_ROOT = os.path.dirname(_BACKTEST_DIR)                # .../quant/
+_BACKTEST_DIR = os.path.dirname(os.path.abspath(__file__))            # .../src/OG Scripts/
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(_BACKTEST_DIR))       # .../quant-trading-system/
+_REPO_ROOT    = os.path.dirname(_PROJECT_ROOT)                         # .../02_quant_projects/
 if _BACKTEST_DIR not in sys.path:
     sys.path.insert(0, _BACKTEST_DIR)
 
@@ -60,7 +61,7 @@ from sim_costs import reset_rng
 # =============================================================================
 
 # ---- Data files ----
-DATA_DIR = os.path.join(_PROJECT_ROOT, "data")
+DATA_DIR = os.path.join(_REPO_ROOT, "data")
 
 PAIRS_CONFIG = [
     {

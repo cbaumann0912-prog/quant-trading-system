@@ -1,0 +1,9 @@
+metric,value
+max_concurrent_positions,2.0
+max_concurrent_open_risk_pct,2.5
+trades_with_any_overlap,1.0
+entries_only_position,76.0
+entries_with_1_other_open,13.0
+entries_with_2plus_others,122.0
+max_n_open_at_any_event,5.0
+peak_open_risk_pct,5.46

@@ -13,7 +13,7 @@ def compute_required_sample_size(effect_size: float, alpha: float, power: float)
 
     Returns
     -------
-    int
+    n_req : int
     """
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
     z_beta = stats.norm.ppf(power)
@@ -34,7 +34,7 @@ def compute_achieved_power(n: int, effect_size: float, alpha: float) -> float:
 
     Returns
     -------
-    float
+    power : float
     """
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
 

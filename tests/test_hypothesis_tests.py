@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
 import pandas as pd
+import scipy
 
-from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d
+from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d, bootstrap_confidence_interval
 
 @pytest.fixture
 def eurusd_returns():
@@ -93,3 +94,36 @@ def test_cohens_d_known_value():
     np.random.seed(8)
     result = compute_effect_size_cohens_d(pd.Series(np.random.normal(0,1,56)),(pd.Series(np.random.normal(1,1,28))))
     assert abs(result) == pytest.approx(1, 0.1)
+
+
+def compute_sharpe(returns):
+    return (returns.mean() - 0.0) / returns.std()
+
+
+def test_ci_contains_true_mean():
+    true_mean = 0  
+    n_trials = 1000
+    count = 0
+
+    for d in range(n_trials):
+        data = scipy.stats.t.rvs(df=5, scale=0.01, size=252)
+        lower, upper = bootstrap_confidence_interval(data,np.mean , 1000, 0.95)
+        if lower < true_mean < upper:
+            count += 1
+
+    coverage = count / n_trials
+    assert coverage > 0.90
+        
+
+def test_output_is_tuple_of_two_floats():
+    statistic_fn = compute_sharpe
+    result = bootstrap_confidence_interval(scipy.stats.t.rvs(5,0.01,size=252), statistic_fn, 1000, 0.95)
+    assert isinstance(result, tuple)
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], float)
+
+
+def test_lower_less_than_upper():
+    statistic_fn = compute_sharpe
+    result = bootstrap_confidence_interval(scipy.stats.t.rvs(5,0.01,size=252), statistic_fn, 1000, 0.95)
+    assert result[0] < result[1]

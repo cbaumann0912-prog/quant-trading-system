@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import math
 from scipy import stats
 
 
@@ -61,13 +62,13 @@ def p_value_interpretation(p: float, alpha: float) -> str:
     if p < alpha:
         return (
         f"Given the significance level {alpha} and that the null hypothesis is true, "
-        f"there is a {p} probability that the observed value or more extrem to occur." 
+        f"there is a {p} probability that the observed value or more extreme to occur." 
         f"The observed value is statistically significant and we reject the null"
         )
     else:
         return (
         f"Given the significance level {alpha} and that the null hypothesis is true, "
-        f"there is a {p} probability that the observed value or more extrem to occur. We fail to "
+        f"there is a {p} probability that the observed value or more extreme to occur. We fail to "
         f"reject the null" 
         )
    
@@ -89,28 +90,43 @@ def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
 
     return d
     
-
-def bootstrap_confidence_interval(data, statistic_fn, n_bootstrap, confidence) -> tuple[float, float]:
-    """Returns a tuple whose first entry represents the lower bound of the confidence interval and the second is the upper bound
-    
+def compute_required_sample_size(effect_size: float, alpha: float, power: float) -> int:
+    """
+    Compute the minimum sample size needed to achieve a given power level.
     Parameters
     ----------
-    data: np.ndarray
-    statistic_fn: function
-    n_bootstrap: int
-    confidence: float
+    effect_size : float
+    alpha : float
+    power : float
+
+    Returns
+    -------
+    n_req : int
     """
 
-    bootstrap_stats = np.zeros(n_bootstrap)
-
-    for b in range(n_bootstrap):
-       sample = np.random.choice(data, len(data), True)
-       bootstrap_stats[b] = statistic_fn(sample)
-
-    lower = np.percentile(bootstrap_stats, ((1 - confidence) / 2)*100)
-    upper = np.percentile(bootstrap_stats, (1 - ((1 - confidence) / 2))*100)
-
-    result = (lower,upper)
-
-    return result
+    z_half_alpha = stats.norm.ppf(1-(alpha/2))
+    z_beta = stats.norm.ppf(power)
     
+    n = ((z_half_alpha + z_beta) / effect_size)**2
+
+    return math.ceil(n)
+
+def compute_achieved_power(n: int, effect_size: float, alpha: float) -> float:
+    """
+    Compute the power achieved by a test given sample size and effect size.
+
+    Parameters
+    ----------
+    n : int
+    effect_size : float
+    alpha : float
+
+    Returns
+    -------
+    power : float
+    """
+    z_half_alpha = stats.norm.ppf(1-(alpha/2))
+
+    power = stats.norm.cdf(((effect_size * math.sqrt(n)) - z_half_alpha))
+    
+    return power

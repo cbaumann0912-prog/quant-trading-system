@@ -72,6 +72,17 @@ Full methodology in [`docs/full_paper.pdf`](docs/full_paper.pdf).
 
 ---
 
+## Development Notes
+
+The original backtesting framework and statistical functions were 
+scaffolded with AI assistance (Claude/ChatGPT). All logic has since 
+been reviewed, tested against a suite of [N] unit tests, and — where 
+the underlying math is now understood — rewritten or validated 
+independently as part of this curriculum. Functions I cannot yet 
+explain from first principles are explicitly flagged in the code.
+
+---
+
 ## Limitations and Open Questions
 
 - Statistical significance: 216 trades over the backtest period.

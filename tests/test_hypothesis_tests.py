@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import scipy
 
-from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d, bootstrap_confidence_interval
+from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d, compute_required_sample_size, compute_achieved_power
+from src.evaluation.bootstrap_ci import bootstrap_confidence_interval 
 
 @pytest.fixture
 def eurusd_returns():
@@ -127,3 +128,29 @@ def test_lower_less_than_upper():
     statistic_fn = compute_sharpe
     result = bootstrap_confidence_interval(scipy.stats.t.rvs(5,0.01,size=252), statistic_fn, 1000, 0.95)
     assert result[0] < result[1]
+
+
+def test_larger_effect_needs_fewer_samples():
+    """Smaller effect size should require more samples to achieve the same power."""
+   
+    result1 = compute_required_sample_size(0.08,0.05,0.8)
+    result2 = compute_required_sample_size(0.28,0.05,0.8)
+
+    assert result1 > result2
+
+
+def test_power_increases_with_n():
+    """Larger sample size should yield higher achieved power for the same effect and alpha."""
+    
+    result1 = compute_achieved_power(8,0.28,0.05)
+    result2 = compute_achieved_power(28,0.28,0.05)
+
+    assert result1 < result2
+
+
+def test_n80_power_reasonable():
+    """compute_required_sample_size(0.2, 0.05, 0.80) should return 196."""
+    
+    result = compute_required_sample_size(0.2, 0.05, 0.80)
+
+    assert result == 197

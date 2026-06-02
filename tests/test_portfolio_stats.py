@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from src.stats.portfolio_stats import (compute_covariance_matrix, compute_portfolio_variance, compute_portfolio_return)
+from src.analysis.portfolio_stats import (compute_covariance_matrix, compute_portfolio_variance, compute_portfolio_return)
 
 returns = pd.DataFrame({
     'EURUSD': [0.0050, -0.0020, 0.0080, -0.0010, 0.0030],

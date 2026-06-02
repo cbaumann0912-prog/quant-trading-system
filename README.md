@@ -72,6 +72,25 @@ Full methodology in [`docs/full_paper.pdf`](docs/full_paper.pdf).
 
 ---
 
+## Limitations and Open Questions
+
+- Statistical significance: 216 trades over the backtest period.
+  The t-stat on the Sharpe is 1.6, giving [Y]% confidence the edge is non-zero.
+  This analysis is in progress.
+
+- Overfitting risk: Parameters were selected on in-sample data.
+  Walk-forward results are presented in full paper, but data snooping
+  bias from the initial signal design cannot be fully ruled out.
+
+- Execution assumptions: "Realistic" execution uses modeled spread data.
+  True transaction costs in live trading could differ materially.
+
+- Signal theory: BOS/FVG logic lacks microstructure justification.
+  Whether the observed pattern reflects a genuine, persistent edge or
+  a data artifact is an open research question.
+
+---
+
 ## Progress
 
 | Day | Math | Python | Research |

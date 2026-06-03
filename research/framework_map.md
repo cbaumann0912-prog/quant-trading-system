@@ -27,8 +27,14 @@ src/
 
 | Day | Topic | Function(s) | Location | Status |
 |-----|-------|-------------|----------|--------|
-| 1–7 | Probability distributions, Student-t, log returns | `fit_student_t`, `log_returns`, `excess_kurtosis` | `src/stats/distributions.py` | ✅ Built |
-
+| 1 | Normal & log-normal distributions — PDF, CDF, simulate log returns and price paths. Research: framework distribution audit | `normal_pdf`, `normal_cdf`, `lognormal_pdf`, `simulate_log_returns`, `simulate_price_path` | `src/stats/distributions.py` | ✅ Built |
+| 2 | Expectation, variance, covariance — portfolio statistics module. Reading: Chan Ch.2 | `compute_covariance_matrix`, `compute_portfolio_variance`, `compute_portfolio_return` | `src/analysis/portfolio_stats.py` | ✅ Built |
+| 3 | CLT & Law of Large Numbers — CLT simulator module. Research: AQR momentum paper methodology | — (CLT simulator, now archived) | `archive/` | ✅ Built |
+| 4 | Student-t & exponential distributions — tail analysis. Research: return distribution analysis | `student_t_pdf`, `tail_mass_comparison` | `src/stats/distributions.py` | ✅ Built |
+| 4 | Return distribution analysis across EUR/USD, GBP/USD, USD/JPY — log returns, excess kurtosis, Student-t fit | — (research) | `research/audit/day04_return_distribution_analysis.md` | ✅ Built |
+| 5 | Correlation matrices — correlation module. Research: rolling correlation regimes | `rolling_correlation`, `detect_regime_breaks` | `src/stats/correlation.py` | ✅ Built |
+| 6 | Sharpe (1994) paper reading. Python: Sharpe & max drawdown module | `compute_sharpe`, `compute_max_drawdown` | `src/analysis/performance_analyzer.py` | ✅ Built |
+| 7 | Week 1 review — research audit. Python: Sharpe & max drawdown continued | — (review) | `research/audit/day07_week1_review.md` | ✅ Built |
 ### Week 2 — Hypothesis Testing
 
 | Day | Topic | Function(s) | Location | Status |

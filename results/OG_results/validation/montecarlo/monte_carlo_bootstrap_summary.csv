@@ -1,2 +1,0 @@
-mode,n_simulations,starting_equity,mean_final_equity,median_final_equity,p5_final_equity,p95_final_equity,mean_total_return,median_total_return,p5_total_return,p95_total_return,mean_drawdown,median_drawdown,worst_drawdown,prob_loss,prob_dd_exceeds_threshold,drawdown_threshold_pct
-bootstrap,1000,100000.0,229519.80513133074,227862.14402189982,179880.3065547248,284042.75146047486,1.2951980513133072,1.2786214402189982,0.7988030655472481,1.8404275146047488,0.051554569242007915,0.0483618401258636,0.13390766374053756,0.0,0.014,10.0

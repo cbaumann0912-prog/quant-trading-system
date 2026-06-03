@@ -1,4 +1,4 @@
-from src.stats.power_analysis import compute_required_sample_size, compute_achieved_power
+from src.stats.hypothesis_tests import compute_required_sample_size, compute_achieved_power
 
 class Strategy():
     def __init__(self, name, effect_size, actual_n):

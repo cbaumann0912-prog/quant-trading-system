@@ -23,6 +23,13 @@ src/
 
 ## Phase 1: Statistical Foundation (Days 1–30)
 
+> ⚠️ **Parallel Track — Strategy Hypothesis Development**
+> Running alongside all of Phase 1, in margin time only (not replacing any scheduled work):
+> Develop a written one-page specification for each of your ≤3 candidate strategies.
+> Each spec must define: signal logic, entry rule, exit rule, position sizing rule, data required, and the economic reason the edge should exist.
+> These documents must be complete by Day 30. They are what you hand to SignalBuilder at Day 44.
+> Do not begin any coding of signal logic during Phase 1. Written specification only.
+
 ### Week 1 — Probability Fundamentals
 
 | Day | Topic | Function(s) | Location | Status |
@@ -77,7 +84,7 @@ src/
 |-----|-------|-------------|----------|--------|
 | 28 | Week 4 self-assessment — PerformanceAnalyzer sprint day 2. Research: full analyzer run all strategies | — | `src/analysis/performance_analyzer.py` | ⏳ Planned |
 | 29 | Stochastic intro: random walks & Gambler's ruin — README & requirements.txt. Research: month 1 assessment | `simulate_random_walk`, `gamblers_ruin_probability` | `src/stats/stochastic.py` | ⏳ Planned |
-| 30 | Month 1 final test suite — GitHub push. Research: strategy shortlist (≤3 candidates) ⚠️ Hard deadline | — | `tests/` | ⏳ Planned |
+| 30 | Month 1 final test suite — GitHub push. Research: strategy shortlist (≤3 candidates) ⚠️ Hard deadline — written one-page specification for each candidate strategy also due today. Specifications must be complete before entering Phase 2. | — | `tests/`, `research/strategy_specs/` | ⏳ Planned |
 
 ---
 
@@ -107,17 +114,23 @@ src/
 | 43 | Framework rebuild: architecture design — DataLoader class. Research: IC analysis EUR/USD momentum | `load_ohlcv`, `resample_to_daily`, `compute_log_returns` | `src/data/loader.py` | ⏳ Planned |
 | 44 | SignalBuilder design — SignalBuilder class. Research: DataLoader + SignalBuilder pipeline test | `SignalBuilder` | `src/signals/signal_builder.py` | ⏳ Planned |
 
-### Days 45–51 — Signal Framework Sprint + Stochastic Processes
+### Days 45–51 — Signal Construction Sprint + Stochastic Processes
+
+> ⚠️ **Restructured Block — Signal Construction Is Now The Primary Deliverable**
+> Original Days 45–49 have been resequenced to prioritize strategy signal construction.
+> WalkForwardValidator is moved earlier (Day 45) to unblock signal runs by Day 49.
+> Polars migration and parallel WalkForward are non-critical-path optimizations — both deferred to the buffer block (Days 72–77).
+> Each strategy signal should arrive here fully specified on paper from Day 30. Day 45 onward is execution only.
 
 | Day | Topic | Function(s) | Location | Status |
 |-----|-------|-------------|----------|--------|
 | 45 | WalkForward design — WalkForwardValidator skeleton. Research: USD/JPY mean-reversion hypothesis | `walk_forward_validate` | `src/evaluation/walk_forward.py` | ⏳ Planned |
-| 46 | Parallelization theory — parallel WalkForward. Research: WalkForward EUR/USD momentum | `parallel_walk_forward` | `src/evaluation/walk_forward.py` | ⏳ Planned |
-| 47 | SignalReport design — SignalReport class. Research: full pipeline run EUR/USD | `SignalReport` | `src/analysis/signal_report.py` | ⏳ Planned |
-| 48 | Parquet & data formats — Parquet migration. Research: full pipeline run USD/JPY | — | `src/data/loader.py` | ⏳ Planned |
-| 49 | Polars introduction — DataLoader Polars migration. Research: week 7 review | — | `src/data/loader.py` | ⏳ Planned |
+| 46 | Strategy 1 signal construction — implement Strategy 1 signal logic through SignalBuilder. Research: Strategy 1 first pipeline run | `SignalBuilder` (Strategy 1 implementation) | `src/signals/signal_builder.py` | ⏳ Planned |
+| 47 | Strategy 2 signal construction — implement Strategy 2 signal logic through SignalBuilder. Research: Strategy 2 first pipeline run | `SignalBuilder` (Strategy 2 implementation) | `src/signals/signal_builder.py` | ⏳ Planned |
+| 48 | Strategy 3 signal construction — implement Strategy 3 signal logic through SignalBuilder. Research: Strategy 3 first pipeline run | `SignalBuilder` (Strategy 3 implementation) | `src/signals/signal_builder.py` | ⏳ Planned |
+| 49 | Run all 3 strategies through WalkForward — SignalReport design + initial outputs for all candidates. Research: week 7 review + strategy comparison table | `SignalReport`, `walk_forward_validate` | `src/analysis/signal_report.py`, `src/evaluation/walk_forward.py` | ⏳ Planned |
 | 50 | Brownian motion & GBM — GBM simulator. Research: Monte Carlo drawdown analysis | `simulate_brownian_motion`, `simulate_gbm` | `src/stats/stochastic.py` | ⏳ Planned |
-| 51 | OU process simulation — OU simulator & stress test. Research: month 2 assessment | `simulate_ou` | `src/stats/stochastic.py` | ⏳ Planned |
+| 51 | OU process simulation — OU simulator & stress test. Research: month 2 assessment + strategy candidate selection decision | `simulate_ou` | `src/stats/stochastic.py` | ⏳ Planned |
 
 ---
 
@@ -139,6 +152,14 @@ src/
 
 ### Days 61–71 — Paper Writing Track
 
+> **Note on the paper block:** 8 days is sufficient given that writing the paper is a review mechanism —
+> you are articulating methodology and results from work already completed across 60 days of builds.
+> The paper is not being written cold. It is being written by someone who built every line of the framework
+> it describes. Each section should come quickly as a result.
+> Apply multiple testing correction (deflated Sharpe, Benjamini-Hochberg) to the full set of strategies
+> tested — not only the winner — and document the selection methodology explicitly in the paper.
+> This is what separates a defensible research document from a p-hacking narrative.
+
 | Day | Topic | Function(s) | Location | Status |
 |-----|-------|-------------|----------|--------|
 | 61 | Paper abstract — paper repo setup. Research: paper data section | — | `paper/forex_systematic_research.md` | ⏳ Planned |
@@ -146,7 +167,7 @@ src/
 | 63 | Paper methodology part 1 — signal construction. Research: paper performance tables | — | `paper/forex_systematic_research.md` | ⏳ Planned |
 | 64 | Paper results — in-sample. Research: paper results OOS | — | `paper/forex_systematic_research.md` | ⏳ Planned |
 | 65 | Paper risk analysis. Research: paper plot suite | — | `paper/forex_systematic_research.md` | ⏳ Planned |
-| 66 | Paper limitations. Research: paper transaction cost table | — | `paper/forex_systematic_research.md` | ⏳ Planned |
+| 66 | Paper limitations — include explicit section on strategy selection methodology and multiple testing correction applied. Research: paper transaction cost table | — | `paper/forex_systematic_research.md` | ⏳ Planned |
 | 67 | Paper full revision pass. Research: framework README polish | — | `paper/forex_systematic_research.md` | ⏳ Planned |
 | 68 | Paper second revision pass. Research: quant-stats README polish | — | `paper/forex_systematic_research.md` | ⏳ Planned |
 | 69 | LinkedIn update — Cornell alumni networking outreach drafts | — | `research/networking/day69_outreach_drafts.md` | ⏳ Planned |
@@ -155,15 +176,17 @@ src/
 
 ### Days 72–77 — Buffer + Overflow Sprint ⚙️
 
+> Priority order for this block has been updated to include deferred items from the Days 45–51 restructure.
+
 | Day | Topic | Function(s) | Location | Status |
 |-----|-------|-------------|----------|--------|
-| 72–77 | Flexible buffer block — priority order: (1) paper weak sections; (2) third signal hypothesis if warranted; (3) live deployment monitoring dashboard; (4) additional networking outreach | — | — | ⏳ Planned |
+| 72–77 | Flexible buffer block — priority order: (1) paper weak sections; (2) parallel WalkForward (deferred from Day 46); (3) Parquet migration (deferred from Day 48); (4) Polars migration (deferred from Day 49, lowest priority — only if time permits); (5) live deployment monitoring dashboard; (6) additional networking outreach | — | — | ⏳ Planned |
 
 ### Days 79–89 — Live Monitoring + Next Phase Prep ⚙️
 
 | Day | Topic | Function(s) | Location | Status |
 |-----|-------|-------------|----------|--------|
-| 79–89 | Flexible operational block — monitor $100K deployment (P&L, Sharpe, drawdown weekly), respond to networking replies, read Month 2 candidate papers, scope next 90-day plan | — | — | ⏳ Planned |
+| 79–89 | Flexible operational block — monitor deployment (P&L, Sharpe, drawdown weekly), respond to networking replies, read Month 2 candidate papers, scope next 90-day plan | — | — | ⏳ Planned |
 
 ### Day 90 — Final Assessment + Final Commit
 
@@ -182,22 +205,22 @@ src/
 │   ├── performance_analyzer.py ← Days 6–7, 13, 40, 57
 │   ├── portfolio.py            ← Days 32–34, 52–53
 │   ├── portfolio_stats.py      ← Day 2 ✅
-│   └── signal_report.py        ← Day 47
+│   └── signal_report.py        ← Day 49
 ├── data/
-│   ├── loader.py               ← Days 43, 48–49
+│   ├── loader.py               ← Days 43, 48–49 (Parquet: buffer)
 │   ├── stationarity.py         ← Days 20, 22
 │   └── time_series.py          ← Day 23
 ├── evaluation/
 │   ├── bootstrap_ci.py         ← Days 11, 37 ✅
 │   ├── cross_validation.py     ← Day 39
 │   ├── significance.py         ← Days 12, 14, 38
-│   └── walk_forward.py         ← Days 45–46
+│   └── walk_forward.py         ← Days 45, 49 (parallel: buffer)
 ├── features/
 │   ├── pca.py                  ← Days 18–19, 42
 │   └── volatility.py           ← Days 55–56
 ├── signals/
 │   ├── cointegration.py        ← Days 24–26
-│   ├── signal_builder.py       ← Day 44
+│   ├── signal_builder.py       ← Days 44–48
 │   └── triple_barrier.py       ← Day 36
 └── stats/
     ├── correlation.py          ← Days 5, 54 ✅
@@ -217,5 +240,11 @@ research/
 │   └── live_deployment_plan.md ← Day 71
 ├── networking/
 │   └── day69_outreach_drafts.md ← Day 69
+├── strategy_specs/             ← Day 30 ⚠️ Hard deadline
+│   ├── strategy_1_spec.md
+│   ├── strategy_2_spec.md
+│   └── strategy_3_spec.md
 └── 90day_final_assessment.md   ← Day 90
 ```
+
+---

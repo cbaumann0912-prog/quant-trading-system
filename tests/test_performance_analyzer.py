@@ -34,3 +34,50 @@ class TestMaxDrawdown:
     def test_max_drawdown_flat_series(self):
         result = PerformanceAnalyzer(returns=FLAT_RETURNS, trades=None).compute_max_drawdown()
         assert result["value"] == 0
+
+class TestDeflatedSharpeRatio:
+    def test_dsr_between_0_and_1(self):
+        result = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
+        observed_sharpe=1.5,
+        n_trials=10,
+        n_obs=252,
+        skewness=0.0,
+        kurtosis=3.0
+        )
+        assert 0 <= result <= 1
+
+    def test_more_trials_lowers_dsr(self):
+        few_trials = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
+        observed_sharpe=1.5,
+        n_trials=2,
+        n_obs=50,
+        skewness=0.0,
+        kurtosis=3.0
+        )
+        many_trials = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
+        observed_sharpe=1.5,
+        n_trials=50,
+        n_obs=50,
+        skewness=0.0,
+        kurtosis=3.0
+        )
+        assert many_trials < few_trials 
+
+    def test_deflated_lower_than_observed(self):
+        observed = 1.5
+        dsr_deflated  = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
+        observed_sharpe=observed,
+        n_trials=50,
+        n_obs=50,
+        skewness=0.0,
+        kurtosis=3.0
+        )
+        dsr_baseline = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
+        observed_sharpe=observed,
+        n_trials=2,
+        n_obs=50,
+        skewness=0.0,
+        kurtosis=3.0
+        )
+
+        assert dsr_baseline  > dsr_deflated

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import pandas as pd
 import numpy as np
+from scipy import stats
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -103,6 +104,39 @@ class PerformanceAnalyzer:
 
         sharpe = (((self.returns.mean() - self.risk_free_rate) / self.returns.std()) * np.sqrt(self.ann_factor))
         return sharpe
+    
+    def deflated_sharpe_ratio(self, observed_sharpe, n_trials, n_obs, skewness, kurtosis): 
+        """
+        Compute the Deflated Sharpe Ratio (DSR) per Lopez de Prado & Bailey (2014).
+
+        Returns the probability that the observed Sharpe ratio is statistically
+        significant after adjusting for selection bias across multiple trials and
+        non-normality in the return distribution.
+
+        Parameters
+        ----------
+        observed_sharpe : float
+        n_trials : int
+        n_obs : int
+        skewness : float
+        kurtosis : float
+
+        Returns
+        -------
+        float
+        Probability that the observed Sharpe is a true positive.
+        """
+        V = (1 - skewness * observed_sharpe + ((kurtosis-1)/4) * observed_sharpe**2) / (n_obs - 1)
+        
+        gamma = 0.5772
+        SR_star = np.sqrt(V) * ((1 - gamma) * stats.norm.ppf(1 - 1/n_trials) + gamma * stats.norm.ppf(1 - 1/(n_trials * np.e)))
+
+        se = np.sqrt(V)
+
+        z = (observed_sharpe - SR_star) / se
+
+        return stats.norm.cdf(z)
+
 
     def compute_sortino(self) -> float:
         """
@@ -143,7 +177,7 @@ class PerformanceAnalyzer:
                  Index value of the peak.
              end_date : any
                  Index value of the trough.
-    """
+        """
         equity_curve = (1 + self.returns).cumprod()
         rolling_peak = equity_curve.cummax()
         drawdown = (equity_curve - rolling_peak) / rolling_peak

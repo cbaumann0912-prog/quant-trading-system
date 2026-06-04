@@ -1,38 +1,33 @@
-"""
-Day 12 Research: Multiple testing correction — methodology demonstration.
-Tests null of zero mean log return per pair (not strategy edge).
-"""
-
 import sys
-import numpy as np
-import pandas as pd
-sys.path.append(".")
+sys.path.insert(0, r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026')
 
+import pandas as pd
+import numpy as np
+from scipy import stats
 from src.evaluation.multiple_testing import bonferroni_correction, benjamini_hochberg
 from src.stats.hypothesis_tests import t_test_mean
 
-DATA_DIR = r"C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data"
-PAIRS = {
-    "EUR/USD": "EURUSD.csv",
-    "GBP/USD": "GBPUSD.csv",
-    "USD/JPY": "USDJPY.csv",
-}
 alpha = 0.05
 
 p_values = []
 labels = []
 
-for pair, filename in PAIRS.items():
-    df = pd.read_csv(f"{DATA_DIR}\\{filename}", header=0)
-    df.columns = ["datetime", "open", "high", "low", "close", "volume"]
-    df["datetime"] = pd.to_datetime(df["datetime"], format='%Y%m%d %H%M%S')
+PAIRS = {
+    "EUR/USD": "EURUSD",
+    "GBP/USD": "GBPUSD",
+    "USD/JPY": "USDJPY",
+}
 
-    log_returns = np.log(df["close"] / df["close"].shift(1)).dropna().values
+ARCHIVE_DIR = r"C:\Users\clayb\onedrive\desktop\career\02_quant_projects\summer2026\archive\OG_results\realistic"
 
-    result = t_test_mean(log_returns, 0, 1-alpha)
-    p = result["p_value"]
+for pair, folder in PAIRS.items():
+    df = pd.read_csv(f"{ARCHIVE_DIR}\\{folder}\\daily_returns.csv", parse_dates=["date"])
+    df = df[df["daily_return_pct"] != 0].dropna()
+    returns = df["daily_return_pct"].values
+
+    result = t_test_mean(returns, 0, 1 - alpha)
     labels.append(pair)
-    p_values.append(float(p))
+    p_values.append(float(result["p_value"]))
 
 bonferroni_results = bonferroni_correction(p_values, alpha)
 bh_results = benjamini_hochberg(p_values, alpha)

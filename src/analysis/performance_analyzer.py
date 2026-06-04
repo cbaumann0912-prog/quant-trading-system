@@ -120,21 +120,26 @@ class PerformanceAnalyzer:
         n_obs : int
         skewness : float
         kurtosis : float
+        periods_per_year : int
 
         Returns
         -------
         float
         Probability that the observed Sharpe is a true positive.
         """
-        V = (1 - skewness * observed_sharpe + ((kurtosis-1)/4) * observed_sharpe**2) / (n_obs - 1)
-        
+        sr_period = observed_sharpe / np.sqrt(self.ann_factor)
+
+        V = (1 - skewness * sr_period + ((kurtosis + 2) / 4) * sr_period ** 2) / (n_obs - 1)
+        if V <= 0:
+            return np.nan
+
         gamma = 0.5772
         SR_star = np.sqrt(V) * ((1 - gamma) * stats.norm.ppf(1 - 1/n_trials) + gamma * stats.norm.ppf(1 - 1/(n_trials * np.e)))
 
         se = np.sqrt(V)
 
-        z = (observed_sharpe - SR_star) / se
-
+        z = (sr_period - SR_star) / se
+        
         return stats.norm.cdf(z)
 
 

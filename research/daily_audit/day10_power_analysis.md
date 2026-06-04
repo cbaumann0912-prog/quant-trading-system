@@ -18,6 +18,5 @@ BOS_FVG_Reversal is well-powered at 216 trades. This is nearly 3x the required s
 
 ## Notes
 - Effect size of 0.33 is below medium by Cohen's conventions (small=0.2, medium=0.5)
-- Power analysis assumes effect size is stable across the sample — regime shifts could
-  invalidate this assumption
+- Power analysis assumes effect size is stable across the sample — regime shifts could invalidate this assumption
 - As new strategies are added, append rows to the results table and rerun the script

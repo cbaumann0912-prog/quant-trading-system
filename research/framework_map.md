@@ -10,7 +10,8 @@ src/
 │   └── portfolio_stats.py
 ├── data/
 ├── evaluation/
-│   └── bootstrap_ci.py
+│   ├── bootstrap_ci.py
+│   └── significance.py
 ├── features/
 ├── signals/
 └── stats/
@@ -51,8 +52,8 @@ src/
 | 9 | p-value interpretation + Cohen's d. Research: p-value table all strategies | `p_value_interpretation`, `compute_effect_size_cohens_d` | `src/stats/hypothesis_tests.py` | ✅ Built |
 | 10 | Permutation test & likelihood ratio test — power analysis module. Research: power analysis all strategies | `compute_required_sample_size`, `compute_achieved_power` | `src/stats/hypothesis_tests.py` | ✅ Built |
 | 11 | Confidence intervals — bootstrap CI module. Research: Sharpe CI on top strategy | `bootstrap_confidence_interval` | `src/evaluation/bootstrap_ci.py` | ✅ Built |
-| 12 | Multiple testing correction — multiple testing module. Research: multiple testing on strategies | `bonferroni_correction` | `src/evaluation/significance.py` | ⏳ Planned |
-| 13 | Deflated Sharpe ratio — DSR module. Research: DSR for all strategies | `deflated_sharpe_ratio` | `src/analysis/performance_analyzer.py` | ⏳ Planned |
+| 12 | Multiple testing correction — significance module. Research: multiple testing on strategies | `bonferroni_correction`, `benjamini_hochberg_correction` | `src/evaluation/significance.py` | ✅ Built |
+| 13 | Deflated Sharpe ratio — DSR module. Research: DSR for all strategies | `deflated_sharpe_ratio` | `src/analysis/performance_analyzer.py` | ✅ Built |
 | 14 | Week 2 review — significance suite integration. Research: week 2 review | — | `src/evaluation/significance.py` | ⏳ Planned |
 
 ### Week 3 — Regression & Linear Algebra
@@ -213,7 +214,7 @@ src/
 ├── evaluation/
 │   ├── bootstrap_ci.py         ← Days 11, 37 ✅
 │   ├── cross_validation.py     ← Day 39
-│   ├── significance.py         ← Days 12, 14, 38
+│   ├── significance.py         ← Days 12, 14, 38 (bonferroni + BH added Day 12)
 │   └── walk_forward.py         ← Days 45, 49 (parallel: buffer)
 ├── features/
 │   ├── pca.py                  ← Days 18–19, 42

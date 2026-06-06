@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
 
-
 def fit_ols(
     A: NDArray[np.float64],
     b: NDArray[np.float64],

@@ -4,7 +4,7 @@ sys.path.insert(0, r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\su
 import pandas as pd
 import numpy as np
 from scipy import stats
-from src.evaluation.multiple_testing import bonferroni_correction, benjamini_hochberg
+from src.evaluation.significance import bonferroni_correction, benjamini_hochberg
 from src.stats.hypothesis_tests import t_test_mean
 
 alpha = 0.05

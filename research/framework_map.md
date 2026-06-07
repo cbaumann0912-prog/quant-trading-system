@@ -1,6 +1,22 @@
 # Framework Map — 90-Day Quant Acceleration Plan
 
 
+## Implementation Taxonomy
+
+Every module in this framework falls into one of two categories. The distinction is recorded here as a design decision, not a per-module label.
+
+**Implement yourself** — modules where the bug you hit, the dimension mismatch you fix, or the numerical edge case you encounter encodes the learning. These are also the topics a quant interviewer will probe by asking you to derive or reconstruct on a whiteboard. Writing them yourself is non-negotiable.
+
+Covers: all of `src/stats/` (OLS, bootstrap CI, hypothesis tests, distributions, permutation test, DSR, power analysis, Bonferroni, BH); all signal logic in `src/signals/` (cointegration suite, triple barrier labels, signal functions inside SignalBuilder); `eigen_decomposition` and `pca` in `src/features/pca.py`; all of `src/stats/stochastic.py` (GBM, OU — the simulation code is the mathematical object); walk-forward validation and leakage-prevention mechanics in `src/evaluation/`; purged cross-validation; all portfolio math (Markowitz, Kelly, VaR/CVaR, risk parity, efficient frontier); GARCH; IC/IR; CAPM decomposition; regime detection and volatility regime classifier; gradient descent; `gamblers_ruin_probability`.
+
+**AI assistance acceptable** — infrastructure where the implementation adds nothing beyond what you already understand conceptually, and where no interview will ever ask you to reconstruct it. The non-negotiable condition for any AI-assisted module: review every line before committing. If you cannot explain a line under questioning, rewrite it yourself until you can.
+
+Covers: `load_ohlcv`, `resample_to_daily`, `compute_log_returns` in `src/data/loader.py` (pure I/O plumbing, Day 43); `plot_acf_pacf` visualization wrapper (Day 22 — understand the ACF/PACF math and Ljung-Box statistic in the math block; the matplotlib code is not the learning); `fit_arima` statsmodels API wrapper (Day 23 — understand ARIMA structure and AIC-based order selection deeply; the API call is three lines); `constrained_optimize` scipy wrapper (Day 35 — understand SLSQP and KKT conditions from the math block; the scipy.optimize call is not the learning); `SignalReport` output formatting (Day 49); `transaction_cost_model` arithmetic implementations (Day 57 — understand the breakeven economics; the formulas are arithmetic); `cli_runner` with Click (Day 58); `Dockerfile` (Day 59); cProfile and line_profiler boilerplate (Day 60 — the vectorization fix stays hand-implemented); README and `requirements.txt` (Day 29).
+
+**Reclaimed time rule**: on every AI-assisted day, the 90-minute Python block does not shrink — time reclaimed from fast infrastructure work redirects into the math block (deeper derivation) or research block (deeper applied analysis). Specific redirects are documented in the calendar event descriptions for each affected day.
+
+---
+
 ## Current Framework Structure
 
 ```
@@ -212,7 +228,7 @@ src/
 │   ├── stationarity.py         ← Days 20, 22
 │   └── time_series.py          ← Day 23
 ├── evaluation/
-│   ├── bootstrap_ci.py         ← Days 11, 37 ✅
+│   ├── bootstrap_ci.py         ← Days 11, 37 
 │   ├── cross_validation.py     ← Day 39
 │   ├── significance.py         ← Days 12, 14, 38 (bonferroni + BH added Day 12)
 │   └── walk_forward.py         ← Days 45, 49 (parallel: buffer)
@@ -224,7 +240,7 @@ src/
 │   ├── signal_builder.py       ← Days 44–48
 │   └── triple_barrier.py       ← Day 36
 └── stats/
-    ├── correlation.py          ← Days 5, 54 ✅
+    ├── correlation.py          ← Days 5, 54 
     ├── distributions.py        ← Days 1, 4 ✅
     ├── hypothesis_tests.py     ← Days 8–10 ✅
     ├── optimization.py         ← Days 31, 35

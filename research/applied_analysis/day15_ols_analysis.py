@@ -58,7 +58,7 @@ t_beta  = beta_1 / se[1]
 resid_mean   = residuals.mean()
 resid_std    = residuals.std()
 resid_skew   = pd.Series(residuals).skew()
-resid_kurt   = pd.Series(residuals).kurt()   # excess kurtosis
+resid_kurt   = pd.Series(residuals).kurt() 
 
 lag1_autocorr = pd.Series(residuals).autocorr(lag=1)
 

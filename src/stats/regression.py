@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Dict
 import scipy.stats
-from statsmodels.stats.stattools import acorr_ljungbox
+from statsmodels.stats.diagnostic import acorr_ljungbox
 
 def fit_ols(A: NDArray[np.float64], b: NDArray[np.float64], add_intercept: bool = True,) -> dict:
     """
@@ -38,7 +38,7 @@ def fit_ols(A: NDArray[np.float64], b: NDArray[np.float64], add_intercept: bool 
     n, p = A.shape
     RSS = np.sum(residuals**2)
     sigma_squared = RSS / (n - p)
-    
+
     var_beta = sigma_squared * np.linalg.inv(AtA)
     std_errors = np.sqrt(np.diag(var_beta))
     
@@ -134,8 +134,9 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
     variance = np.var(residuals,ddof=1)
     excess_kurtosis = scipy.stats.kurtosis(residuals)
     lb_result = acorr_ljungbox(residuals, lags=[lags], return_df=False)
-    lb_stat = lb_result[0][0]
-    lb_pvalue = lb_result[1][0]
+    lb_result = acorr_ljungbox(residuals, lags=[lags])
+    lb_stat = float(lb_result['lb_stat'].iloc[0])
+    lb_pvalue = float(lb_result['lb_pvalue'].iloc[0])
     lag1_autocorr = np.corrcoef(residuals[:-1], residuals[1:])[0,1]
 
     return {

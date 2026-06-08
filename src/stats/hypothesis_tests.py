@@ -15,9 +15,12 @@ def t_test_mean(
 
     Parameters
     ----------
-    returns : pd.Series
-    null_mean : float
-    confidence : float
+    returns
+        Daily return series to test.
+    null_mean
+        Hypothesized mean value under H0.
+    confidence
+        Confidence level (e.g. 0.95) for the interval and rejection threshold.
 
     Returns
     -------
@@ -57,7 +60,21 @@ def t_test_mean(
 
 
 def p_value_interpretation(p: float, alpha: float) -> str:
-    """Returns a precise statistical interpretation of a p-value given a significance level."""
+    """
+    Return a precise statistical interpretation of a p-value.
+
+    Parameters
+    ----------
+    p
+        Observed p-value from a hypothesis test.
+    alpha
+        Significance level against which p is compared.
+
+    Returns
+    -------
+    str
+        Human-readable interpretation of the test result.
+    """
     
     if p < alpha:
         return (
@@ -74,7 +91,21 @@ def p_value_interpretation(p: float, alpha: float) -> str:
    
 
 def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
-    """Returns Cohen's d effect size measuring the standardized difference between two groups."""
+    """
+    Compute Cohen's d effect size between two independent groups.
+
+    Parameters
+    ----------
+    group1
+        First sample of observations.
+    group2
+        Second sample of observations.
+
+    Returns
+    -------
+    float
+        Standardized mean difference (positive when group1 > group2).
+    """
     
     mean1 = group1.mean()
     mean2 = group2.mean()
@@ -95,13 +126,17 @@ def compute_required_sample_size(effect_size: float, alpha: float, power: float)
     Compute the minimum sample size needed to achieve a given power level.
     Parameters
     ----------
-    effect_size : float
-    alpha : float
-    power : float
+    effect_size
+        Expected standardized effect size (Cohen's d) to detect.
+    alpha
+        Significance level for the two-sided test.
+    power
+        Desired statistical power (probability of correctly rejecting H0).
 
     Returns
     -------
-    n_req : int
+    int
+        Minimum required sample size per group.
     """
 
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
@@ -117,13 +152,17 @@ def compute_achieved_power(n: int, effect_size: float, alpha: float) -> float:
 
     Parameters
     ----------
-    n : int
-    effect_size : float
-    alpha : float
+    n
+        Sample size.
+    effect_size
+        Standardized effect size (Cohen's d).
+    alpha
+        Significance level for the two-sided test.
 
     Returns
     -------
-    power : float
+    float
+        Achieved statistical power in [0, 1].
     """
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
 

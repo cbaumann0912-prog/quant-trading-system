@@ -8,9 +8,8 @@ def compute_correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
 
     Parameters
     ----------
-    returns : pd.DataFrame
-        Each column is a return series for one instrument.
-        Rows are observations (days).
+    returns
+        Each column is a return series for one instrument. Rows are observations (days).
 
     Returns
     -------
@@ -42,11 +41,11 @@ def rolling_correlation(
 
     Parameters
     ----------
-    s1 : pd.Series
+    s1
         First return series.
-    s2 : pd.Series
+    s2
         Second return series.
-    window : int
+    window
         Rolling window size in periods.
 
     Returns

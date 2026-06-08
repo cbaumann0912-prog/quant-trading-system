@@ -1,14 +1,25 @@
 import numpy as np
+from typing import Callable
 
-def bootstrap_confidence_interval(data, statistic_fn, n_bootstrap, confidence) -> tuple[float, float]:
-    """Returns a tuple whose first entry represents the lower bound of the confidence interval and the second is the upper bound
-    
+def bootstrap_confidence_interval(data: np.ndarray, statistic_fn: Callable, n_bootstrap: int, confidence: float) -> tuple[float, float]:
+    """
+    Compute a bootstrap percentile confidence interval for a statistic.
+
     Parameters
     ----------
-    data: np.ndarray
-    statistic_fn: function
-    n_bootstrap: int
-    confidence: float
+    data
+        1-D array of observed values to resample from.
+    statistic_fn
+        Function that takes a 1-D array and returns a scalar statistic.
+    n_bootstrap
+        Number of bootstrap resamples to draw.
+    confidence
+        Desired confidence level (e.g. 0.95).
+
+    Returns
+    -------
+    tuple[float, float]
+        (lower_bound, upper_bound) of the confidence interval.
     """
 
     bootstrap_stats = np.zeros(n_bootstrap)

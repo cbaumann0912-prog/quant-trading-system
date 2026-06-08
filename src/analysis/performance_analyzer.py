@@ -105,7 +105,7 @@ class PerformanceAnalyzer:
         sharpe = (((self.returns.mean() - self.risk_free_rate) / self.returns.std()) * np.sqrt(self.ann_factor))
         return sharpe
     
-    def deflated_sharpe_ratio(self, observed_sharpe, n_trials, n_obs, skewness, kurtosis): 
+    def deflated_sharpe_ratio(self, observed_sharpe: float, n_trials: int, n_obs: int, skewness: float, kurtosis: float) -> float:
         """
         Compute the Deflated Sharpe Ratio (DSR) per Lopez de Prado & Bailey (2014).
 
@@ -115,17 +115,21 @@ class PerformanceAnalyzer:
 
         Parameters
         ----------
-        observed_sharpe : float
-        n_trials : int
-        n_obs : int
-        skewness : float
-        kurtosis : float
-        periods_per_year : int
+        observed_sharpe
+            In-sample Sharpe ratio of the best strategy.
+        n_trials
+            Number of strategies or parameter sets that were evaluated.
+        n_obs
+            Number of return observations used to compute the Sharpe.
+        skewness
+            Sample skewness of the strategy's return distribution.
+        kurtosis
+            Sample excess kurtosis of the strategy's return distribution.
 
         Returns
         -------
         float
-        Probability that the observed Sharpe is a true positive.
+            Probability that the observed Sharpe is a true positive.
         """
         sr_period = observed_sharpe / np.sqrt(self.ann_factor)
 

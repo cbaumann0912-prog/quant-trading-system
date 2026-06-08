@@ -13,17 +13,16 @@ def fit_ols(X: NDArray[np.float64], y: NDArray[np.float64], add_intercept: bool 
 
     Parameters
     ----------
-    A : NDArray[np.float64]
-    b : NDArray[np.float64]
-    add_intercept : bool
+    X
+        Design matrix of shape (n, p). An intercept column is prepended if add_intercept=True.
+    y
+        Target vector of shape (n,).
+    add_intercept
+        If True, prepend a column of ones to X before fitting.
 
     Returns
     -------
-    dict with keys:
-        'coefficients' : NDArray  
-        'residuals'    : NDArray 
-        'r_squared'    : float    
-        'std_errors'   : NDArray 
+    dict with keys: coefficients, residuals, r_squared, std_errors
     """
     if add_intercept:
         X = np.column_stack([np.ones(len(y)), X])
@@ -59,9 +58,9 @@ def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
 
     Parameters
     ----------
-    y : array of shape (n,)
+    y
         Observed response values.
-    y_hat : array of shape (n,)
+    y_hat
         Fitted values from the model.
 
     Returns
@@ -81,11 +80,11 @@ def adj_r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64], p: int) ->
 
     Parameters
     ----------
-    y : array of shape (n,)
+    y
         Observed response values.
-    y_hat : array of shape (n,)
+    y_hat
         Fitted values from the model.
-    p : int
+    p
         Number of predictors, excluding the intercept.
 
     Returns
@@ -118,11 +117,11 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
 
     Parameters
     ----------
-    y : array of shape (n,)
+    y
         Observed response values.
-    y_hat : array of shape (n,)
+    y_hat
         Fitted values from the model.
-    lags : int
+    lags
         Number of lags for the Ljung-Box test. Default 20.
 
     Returns
@@ -157,13 +156,13 @@ def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
     
     Parameters
     ----------
-    X : np.ndarray, shape (n, p)
+    X
         Design matrix (standardized, no intercept column)
-    y : np.ndarray, shape (n,)
+    y
         Target vector
-    lambda_ : float
+    lambda_
         Regularization strength. lambda_=0 recovers OLS.
-    
+
     Returns
     -------
     dict with keys: coefficients, intercept, lambda_
@@ -188,7 +187,26 @@ def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
 }
 
 
-def lasso_objective(beta, X_c, y_c, lambda_):
+def lasso_objective(beta: np.ndarray, X_c: np.ndarray, y_c: np.ndarray, lambda_: float) -> float:
+    """
+    Evaluate the Lasso objective (RSS + L1 penalty) at a given coefficient vector.
+
+    Parameters
+    ----------
+    beta
+        Coefficient vector of shape (p,).
+    X_c
+        Mean-centered design matrix of shape (n, p).
+    y_c
+        Mean-centered target vector of shape (n,).
+    lambda_
+        Regularization strength. Scales the L1 penalty term.
+
+    Returns
+    -------
+    float
+        Scalar objective value: RSS + lambda_ * sum(|beta|).
+    """
     residuals = y_c - X_c @ beta
     rss = residuals @ residuals
     l1_penalty = lambda_ * np.sum(np.abs(beta))  # <-- this is the Σ|βⱼ|
@@ -201,13 +219,13 @@ def lasso_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
     
     Parameters
     ----------
-    X : np.ndarray, shape (n, p)
+    X
         Design matrix (standardized, no intercept column)
-    y : np.ndarray, shape (n,)
+    y
         Target vector
-    lambda_ : float
+    lambda_
         Regularization strength. lambda_=0 recovers OLS.
-    
+
     Returns
     -------
     dict with keys: coefficients, intercept, lambda_, n_nonzero

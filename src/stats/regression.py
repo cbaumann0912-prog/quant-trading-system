@@ -2,9 +2,12 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Dict
 import scipy.stats
+import scipy.optimize
+import scipy.stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
-def fit_ols(A: NDArray[np.float64], b: NDArray[np.float64], add_intercept: bool = True,) -> dict:
+
+def fit_ols(X: NDArray[np.float64], y: NDArray[np.float64], add_intercept: bool = True,) -> dict:
     """
     Fit OLS regression via the normal equations.
 
@@ -23,19 +26,19 @@ def fit_ols(A: NDArray[np.float64], b: NDArray[np.float64], add_intercept: bool 
         'std_errors'   : NDArray 
     """
     if add_intercept:
-        A = np.column_stack([np.ones(len(b)), A])
+        X = np.column_stack([np.ones(len(y)), X])
     
-    AtA = A.T @ A
-    Atb = A.T @ b
+    AtA = X.T @ X
+    Atb = X.T @ y
     
     beta = np.linalg.solve(AtA, Atb)   
     
-    y_hat = A @ beta        
-    residuals = b - y_hat   
+    y_hat = X @ beta        
+    residuals = y - y_hat   
     
-    R_squared = r_squared(b, y_hat)
+    R_squared = r_squared(y, y_hat)
     
-    n, p = A.shape
+    n, p = X.shape
     RSS = np.sum(residuals**2)
     sigma_squared = RSS / (n - p)
 
@@ -48,6 +51,7 @@ def fit_ols(A: NDArray[np.float64], b: NDArray[np.float64], add_intercept: bool 
     'r_squared':    R_squared,
     'std_errors':   std_errors,
 } 
+
 
 def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
     """
@@ -70,7 +74,6 @@ def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
     r2 = 1 - (RSS / TSS)
     return r2
     
-
 
 def adj_r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64], p: int) -> float:
     """
@@ -133,7 +136,6 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
     mean = np.mean(residuals)
     variance = np.var(residuals,ddof=1)
     excess_kurtosis = scipy.stats.kurtosis(residuals)
-    lb_result = acorr_ljungbox(residuals, lags=[lags], return_df=False)
     lb_result = acorr_ljungbox(residuals, lags=[lags])
     lb_stat = float(lb_result['lb_stat'].iloc[0])
     lb_pvalue = float(lb_result['lb_pvalue'].iloc[0])
@@ -147,3 +149,92 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
     'lb_pvalue': lb_pvalue,
     'lag1_autocorr': lag1_autocorr,
 }
+
+
+def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
+    """
+    Fit Ridge regression using the closed-form solution.
+    
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+        Design matrix (standardized, no intercept column)
+    y : np.ndarray, shape (n,)
+        Target vector
+    lambda_ : float
+        Regularization strength. lambda_=0 recovers OLS.
+    
+    Returns
+    -------
+    dict with keys: coefficients, intercept, lambda_
+    """
+    X_mean = X.mean(axis=0)
+    y_mean = y.mean()
+    X_c = X - X_mean
+    y_c = y - y_mean
+
+    AtA = X_c.T @ X_c
+    Atb = X_c.T @ y_c
+    lambda_I = lambda_ * np.identity(X_c.shape[1])
+
+    beta = np.linalg.solve((AtA + lambda_I), Atb)
+
+    intercept = y_mean - X_mean @ beta
+
+    return {
+    'coefficients': beta,
+    'intercept': intercept,
+    'lambda_': lambda_
+}
+
+
+def lasso_objective(beta, X_c, y_c, lambda_):
+    residuals = y_c - X_c @ beta
+    rss = residuals @ residuals
+    l1_penalty = lambda_ * np.sum(np.abs(beta))  # <-- this is the Σ|βⱼ|
+    return rss + l1_penalty
+
+
+def lasso_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
+    """
+    Fit Lasso regression using scipy.optimize.minimize with L1 penalty.
+    
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+        Design matrix (standardized, no intercept column)
+    y : np.ndarray, shape (n,)
+        Target vector
+    lambda_ : float
+        Regularization strength. lambda_=0 recovers OLS.
+    
+    Returns
+    -------
+    dict with keys: coefficients, intercept, lambda_, n_nonzero
+    """
+    X_mean = X.mean(axis=0)
+    y_mean = y.mean()
+    X_c = X - X_mean
+    y_c = y - y_mean
+
+    x0 = np.zeros(X_c.shape[1])
+
+    result = scipy.optimize.minimize(
+        lasso_objective,
+        x0,
+        args=(X_c, y_c, lambda_),
+        method='L-BFGS-B'
+    )
+
+    beta = result.x
+
+    intercept = y_mean - X_mean @ beta
+
+    beta[np.abs(beta) < 1e-6] = 0.0
+
+    return {
+        'coefficients': beta,
+        'intercept': intercept,
+        'lambda_': lambda_,
+        'n_nonzero': int(np.sum(beta != 0))
+    }

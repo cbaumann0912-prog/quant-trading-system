@@ -1,23 +1,23 @@
 import numpy as np
 import pytest
 from numpy.typing import NDArray
-from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics
+from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics, ridge_fit, lasso_objective, lasso_fit
 
 
 @pytest.fixture
 def simple_data():
-    A = np.array([1, 2, 3, 4, 5], dtype=float).reshape(-1, 1)
-    b = np.array([2.1, 3.9, 6.2, 7.8, 9.5], dtype=float)
-    return A, b
+    X = np.array([1, 2, 3, 4, 5], dtype=float).reshape(-1, 1)
+    y = np.array([2.1, 3.9, 6.2, 7.8, 9.5], dtype=float)
+    return X, y
 
 
 def test_coefficients_match_sklearn(simple_data):
     from sklearn.linear_model import LinearRegression
-    A, b = simple_data
+    X, y = simple_data
 
-    result = fit_ols(A, b, add_intercept=True)
+    result = fit_ols(X, y, add_intercept=True)
 
-    model = LinearRegression(fit_intercept=True).fit(A, b)
+    model = LinearRegression(fit_intercept=True).fit(X, y)
     sklearn_coeffs = np.array([model.intercept_, model.coef_[0]])
 
     np.testing.assert_allclose(
@@ -133,3 +133,41 @@ def test_residual_diagnostics_autocorrelated_fails_ljung_box():
     result = residual_diagnostics(y, y_hat, 20)
 
     assert result["lb_pvalue"] < 0.05
+
+
+def test_ridge_shrinks_vs_ols():
+    np.random.seed(28)
+    X = np.random.randn(100, 3)
+    y = X @ np.array([1.0, 2.0, 3.0]) + np.random.randn(100)
+
+    result_ols = fit_ols(X, y, False)
+    result_rr = ridge_fit(X, y, 10.0)
+
+    ols_norm = np.linalg.norm(result_ols["coefficients"])
+    ridge_norm = np.linalg.norm(result_rr["coefficients"])
+
+    assert ridge_norm < ols_norm
+
+def test_lasso_produces_sparse_solution():
+    np.random.seed(8)
+    X = np.random.randn(100, 10)
+    true_beta = np.array([3.0, -2.0, 0, 0, 0, 0, 0, 0, 0, 0])
+    y = X @ true_beta + np.random.randn(100)
+
+    result = lasso_fit(X, y, 10.0)
+
+    assert result["n_nonzero"] < X.shape[1]
+
+def test_ridge_lambda_zero_matches_ols():
+    np.random.seed(42)
+    X = np.random.randn(100, 3)
+    y = X @ np.array([1.0, 2.0, 3.0]) + np.random.randn(100)
+
+    result_ridge = ridge_fit(X, y, lambda_=0.0)
+    result_ols = fit_ols(X, y, add_intercept=True)
+
+    np.testing.assert_allclose(
+        result_ridge["coefficients"],
+        result_ols["coefficients"][1:],
+        rtol=1e-5
+    )

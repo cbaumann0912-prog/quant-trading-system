@@ -30,7 +30,6 @@ Day 4 measured excess kurtosis of 3.04 on raw EUR/USD log returns. After removin
 
 A second explanation: the 15-year window spans structurally different regimes — the 2015 SNB shock, Brexit, COVID. Extreme residuals from these episodes inflate kurtosis even if within-regime errors are approximately normal. The fat tails may be episodic rather than a permanent feature of the distribution.
 
-
 ## 7. Open Questions
 The hedge ratio β = 0.5596 is a static full-sample estimate. A single coefficient estimated across 15 years of structurally different regimes may not be stable. Day 45 walk-forward validation will test whether this number holds out-of-sample or drifts materially across sub-periods. A rolling hedge ratio is worth evaluating against the static estimate.
 

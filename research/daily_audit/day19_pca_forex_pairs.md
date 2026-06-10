@@ -35,8 +35,6 @@ Eigenvectors represent the directions of maximum variance within the data. They 
 | PC2       | 2.159184e-05 | 0.2892             | 0.8850     |
 | PC3       | 8.589501e-06 | 0.1150             | 1.0000     |
 
-Components needed to explain 95% of variance: 3
-
 ### 6.2 Eigenvector Loadings
 
 | Pair   | PC1     | PC2    | PC3     |
@@ -110,7 +108,7 @@ Hypothesis evaluation: The increasing proportion of variance explained by PC1 co
 
 The 2016 Brexit referendum produced the single largest deviation from the trend. GBP/USD experienced substantial movements driven by UK-specific political risk rather than broader USD dynamics, weakening the three-pair correlation structure and causing PC2 to absorb idiosyncratic GBP variance — producing the sample maximum of 0.4155.
 
-A strategy calibrated using full-sample PCA loadings would underestimate the current importance of the USD factor. The full-sample PC1 of 0.5958 has not appeared in any single year since 2017.
+Since 2020, no year has shown PC1 below 0.65 — the full-sample average of 0.5958 understates current USD factor dominance by approximately 10–15 percentage points.
 
 ### 6.6 PC Score Descriptive Statistics and Signal Properties
 
@@ -142,11 +140,9 @@ A strategy calibrated using full-sample PCA loadings would underestimate the cur
 | PC2       | -0.0371  |
 | PC3       | -0.0158  |
 
-Findings: The standard deviation of each score series equals √λ_k to six significant figures, providing a third independent verification of the implementation alongside the orthogonality and variance checks in Section 6.3.
+Findings: PC2 skewness of -1.197 is the most consequential distributional finding beyond kurtosis. The minimum PC2 score of -0.0874 is 2.2 times larger in magnitude than the maximum of +0.0399, confirming that carry crash drawdowns are structurally asymmetric — downside moves are both more frequent and larger than upside recoveries. PC1 and PC3 skew near zero, confirming symmetric factor behavior. These two factors require different risk models.
 
-PC2 skewness of -1.197 is the most consequential distributional finding beyond kurtosis. The minimum PC2 score of -0.0874 is 2.2 times larger in magnitude than the maximum of +0.0399, confirming that carry crash drawdowns are structurally asymmetric — downside moves are both more frequent and larger than upside recoveries. PC1 and PC3 skew near zero, confirming symmetric factor behavior. These two factors require different risk models.
-
-At a 2σ threshold, PC2 produces 14.6 crossings per year — sufficient event frequency to support signal construction. At 3σ, this falls to 4.2 per year, approaching the sample size floor for reliable inference. However, lag-1 autocorrelation of -0.037 indicates that PC2 factor shocks have no meaningful daily persistence. A momentum rule entering the day after a threshold crossing has no statistical basis. Any threshold-based signal requires same-day or intraday execution at the point of crossing, not the following open. The asymmetry in threshold counts is consistent with the negative skew. 
+At a 2σ threshold, PC2 produces 14.6 crossings per year — sufficient event frequency to support signal construction. At 3σ, this falls to 4.2 per year, approaching the sample size floor for reliable inference. However, lag-1 autocorrelation of -0.037 indicates that PC2 factor shocks have no meaningful daily persistence. A momentum rule entering the day after a threshold crossing has no statistical basis. Any threshold-based signal requires same-day or intraday execution at the point of crossing, not the following open.
 
 ## 7. Alternative Explanations
 
@@ -163,8 +159,6 @@ At a 2σ threshold, PC2 produces 14.6 crossings per year — sufficient event fr
 - Does the cumulative sum of PC2 scores form a mean-reverting series suitable for stat arb signal construction, and if so, what is its half-life?
 
 ## 9. Connection to Strategy Development
-Multiple strategies operating across different currency pairs may appear diversified while sharing substantial exposure to the same underlying USD factor. A large unexpected USD movement could negatively impact all strategies simultaneously — not because each individual strategy failed independently, but because they were exposed to a common source of risk.
-
 At approximately 72% PC1 variance explained in recent years, much of the information contained within each currency pair is redundant. The amount of genuinely independent information per pair is substantially smaller than the raw data suggests.
 
 Because the eigenstructure has drifted materially across the sample period, PCA loadings must be re-estimated on rolling windows — applying full-sample loadings to contemporary data introduces systematic error in both signal construction and risk measurement.

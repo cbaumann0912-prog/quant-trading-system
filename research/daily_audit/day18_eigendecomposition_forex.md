@@ -4,7 +4,7 @@
 What does the eigenstructure of the EUR/USD, GBP/USD, USD/JPY return covariance matrix reveal about the dominant sources of variance in the forex data?
 
 ## 2. Why It Matters
-Three pairs, but  there are not three independent risk sources. The eigenstructure tells you how many truly independent dimensions the data occupies. Understanding the eigenstructure and what it is conveying can allow for economic understanding of what specific large contributing factors are. Signals are currently built on raw EUR/USD, GBP/USD, and USD/JPY returns, but these series are not independent. PC1 alone explains 59.6% of their shared variance. By projecting returns into principal component space you obtain orthogonal PC return series, allowing signals built on one factor to operate without unintentionally reacting to another.
+Three pairs, but  there are not three independent risk sources. The eigenstructure tells you how many truly independent dimensions the data occupies. Understanding the eigenstructure and what it is conveying can allow for economic understanding of what specific large contributing factors are. Signals are currently built on raw EUR/USD, GBP/USD, and USD/JPY returns, but these series are not independent. By projecting returns into principal component space you obtain orthogonal PC return series, allowing signals built on one factor to operate without unintentionally reacting to another.
 
 ## 3. Methodology
 - 15 years of 1-minute OHLCV resampled to daily close

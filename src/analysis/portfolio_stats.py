@@ -15,9 +15,10 @@ def compute_covariance_matrix(returns: pd.DataFrame) -> np.ndarray:
     np.ndarray
         Covariance matrix of shape (n_assets, n_assets).
     """
-    means = returns.mean()
-    deviations = returns - means
-    return np.cov(deviations.T)
+    X = np.asarray(returns)
+    X = X - X.mean(axis=0)
+    n = X.shape[0]
+    return (X.T @ X) / (n - 1)
 
 def compute_portfolio_variance(weights: np.ndarray, cov_matrix: np.ndarray) -> float:
     """

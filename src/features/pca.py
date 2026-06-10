@@ -1,4 +1,5 @@
 import numpy as np
+from src.analysis.portfolio_stats import compute_covariance_matrix
 
 
 def matrix_inverse_via_svd(M: np.ndarray, threshold: float = 1e-10) -> np.ndarray:
@@ -87,12 +88,10 @@ def eigendecomposition(M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return lambdas , v
 
 
-def pca(X: np.ndarray, n_components: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def pca(X: np.ndarray, n_components: int | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     PCA from first principles via eigendecomposition of the
     covariance matrix.
-
-    Day 19 implementation. Skeleton only today.
 
     Parameters
     ----------
@@ -112,5 +111,20 @@ def pca(X: np.ndarray, n_components: int) -> tuple[np.ndarray, np.ndarray, np.nd
         X projected onto the principal components,
         shape (n_observations, n_components).
     """
-    # Day 19
-    raise NotImplementedError("pca — scheduled for Day 19")
+    X_c = X - X.mean(axis=0)
+
+    cov_matrix = compute_covariance_matrix(X)
+
+    lambdas , v = eigendecomposition(cov_matrix)
+
+    Z = X_c @ v
+
+    total_variance = lambdas.sum()
+
+    v = v[:, :n_components]
+    lambdas = lambdas[:n_components]
+    Z = Z[:, :n_components]
+
+    explained_variance = lambdas / total_variance
+
+    return v , explained_variance , Z

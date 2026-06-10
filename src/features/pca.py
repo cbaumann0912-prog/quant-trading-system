@@ -73,7 +73,7 @@ def eigendecomposition(M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if M.ndim != 2 or M.shape[0] != M.shape[1]:
         raise ValueError(f"M must be a 2D square matrix, got shape {M.shape}")
 
-    lambdas, v = np.linalg.eig(M)
+    lambdas, v = np.linalg.eigh(M)
 
     idx = np.argsort(-np.abs(lambdas))
 
@@ -87,10 +87,7 @@ def eigendecomposition(M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return lambdas , v
 
 
-def pca(
-    X: np.ndarray,
-    n_components: int | None = None
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def pca(X: np.ndarray, n_components: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     PCA from first principles via eigendecomposition of the
     covariance matrix.

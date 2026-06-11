@@ -6,7 +6,6 @@ from src.stats.correlation import compute_correlation_matrix, rolling_correlatio
 
 @pytest.fixture
 def sample_returns() -> pd.DataFrame:
-    """10-day return sample — same data as your hand-computation problem."""
 
     return pd.DataFrame({
         "EURUSD": [ 0.42, -0.17,  0.89, -0.53,  0.11,

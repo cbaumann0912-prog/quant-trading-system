@@ -24,7 +24,7 @@ def ill_conditioned_matrix():
 @pytest.fixture
 def simple_data():
     """Small deterministic dataset for exact numerical checks."""
-    np.random.seed(8)
+    np.random.seed(28)
     return np.random.randn(100, 3)
 
 

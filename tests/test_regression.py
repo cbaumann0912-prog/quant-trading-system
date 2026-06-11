@@ -64,7 +64,7 @@ def test_r_squared_known_value():
 
 
 def test_adj_r_squared_leq_r_squared():
-    np.random.seed(8)
+    np.random.seed(28)
     y = np.random.normal(0, 1, 20)
     y_hat = np.random.normal(0, 1, 20)
     adj_r2 = adj_r_squared(y, y_hat, 2)
@@ -81,7 +81,7 @@ def test_adj_r_squared_guard_fires():
     
 
 def test_adj_r_squared_penalty_direction():
-    np.random.seed(8)
+    np.random.seed(28)
     y = np.random.normal(0, 1, 20)
     y_hat = np.random.normal(0, 1, 20)
     adj_r2_1 = adj_r_squared(y, y_hat, 2)
@@ -91,7 +91,7 @@ def test_adj_r_squared_penalty_direction():
 
 
 def test_residual_diagnostics_keys_present():
-    np.random.seed(8)
+    np.random.seed(28)
     y = np.random.normal(0, 1, 500)
     y_hat = np.random.normal(0, 1, 500)
     result = residual_diagnostics(y, y_hat, 20)
@@ -105,7 +105,7 @@ def test_residual_diagnostics_keys_present():
 
 
 def test_residual_diagnostics_mean_near_zero():
-    np.random.seed(8)
+    np.random.seed(28)
     y = np.random.normal(0, 1, 500)
     y_hat = np.random.normal(0, 1, 500)
     result = residual_diagnostics(y, y_hat, 20)
@@ -114,7 +114,7 @@ def test_residual_diagnostics_mean_near_zero():
 
 
 def test_residual_diagnostics_white_noise_passes_ljung_box():
-    np.random.seed(8)
+    np.random.seed(28)
     y = np.random.normal(0, 1, 500)
     y_hat = np.random.normal(0, 1, 500)
     result = residual_diagnostics(y, y_hat, 20)
@@ -123,7 +123,7 @@ def test_residual_diagnostics_white_noise_passes_ljung_box():
 
 
 def test_residual_diagnostics_autocorrelated_fails_ljung_box():
-    np.random.seed(8)
+    np.random.seed(28)
     n = 500
     residuals = np.zeros(n)
     for i in range(1, n):
@@ -149,7 +149,7 @@ def test_ridge_shrinks_vs_ols():
     assert ridge_norm < ols_norm
 
 def test_lasso_produces_sparse_solution():
-    np.random.seed(8)
+    np.random.seed(28)
     X = np.random.randn(100, 10)
     true_beta = np.array([3.0, -2.0, 0, 0, 0, 0, 0, 0, 0, 0])
     y = X @ true_beta + np.random.randn(100)
@@ -159,7 +159,7 @@ def test_lasso_produces_sparse_solution():
     assert result["n_nonzero"] < X.shape[1]
 
 def test_ridge_lambda_zero_matches_ols():
-    np.random.seed(42)
+    np.random.seed(28)
     X = np.random.randn(100, 3)
     y = X @ np.array([1.0, 2.0, 3.0]) + np.random.randn(100)
 

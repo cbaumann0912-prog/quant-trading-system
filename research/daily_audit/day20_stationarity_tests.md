@@ -8,17 +8,17 @@ Mean-reversion pair trading only works if the spread has a mean to revert to. Th
 
 ## 3. Methodology
 - 15 years of 1-minute OHLCV data resampled to daily closing prices.
-- Log price levels computed as ln(Pₜ).
+- Log price levels computed as ln(Pt).
 - Series aligned on common trading dates via index intersection across all three pairs.
 - Individual pair stationarity tested using `check_stationarity()` from `src/data/stationarity.py`, which combines ADF and KPSS.
-- OLS regression run for each bivariate combination to estimate the hedge ratio (β).
+- OLS regression run for each bivariate combination to estimate the hedge ratio (beta).
 - Residuals extracted and tested for stationarity — Engle-Granger step 2.
 - Benjamini-Hochberg correction applied to residual ADF p-values to control false discovery rate across the three tests.
 
 ## 4. Assumptions
 - Log price levels are I(1). Engle-Granger requires both inputs to be integrated of order one. If any series is I(2) or already I(0), the framework breaks down. Layer 1 checks this.
 - The cointegrating relationship is linear. OLS estimates a linear hedge ratio and will miss non-linear structure.
-- The hedge ratio is stable over time. One regression over 15 years assumes β is constant. Structural breaks violate this. Walk-forward stability is deferred to Day 45.
+- The hedge ratio is stable over time. One regression over 15 years assumes beta is constant. Structural breaks violate this. Walk-forward stability is deferred to Day 45.
 - Residuals are approximately homoskedastic. ADF and KPSS are sensitive to volatility clustering. FX residuals likely exhibit GARCH effects — a known violation, addressed formally on Day 55.
 - No lookahead bias. Only daily closing prices are used.
 
@@ -27,6 +27,7 @@ Mean-reversion pair trading only works if the spread has a mean to revert to. Th
 ### 5a. Raw Log Price Levels — Individual Pairs
 
 | Series  | ADF Stat | ADF p  | KPSS Stat | KPSS p | Verdict        |
+| ------- | -------- | ------ | --------- | ------ | -------------- |
 | EUR/USD | -2.0668  | 0.2581 | 6.0092    | 0.0100 | I(1) unit root |
 | GBP/USD | -1.7678  | 0.3966 | 7.7501    | 0.0100 | I(1) unit root |
 | USD/JPY | -0.8862  | 0.7925 | 8.1109    | 0.0100 | I(1) unit root |
@@ -36,6 +37,7 @@ All three series came back I(1) as expected. ADF failed to reject the unit root 
 ### 5b. OLS Residuals — All Pair Combinations
 
 | Spread            | Beta    | ADF Stat | ADF p  | KPSS Stat | KPSS p | Raw Verdict            | BH-Corrected |
+| ----------------- | ------- | -------- | ------ | --------- | ------ | ---------------------- | ------------ |
 | EUR/USD ~ GBP/USD | 0.7282  | -2.8049  | 0.0576 | 0.5739    | 0.0250 | I(1), no cointegration | False        |
 | EUR/USD ~ USD/JPY | -0.3425 | -2.1977  | 0.2071 | 1.2416    | 0.0100 | I(1), no cointegration | False        |
 | GBP/USD ~ USD/JPY | -0.3489 | -1.8152  | 0.3729 | 2.4882    | 0.0100 | I(1), no cointegration | False        |
@@ -44,12 +46,12 @@ No pair passed. The EUR/USD ~ GBP/USD spread is the only one worth pausing on �
 
 The other two pairs are not close. EUR/USD ~ USD/JPY and GBP/USD ~ USD/JPY show no evidence of mean-reverting residuals under either test.
 
-The levels-based β for EUR/USD ~ GBP/USD is 0.7282, not 0.5596. The Day 15 beta was estimated on log returns and measures contemporaneous daily return sensitivity. Today's beta is estimated on log price levels and measures long-run equilibrium elasticity. These are different quantities answering different questions.
+The levels-based beta for EUR/USD ~ GBP/USD is 0.7282, not 0.5596. The Day 15 beta was estimated on log returns and measures contemporaneous daily return sensitivity. Today's beta is estimated on log price levels and measures long-run equilibrium elasticity. These are different quantities answering different questions.
 
 ## 6. Alternative Explanations
 The null result does not rule out a relationship between these pairs — it rules out a static, full-sample, linear one.
 
--  A single regression treats all 15 years as one regime. It probably is not.
+- Over 15 years, the EUR/GBP relationship absorbed the European sovereign debt crisis, Brexit, COVID-19, and multiple divergent rate cycles. A single regression treats all of that as one regime. It probably is not.
 - The borderline EUR/USD ~ GBP/USD result is consistent with a cointegrated spread with very slow mean reversion — a half-life of several months. At that speed, ADF has low power to distinguish the spread from a unit root in finite samples. Johansen testing will provide a more sensitive check.
 - The Engle-Granger procedure is a two-step estimator with known efficiency losses. Johansen's maximum likelihood approach handles this better, particularly with three series.
 - Daily sampling may be too coarse. Intraday cointegration could exist and disappear under daily aggregation.

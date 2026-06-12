@@ -61,3 +61,5 @@ The hedge ratio of 0.5596 is a single number summarizing 15 years of a relations
 The most important missing piece is stationarity of the residual. A significant $\hat{\beta}$ and a reasonable $R^2$ on returns says nothing about whether the price-level spread mean-reverts. The residual here is a return residual, not a price-level spread. The cointegration question — whether EUR/USD and GBP/USD prices share a common stochastic trend — requires the Engle-Granger test. Until then, no claim about a tradeable mean-reversion signal in the price spread is warranted.
 
 The hedge ratio estimated today is a full-sample quantity. Whether it is stable enough to apply in a walk-forward setting — where you estimate on a training window and apply to unseen data — is unanswered.
+
+This analysis was conducted on log returns. The resulting β = 0.5596 is a return hedge ratio measuring the contemporaneous return relationship, not a cointegration hedge ratio. Engle-Granger cointegration testing requires OLS on log price levels.

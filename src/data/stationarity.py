@@ -147,7 +147,7 @@ def check_stationarity(series: pd.Series, regression: str = "c") -> dict:
             "examining plots/ACF, or using additional tests."
         )
 
-    else:  # both reject
+    else:
         is_stationary = False
         recommendation = (
             "Both tests reject their null hypotheses. "

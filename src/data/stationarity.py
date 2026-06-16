@@ -1,6 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller, kpss
-
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.stats.diagnostic import acorr_ljungbox
 
 def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> dict:
     """
@@ -163,3 +165,52 @@ def check_stationarity(series: pd.Series, regression: str = "c") -> dict:
         "is_stationary": is_stationary,
         "recommendation": recommendation,
     }
+
+
+def plot_acf_pacf(
+    series: np.ndarray,
+    lags: int = 40,
+    title: str = "",
+    alpha: float = 0.05,
+) -> None:
+    """
+    Plot ACF and PACF side by side.
+
+    Parameters
+    ----------
+    series : np.ndarray
+        Time series to analyze.
+    lags : int
+        Number of lags to display.
+    title : str
+        Plot title prefix.
+    alpha : float
+        Significance level for confidence bands.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+    plot_acf(series, lags=lags, alpha=alpha, ax=axes[0])
+    axes[0].set_title(f"{title} ACF")
+    plot_pacf(series, lags=lags, alpha=alpha, ax=axes[1])
+    axes[1].set_title(f"{title} PACF")
+    plt.tight_layout()
+    plt.show()
+    plt.close("all")
+
+
+def ljung_box_test(series: np.ndarray, lags: int = 20,) -> pd.DataFrame:
+    """
+    Ljung-Box Q test for autocorrelation up to given lag.
+
+    Parameters
+    ----------
+    series : np.ndarray
+        Series to test (typically residuals or returns).
+    lags : int
+        Maximum lag to test.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: lb_stat, lb_pvalue, indexed by lag.
+    """
+    return acorr_ljungbox(series, lags=lags, return_df=True)

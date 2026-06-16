@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
 import pytest
+import matplotlib
 
-from src.data.stationarity import adf_test, check_stationarity, kpss_test
+matplotlib.use("Agg")
+
+from src.data.stationarity import adf_test, check_stationarity, kpss_test, plot_acf_pacf, ljung_box_test
+from statsmodels.tsa.stattools import acf, pacf
 
 np.random.seed(28)
 
@@ -105,3 +109,50 @@ def test_check_stationarity_returns_expected_keys():
     }
     
     assert expected_keys.issubset(result.keys())
+
+def test_white_noise_acf_near_zero():
+    series = np.random.normal(0, 1, 5000)
+    acf_vals = acf(series, nlags=20, fft=True)
+
+    assert np.all(np.abs(acf_vals[1:]) < 0.05)
+
+
+def test_ar1_pacf_cuts_off_at_lag1():
+    n = 5000
+    phi = 0.7
+    series = np.zeros(n)
+    eps = np.random.normal(0, 1, n)
+    for t in range(1, n):
+        series[t] = phi * series[t - 1] + eps[t]
+        
+    pacf_vals = pacf(series, nlags=10, method="ywm")
+
+    assert abs(pacf_vals[1]) > 0.3
+    assert np.all(np.abs(pacf_vals[2:]) < 0.1)
+
+
+def test_ljung_box_rejects_autocorrelated():
+    n = 2000
+    phi = 0.6
+    series = np.zeros(n)
+    eps = np.random.normal(0, 1, n)
+    for t in range(1, n):
+        series[t] = phi * series[t - 1] + eps[t]
+
+    lb = ljung_box_test(series, lags=10)
+
+    assert lb["lb_pvalue"].iloc[0] < 0.05
+
+
+def test_ljung_box_output_shape():
+    series = np.random.normal(0, 1, 500)
+    lb = ljung_box_test(series, lags=20)
+
+    assert len(lb) == 20
+    assert "lb_stat" in lb.columns
+    assert "lb_pvalue" in lb.columns
+
+
+def test_plot_acf_pacf_runs_without_error():
+    series = np.random.normal(0, 1, 500)
+    plot_acf_pacf(series, lags=20, title="test")

@@ -20,7 +20,8 @@ def load_pair(path: Path) -> pd.Series:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
     df = df.set_index("Datetime").sort_index()
-    log_returns = np.log(df["Close"] / df["Close"].shift(1)).dropna()
+    daily = df["Close"].resample("D").last().dropna()
+    log_returns = np.log(daily / daily.shift(1)).dropna()
     return log_returns
 
 
@@ -34,14 +35,20 @@ pairs = {
     "USD/JPY": usdjpy_returns,
 }
 
+PLOT_DIR = Path("research/applied_analysis/plots")
+PLOT_DIR.mkdir(parents=True, exist_ok=True)
+
 for name, returns in pairs.items():
-    print(f"\n{'='*60}")
     print(f"  {name}")
-    print(f"{'='*60}")
     print(f"  Obs: {len(returns):,}")
     print(f"  Date range: {returns.index[0]} → {returns.index[-1]}")
 
-    plot_acf_pacf(series=returns.values, lags=MAX_LAG_PLOT, title=name)
+    plot_acf_pacf(
+        series=returns.values,
+        lags=MAX_LAG_PLOT,
+        title=name,
+        save_path=PLOT_DIR / f"day22_{name.replace('/', '')}_acf_pacf.png",
+    )
 
     lb = ljung_box_test(series=returns.values, lags=MAX_LAG_LB)
 

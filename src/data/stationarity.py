@@ -172,28 +172,18 @@ def plot_acf_pacf(
     lags: int = 40,
     title: str = "",
     alpha: float = 0.05,
+    save_path: Path | None = None,
 ) -> None:
-    """
-    Plot ACF and PACF side by side.
-
-    Parameters
-    ----------
-    series : np.ndarray
-        Time series to analyze.
-    lags : int
-        Number of lags to display.
-    title : str
-        Plot title prefix.
-    alpha : float
-        Significance level for confidence bands.
-    """
     fig, axes = plt.subplots(1, 2, figsize=(14, 4))
     plot_acf(series, lags=lags, alpha=alpha, ax=axes[0])
     axes[0].set_title(f"{title} ACF")
     plot_pacf(series, lags=lags, alpha=alpha, ax=axes[1])
     axes[1].set_title(f"{title} PACF")
     plt.tight_layout()
-    plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=150)
+    else:
+        plt.show()
     plt.close("all")
 
 

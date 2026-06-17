@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 
-
 def fit_arima(series: pd.Series,
 order: tuple[int, int, int],
 trend: str = "n",
@@ -41,11 +40,6 @@ trend: str = "n",
     -----
     AIC = -2 * log_likelihood + 2 * k
     BIC = -2 * log_likelihood + k * ln(n)
-
-    For n > 7, ln(n) > 2, so BIC always penalises extra parameters more
-    heavily than AIC.  At ~4 700 daily FX observations ln(4700) ≈ 8.5,
-    roughly 4× harsher per extra parameter.  When AIC and BIC disagree,
-    trust BIC on large samples.
     """
     if series.isnull().any():
         raise ValueError(
@@ -77,8 +71,6 @@ trend: str = "n",
         "fitted_values": np.asarray(result.fittedvalues),
         "result": result,
     }
-
-
 
 
 def select_arima_order(

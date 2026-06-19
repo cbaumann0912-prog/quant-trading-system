@@ -58,5 +58,4 @@ For candidate 1 (Multi-Pair Forex Stat Arb), this is now two independent finding
 - Validate k_ar_diff via lag-order selection criterion (AIC/BIC on the underlying VAR) before treating rank = 0 as fully final — current result uses the default lag, not a selected one.
 - Consider a sub-period Johansen test (pre/post the Day 19 structural break point) as a follow-up, time permitting, to address the alternative
   explanation in Section 6.
-- Remove stray module-level print statement firing on import in `src/signals/cointegration.py` (printed `(2, 2) (2,) (2,)` and unrelated eigenvalues before this script's actual output) — track down and clean up before it masks something important in a later run.
 - Carry forward into  strategy spec decision: cointegration-based Multi-Pair Forex Stat Arb (candidate 1) should move toward caution/invalid given two independent null results, absent a specific sub-period argument.

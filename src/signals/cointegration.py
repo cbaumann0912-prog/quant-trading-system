@@ -157,3 +157,66 @@ def _infer_rank(stat: np.ndarray, crit_vals: np.ndarray, conf_col: int = 1) -> i
         if stat[r] < crit_vals[r, conf_col]:
             return r
     return len(stat)
+
+
+def ou_half_life(spread: pd.Series, dt: float = 1.0) -> dict:
+    """
+    Estimate OU parameters (theta, mu, sigma, half_life) from a spread series
+    by regressing delta_X_t on X_{t-1}:
+
+        delta_X_t = alpha + beta * X_{t-1} + eps_t
+        theta = -beta / dt
+        mu    = -alpha / beta
+        half_life = ln(2) / theta
+
+    Parameters
+    ----------
+    spread : pd.Series
+        Mean-reverting spread / residual series (e.g. from engle_granger_test
+        or cointegration_spread).
+    dt : float
+        Time step between observations (default 1.0 = one bar).
+
+    Returns
+    -------
+    dict with keys: theta, mu, sigma, half_life
+    """
+    spread = spread.dropna()
+    if len(spread) < 3:
+        raise ValueError("ou_half_life: need at least 3 observations.")
+
+    x_lag = spread.shift(1)
+    dx = spread.diff()
+
+    aligned = pd.DataFrame({"x_lag": x_lag, "dx": dx}).dropna()
+    x_lag = aligned["x_lag"]
+    dx = aligned["dx"]
+
+    if len(x_lag) < 2:
+        raise ValueError("ou_half_life: not enough overlapping data after differencing.")
+
+    A = x_lag.values.reshape(-1, 1)
+    b = dx.values
+    ols = fit_ols(A, b)
+    coefficients = ols["coefficients"]
+    alpha, beta = coefficients[0], coefficients[1]
+
+
+    if beta >= 0:
+        theta = 0.0
+        mu = np.nan
+        half_life = np.inf
+    else:
+        theta = -beta / dt
+        mu = -alpha / beta
+        half_life = np.log(2) / theta
+
+    residuals = b - (alpha + beta * x_lag.values)
+    sigma = np.std(residuals, ddof=2) / np.sqrt(dt) if len(residuals) > 2 else np.nan
+
+    return {
+        "theta": float(theta),
+        "mu": float(mu),
+        "sigma": float(sigma),
+        "half_life": float(half_life),
+    }

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.signals.cointegration import engle_granger_test, cointegration_spread, johansen_test
+from src.signals.cointegration import engle_granger_test, cointegration_spread, johansen_test, ou_half_life
 from src.stats.regression import fit_ols
 from src.data.stationarity import adf_test
 
@@ -105,7 +105,7 @@ def test_johansen_known_cointegrated_pair():
     n = 1000
     y1 = np.cumsum(np.random.normal(0, 1, n))
     noise = np.random.normal(0, 0.5, n)
-    y2 = 0.5 * y1 + noise  # stationary combination -> rank should be 1
+    y2 = 0.5 * y1 + noise 
     df = pd.DataFrame({"y1": y1, "y2": y2})
     result = johansen_test(df)
 
@@ -115,7 +115,7 @@ def test_johansen_known_cointegrated_pair():
 def test_johansen_independent_series():
     n = 1000
     y1 = np.cumsum(np.random.normal(0, 1, n))
-    y2 = np.cumsum(np.random.normal(0, 1, n))  # independent random walk
+    y2 = np.cumsum(np.random.normal(0, 1, n))  
     df = pd.DataFrame({"y1": y1, "y2": y2})
     result = johansen_test(df)
 
@@ -156,10 +156,6 @@ def test_johansen_rejects_nan_input():
 
 
 def test_johansen_real_data_three_pairs():
-    """
-    Smoke test on real daily EUR/USD, GBP/USD, USD/JPY closes.
-    No leakage: deterministic seed, no parameter tuning against this output.
-    """
     data_dir = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 
     pairs = {
@@ -187,3 +183,48 @@ def test_johansen_real_data_three_pairs():
     assert result["eigenvectors"].shape == (3, 3)
     assert result["rank_trace"] in (0, 1, 2, 3)
     assert result["rank_max_eig"] in (0, 1, 2, 3)
+
+
+def _simulate_ou(theta, mu, sigma, n=3000, dt=1.0, x0=0.0, seed=42):
+    rng = np.random.default_rng(seed)
+    x = np.zeros(n)
+    x[0] = x0
+    for t in range(1, n):
+        x[t] = x[t - 1] + theta * (mu - x[t - 1]) * dt + sigma * np.sqrt(dt) * rng.standard_normal()
+    return pd.Series(x)
+ 
+ 
+def test_fast_reverting_series_short_half_life():
+    fast_series = _simulate_ou(theta=0.5, mu=0.0, sigma=0.1, n=3000)
+    result = ou_half_life(fast_series)
+    expected = np.log(2) / 0.5  # ~1.386 bars
+ 
+    assert result["half_life"] < 5
+    assert abs(result["half_life"] - expected) < 1.0
+ 
+ 
+def test_half_life_positive():
+    series = _simulate_ou(theta=0.05, mu=1.0, sigma=0.2, n=3000)
+    result = ou_half_life(series)
+ 
+    assert result["half_life"] > 0
+    assert np.isfinite(result["half_life"])
+ 
+ 
+def test_ou_params_dict_keys():
+    series = _simulate_ou(theta=0.1, mu=0.0, sigma=0.1, n=1000)
+    result = ou_half_life(series)
+ 
+    assert set(result.keys()) == {"theta", "mu", "sigma", "half_life"}
+    assert isinstance(result["half_life"], float)
+    assert isinstance(result["theta"], float)
+    assert isinstance(result["mu"], float)
+    assert isinstance(result["sigma"], float)
+ 
+ 
+def test_non_reverting_series_returns_inf_half_life():
+    rng = np.random.default_rng(0)
+    random_walk = pd.Series(np.cumsum(rng.standard_normal(500)))
+    result = ou_half_life(random_walk)
+ 
+    assert result["half_life"] > 50 or np.isinf(result["half_life"])

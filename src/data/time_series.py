@@ -35,11 +35,6 @@ trend: str = "n",
     ------
     ValueError   — NaN in series, or series too short for requested order.
     RuntimeError — statsmodels optimization fails to converge.
-
-    Notes
-    -----
-    AIC = -2 * log_likelihood + 2 * k
-    BIC = -2 * log_likelihood + k * ln(n)
     """
     if series.isnull().any():
         raise ValueError(
@@ -80,12 +75,7 @@ def select_arima_order(
     d: int = 0,
     criterion: str = "aic",
 ) -> tuple[int, int, int]:
-    """
-    Select ARIMA order by exhaustive grid search over p and q.
-
-    Evaluates all (p, q) combinations in range(0, max_p+1) x range(0, max_q+1).
-    Fits each via fit_arima and returns the order minimising the chosen
-    information criterion.  Failed fits are skipped and logged to stderr.
+    """Select ARIMA order by exhaustive grid search over (p, q).
 
     Parameters
     ----------

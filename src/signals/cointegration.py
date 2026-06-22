@@ -6,13 +6,7 @@ from src.data.stationarity import adf_test
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 
 def engle_granger_test(y: pd.Series, x: pd.Series) -> dict:
-    """
-    Test for cointegration between two I(1) price series using the
-    Engle-Granger two-step procedure.
-
-    The null hypothesis is no cointegration (residuals are I(1)).
-    Rejection of the null implies the spread is stationary and
-    mean-reverting.
+    """Engle-Granger two-step cointegration test for two I(1) price series.
 
     Parameters
     ----------
@@ -160,14 +154,7 @@ def _infer_rank(stat: np.ndarray, crit_vals: np.ndarray, conf_col: int = 1) -> i
 
 
 def ou_half_life(spread: pd.Series, dt: float = 1.0) -> dict:
-    """
-    Estimate OU parameters (theta, mu, sigma, half_life) from a spread series
-    by regressing delta_X_t on X_{t-1}:
-
-        delta_X_t = alpha + beta * X_{t-1} + eps_t
-        theta = -beta / dt
-        mu    = -alpha / beta
-        half_life = ln(2) / theta
+    """Estimate OU mean-reversion parameters from a spread series.
 
     Parameters
     ----------

@@ -1,10 +1,7 @@
 import numpy as np
 
 def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
-    """
-    Apply Bonferroni correction across m hypothesis tests.
-
-    Controls FWER by rejecting H0_i where p_i <= alpha / m.
+    """Apply Bonferroni correction across m hypothesis tests.
 
     Parameters
     ----------
@@ -37,12 +34,7 @@ def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
 
 
 def benjamini_hochberg_correction(p_values: list[float], alpha: float) -> list[bool]:
-    """
-    Apply Benjamini-Hochberg correction across m hypothesis tests.
-
-    Controls FDR by finding the largest rank i where p_(i) <= i * alpha / m,
-    then rejecting all hypotheses up to and including that rank.
-    Assumes independent or positively correlated tests (c_m = 1).
+    """Apply Benjamini-Hochberg FDR correction across m hypothesis tests.
 
     Parameters
     ----------

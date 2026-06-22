@@ -9,9 +9,7 @@ def t_test_mean(
     null_mean: float,
     confidence: float,
 ) -> dict:
-    """
-    Test whether the mean of a return series is significantly different
-    from a null value using a one-sample t-test.
+    """One-sample t-test on a return series against a null mean.
 
     Parameters
     ----------

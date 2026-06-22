@@ -3,12 +3,7 @@ from src.analysis.portfolio_stats import compute_covariance_matrix
 
 
 def matrix_inverse_via_svd(M: np.ndarray, threshold: float = 1e-10) -> np.ndarray:
-    """
-    Compute the Moore-Penrose pseudoinverse of M using SVD.
-
-    Decomposes M = U @ diag(s) @ Vt, inverts by computing
-    V @ diag(s_inv) @ Ut where singular values below `threshold`
-    are treated as zero (not inverted).
+    """Compute the Moore-Penrose pseudoinverse of M via SVD.
 
     Parameters
     ----------
@@ -45,16 +40,12 @@ def matrix_inverse_via_svd(M: np.ndarray, threshold: float = 1e-10) -> np.ndarra
 
 
 def eigendecomposition(M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Compute eigenvalues and eigenvectors of M, sorted by eigenvalue
-    magnitude descending.
+    """Compute eigenvalues and eigenvectors of M, sorted by descending magnitude.
 
     Parameters
     ----------
     M : np.ndarray
-        Square 2D matrix. For covariance matrix use, M should be
-        symmetric positive semi-definite — eigenvalues will be real
-        and non-negative.
+        Square 2D matrix.
 
     Returns
     -------

@@ -5,16 +5,7 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
 def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> dict:
-    """
-    Run Augmented Dickey-Fuller test on a time series.
-
-    Null hypothesis: series has a unit root (non-stationary).
-    Rejection (p < 0.05): evidence of stationarity.
-
-    Reparameterized form tested:
-        Δy_t = γ·y_{t-1} + Σ c_j·Δy_{t-j} + u_t
-    where γ = ρ - 1. H0: γ = 0. H1: γ < 0 (left-tailed test).
-    Lag count selected by AIC to ensure white-noise residuals.
+    """Run Augmented Dickey-Fuller test on a time series.
 
     Parameters
     ----------
@@ -54,12 +45,7 @@ def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> d
 
 
 def kpss_test(series: pd.Series, regression: str = "c") -> dict:
-    """
-    Run KPSS test on a time series.
-
-    Null hypothesis: series is stationary.
-    Rejection (stat > critical value): evidence of unit root.
-    Opposite null to ADF — run both to resolve ambiguity.
+    """Run KPSS stationarity test on a time series.
 
     Parameters
     ----------
@@ -98,14 +84,7 @@ def kpss_test(series: pd.Series, regression: str = "c") -> dict:
 
 
 def check_stationarity(series: pd.Series, regression: str = "c") -> dict:
-    """
-    Run ADF and KPSS together and return combined verdict.
-
-    Interpretation table:
-        ADF rejects + KPSS fails to reject  → stationary (both agree)
-        ADF fails    + KPSS rejects         → unit root  (both agree)
-        ADF fails    + KPSS fails           → inconclusive (low power / small sample)
-        ADF rejects  + KPSS rejects         → structural break (neither I(0) nor I(1) cleanly)
+    """Run ADF and KPSS together and return a combined stationarity verdict.
 
     Parameters
     ----------

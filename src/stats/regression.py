@@ -105,15 +105,7 @@ def adj_r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64], p: int) ->
 
 
 def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lags: int = 20) -> Dict[str, float]:
-    """
-    Run a standard residual diagnostic suite on OLS residuals.
-
-    Computes:
-        - residual mean (should be near zero)
-        - residual variance (estimated σ²)
-        - excess kurtosis (fat tail indicator)
-        - Ljung-Box Q-statistic and p-value at `lags` lags
-        - lag-1 autocorrelation
+    """Run a standard residual diagnostic suite on OLS residuals.
 
     Parameters
     ----------

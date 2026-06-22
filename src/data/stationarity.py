@@ -52,6 +52,7 @@ def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> d
         "reject_null": bool(result[1] < 0.05)
     }
 
+
 def kpss_test(series: pd.Series, regression: str = "c") -> dict:
     """
     Run KPSS test on a time series.

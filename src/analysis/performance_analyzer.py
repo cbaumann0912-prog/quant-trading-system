@@ -1,8 +1,3 @@
-"""
-PerformanceAnalyzer: computes and reports standard performance metrics
-for a trading strategy given a returns series and trade log.
-"""
-
 from __future__ import annotations
 
 import pandas as pd
@@ -14,8 +9,7 @@ from typing import Optional
 
 @dataclass
 class PerformanceReport:
-    """Container for all computed performance metrics.
-
+    """
     Attributes
     ----------
     sharpe_ratio : float
@@ -53,7 +47,7 @@ class PerformanceReport:
 
 
 class PerformanceAnalyzer:
-    """Compute and report performance metrics for a systematic trading strategy.
+    """Compute and report performance metrics for a trading strategy.
 
     Parameters
     ----------
@@ -67,26 +61,45 @@ class PerformanceAnalyzer:
         weekly returns, 12 for monthly, 365 for crypto.
     risk_free_rate : float, optional
         Daily risk-free rate as a decimal. Defaults to 0.0.
-
-    Examples
-    --------
-    >>> analyzer = PerformanceAnalyzer(returns=my_returns, trades=my_trades)
-    >>> report = analyzer.run_report()
-    >>> print(report.sharpe_ratio)
     """
 
     def __init__(
         self,
         returns: pd.Series,
         trades: Optional[pd.DataFrame] = None,
-        ann_factor: int = 252,
-        risk_free_rate: float = 0.0,
+        risk_free_rate: float = 0.0
     ) -> None:
         self.returns = returns
         self.trades = trades
-        self.ann_factor = ann_factor
         self.risk_free_rate = risk_free_rate
 
+
+    def compute_ann_factor(self) -> float:
+        """
+        ann_factor = n_trades / years_spanned, where n_trades is the number
+        of rows in self.trades and years_spanned is derived from the first
+        and last timestamps in self.returns.index.
+ 
+        Returns
+        -------
+        float
+            Empirical annualization factor (n_trades per year).
+ 
+        Raises
+        ------
+        ValueError
+            If self.trades is None -- ann_factor cannot be computed
+        """
+        n_obs = len(self.returns)
+        start = self.returns.index.min()
+        end = self.returns.index.max()
+        years_spanned = (end - start).days / 365.25
+
+        if years_spanned <= 0:
+            raise ValueError("Returns index must span a positive amount of time.")
+        
+        return n_obs / years_spanned
+ 
 
     def compute_sharpe(self) -> float:
         """
@@ -101,10 +114,14 @@ class PerformanceAnalyzer:
         float
             Annualized Sharpe ratio. Returns NaN if standard deviation is zero.
         """
-
-        sharpe = (((self.returns.mean() - self.risk_free_rate) / self.returns.std()) * np.sqrt(self.ann_factor))
+        ann_factor = self.compute_ann_factor()
+        std = self.returns.std()
+        if std == 0:
+            return float("nan")
+        sharpe = (self.returns.mean() - self.risk_free_rate) / std * np.sqrt(ann_factor)
         return sharpe
     
+
     def deflated_sharpe_ratio(self, observed_sharpe: float, n_trials: int, n_obs: int, skewness: float, kurtosis: float) -> float:
         """
         Compute the Deflated Sharpe Ratio (DSR) per Lopez de Prado & Bailey (2014).
@@ -131,7 +148,7 @@ class PerformanceAnalyzer:
         float
             Probability that the observed Sharpe is a true positive.
         """
-        sr_period = observed_sharpe / np.sqrt(self.ann_factor)
+        sr_period = observed_sharpe / np.sqrt(self.compute_ann_factor())
 
         V = (1 - skewness * sr_period + ((kurtosis + 2) / 4) * sr_period ** 2) / (n_obs - 1)
         if V <= 0:
@@ -158,13 +175,23 @@ class PerformanceAnalyzer:
         -------
         float
             Annualized Sortino ratio. Returns NaN if downside deviation is zero.
-
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("compute_sortino is not yet implemented.")
+        if self.returns is None or len(self.returns) == 0:
+            return float("nan")
+
+        excess_returns = self.returns - self.risk_free_rate
+        downside_returns = excess_returns[excess_returns < 0]
+        if len(downside_returns) == 0:
+            return float("nan")
+        downside_deviation = np.sqrt(np.mean(downside_returns**2))
+
+        if downside_deviation == 0:
+            return float("nan")
+
+        ann_factor = self.compute_ann_factor()
+
+        return (excess_returns.mean() / downside_deviation * np.sqrt(ann_factor))
+
 
     def compute_max_drawdown(self) -> dict:
         """
@@ -195,7 +222,6 @@ class PerformanceAnalyzer:
         start_date = equity_curve[:end_date].idxmax()
 
         return {"value": Min, "duration_days":(end_date - start_date).days, "start_date": start_date , "end_date": end_date}
-
             
 
     def compute_win_rate(self) -> float:
@@ -213,10 +239,51 @@ class PerformanceAnalyzer:
         ------
         ValueError
             If self.trades does not contain a 'pnl' column.
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("compute_win_rate is not yet implemented.")
+        if self.trades is None or self.trades.empty:
+            return float("nan")
+
+        if "pnl" not in self.trades.columns:
+            raise ValueError("self.trades must contain a 'pnl' column.")
+
+        pnl = self.trades["pnl"]
+
+        return (pnl > 0).mean()
+
+    def compute_profit_factor(self) -> float:
+        """
+        Compute the profit factor: gross profit / gross loss.
+ 
+        Requires self.trades to be set and contain a 'pnl' column.
+        Gross profit = sum of all positive pnl values.
+        Gross loss = absolute value of sum of all negative pnl values.
+ 
+        Returns
+        -------
+        float
+            Profit factor. Returns NaN if trades is None, empty, or there
+            are no losing trades (undefined / division by zero).
+ 
+        Raises
+        ------
+        ValueError
+            If self.trades does not contain a 'pnl' column.
+        """
+        if self.trades is None or self.trades.empty:
+            return float("nan")
+
+        if "pnl" not in self.trades.columns:
+            raise ValueError("self.trades must contain a 'pnl' column.")
+
+        pnl = self.trades["pnl"]
+
+        gross_profit = pnl[pnl > 0].sum()
+        gross_loss = abs(pnl[pnl < 0].sum())
+
+        if gross_loss == 0:
+            return float("nan")
+
+        return gross_profit / gross_loss
 
     def compute_calmar(self) -> float:
         """
@@ -230,13 +297,21 @@ class PerformanceAnalyzer:
         -------
         float
             Calmar ratio. Returns NaN if max drawdown is zero.
-
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("compute_calmar is not yet implemented.")
+        if self.returns is None or len(self.returns) == 0:
+            return float("nan")
+
+        ann_factor = self.compute_ann_factor()
+
+        annualized_return = ((1 + self.returns.mean()) ** ann_factor - 1)
+
+        max_drawdown = abs(self.compute_max_drawdown()["value"])
+
+        if max_drawdown == 0:
+            return float("nan")
+
+        return annualized_return / max_drawdown
+
 
     def compute_t_stat(self) -> float:
         """
@@ -250,13 +325,17 @@ class PerformanceAnalyzer:
         float
             t-statistic. Values > ~2.0 suggest statistical significance
             at the 5% level for large samples.
-
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("compute_t_stat is not yet implemented.")
+        if self.returns is None or len(self.returns) == 0:
+            return float("nan")
+
+        n = len(self.returns)
+        std = self.returns.std()
+
+        if std == 0:
+            return float("nan")
+
+        return self.returns.mean() / (std / np.sqrt(n))
 
     def run_report(self) -> PerformanceReport:
         """
@@ -271,10 +350,25 @@ class PerformanceAnalyzer:
         PerformanceReport
             Fully populated report object. Fields default to NaN if the
             corresponding compute_* method fails or returns NaN.
-
-        Raises
-        ------
-        NotImplementedError
-            Until Phase 2 implementation.
         """
-        raise NotImplementedError("run_report is not yet implemented.")
+        ann_factor = self.compute_ann_factor()
+
+        annualized_return = ((1 + self.returns.mean()) ** ann_factor - 1)
+
+        annualized_vol = self.returns.std() * np.sqrt(ann_factor)
+    
+        return PerformanceReport(
+        sharpe_ratio=self.compute_sharpe(),
+        sortino_ratio=self.compute_sortino(),
+        max_drawdown=self.compute_max_drawdown()["value"],1. 
+        win_rate=self.compute_win_rate(),
+        calmar_ratio=self.compute_calmar(),
+        t_stat=self.compute_t_stat(),
+        n_trades=0 if self.trades is None else len(self.trades),
+        annualized_return=annualized_return,
+        annualized_vol=annualized_vol,
+        metadata={
+            "start_date": self.returns.index.min(),
+            "end_date": self.returns.index.max(),
+        },
+    )

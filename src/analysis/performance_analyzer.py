@@ -75,11 +75,7 @@ class PerformanceAnalyzer:
 
 
     def compute_ann_factor(self) -> float:
-        """
-        ann_factor = n_trades / years_spanned, where n_trades is the number
-        of rows in self.trades and years_spanned is derived from the first
-        and last timestamps in self.returns.index.
- 
+        """ 
         Returns
         -------
         float
@@ -360,7 +356,7 @@ class PerformanceAnalyzer:
         return PerformanceReport(
         sharpe_ratio=self.compute_sharpe(),
         sortino_ratio=self.compute_sortino(),
-        max_drawdown=self.compute_max_drawdown()["value"],1. 
+        max_drawdown=self.compute_max_drawdown()["value"], 
         win_rate=self.compute_win_rate(),
         calmar_ratio=self.compute_calmar(),
         t_stat=self.compute_t_stat(),

@@ -4,38 +4,21 @@
 
 ---
 
-In January 2026, during the second semester of my freshman year at Cornell, I built a systematic intraday FX strategy from scratch. The strategy — a multi-timeframe BOS/FVG reversal system — was backtested across 15 years of 1-minute data on EUR/USD, GBP/USD, and USD/JPY, producing a Sharpe ratio of 1.60 and a max drawdown of -5.36% under realistic execution conditions.
+In January 2026, during the second semester of my freshman year at Cornell, I built a systematic intraday FX strategy from scratch — a multi-timeframe BOS/FVG reversal system, backtested across 15 years of 1-minute data on EUR/USD, GBP/USD, and USD/JPY. Under realistic execution conditions it produced a Sharpe ratio of 1.60 and a max drawdown of -5.36%.
 
-The results looked compelling. But I had a problem: I didn't really understand them.
+The results looked compelling. But I had a problem: I didn't really understand them. I could produce an equity curve, a walk-forward validation, a parameter robustness heatmap. What I couldn't do was explain, from first principles, why a Sharpe of 1.60 is meaningful, what the p-value on that t-stat actually means, or whether the effect size was economically significant beyond being statistically so. The code ran. The math behind it was a black box.
 
-I could produce an equity curve, a walk-forward validation, a parameter robustness heatmap. What I couldn't do was explain, from first principles, *why* a Sharpe of 1.60 is meaningful, what the p-value on that t-stat actually means, or whether the effect size was economically significant beyond being statistically so. The code ran. The math behind it was a black box.
-
-This repository documents the summer I spent fixing that.
+This repository is what happened when I decided that wasn't good enough.
 
 ---
 
 ## What This Is
 
-A 90-day, self-directed curriculum built around one goal: understand the mathematics underneath the tools I was already using.
+An all-in-one research pipeline. Feed it a strategy's logic, and it backtests it, analyzes the results, runs the statistical machinery needed to say with actual rigor whether the strategy holds up, optimizes its parameters, and — if it survives all of that — leaves it ready for live implementation.
 
-The curriculum covers distributions, hypothesis testing, regression, stationarity testing, cointegration, PCA, factor models, portfolio construction, and volatility modeling. Each topic is implemented from scratch in Python and applied directly to the three currency pairs from the original backtest — every concept has a corresponding empirical audit on real data in `research/audit/`. No black boxes. 
+Every piece of statistical machinery in that pipeline — hypothesis testing, regression, stationarity testing, cointegration, PCA, factor models, portfolio construction, volatility modeling — is implemented from scratch rather than imported as a library call. The point isn't just to get a verdict on a strategy; it's to be able to defend, derive, or rebuild every step that produced that verdict.
 
-By the end of summer, the deliverables are a complete, CLI-accessible, Dockerized systematic research framework and a research paper written to the standards of published systematic strategy literature.
-
-The framework is designed around a specific research workflow: a hypothesis emerges from the reading, gets formalized into a one-page strategy spec before any code is written, then runs through the full validation pipeline — walk-forward, purged cross-validation, multiple testing correction. Three candidate strategies developed over the course of the summer are the test cases for that pipeline.
-
----
-
-## Original Strategy Results
-
-The BOS/FVG Reversal strategy is the starting point and primary research object. All figures are from the original backtest on 15 years of 1-minute intraday data (2011–2026).
-
-| Execution Scenario | Return | Sharpe | Max Drawdown |
-|---|---|---|---|
-| Realistic (modeled spread) | +136.71% | 1.60 | -5.36% |
-| Worst-case (2× spread + slippage) | +62.97% | 0.867 | -8.74% |
-
-Full methodology in [`archive/docs/full_paper.pdf`](/archive/docs/full_paper.pdf). Whether these numbers reflect a genuine, persistent edge or a well-dressed artifact is the central question this summer is built to answer — the [Limitations](#limitations) section documents what's known, what's uncertain, and what would need to be true for the results to hold.
+The output for any given strategy is a statistical case: validated or invalidated, with the reasoning shown, not just a Sharpe ratio asserted at the end of a backtest.
 
 ---
 
@@ -54,74 +37,101 @@ Raw data lives outside this repo at a local path referenced via configurable pat
 ## Repository Structure
 
 ```
-src/
-├── analysis/
-│   ├── factor_models.py          # CAPM, PCA factor decomposition
-│   ├── performance_analyzer.py   # + deflated Sharpe, IC/IR, transaction costs
-│   ├── portfolio.py              # Markowitz, risk parity, Kelly, VaR, CVaR
-│   └── signal_report.py          # Structured strategy output reports
-├── data/
-│   ├── loader.py                 # OHLCV ingestion, resampling, log returns
-│   ├── stationarity.py           # ADF, KPSS, ACF/PACF, Ljung-Box
-│   └── time_series.py            # ARIMA fitting
-├── evaluation/
-│   ├── bootstrap_ci.py
-│   ├── cross_validation.py       # Purged K-fold (embargo-aware)
-│   ├── significance.py           # Bonferroni, Benjamini-Hochberg, permutation tests
-│   └── walk_forward.py           # Walk-forward validation engine
-├── features/
-│   ├── pca.py                    # Eigendecomposition, PCA from scratch
-│   └── volatility.py             # GARCH(1,1), volatility regime classifier
-├── signals/
-│   ├── cointegration.py          # Engle-Granger, Johansen, OU half-life
-│   ├── signal_builder.py         # Unified signal construction interface
-│   └── triple_barrier.py         # Triple barrier labeling (de Prado)
-└── stats/
-    ├── optimization.py           # Gradient descent, SLSQP
-    ├── regression.py             # OLS, ridge, lasso, diagnostics
-    └── stochastic.py             # Random walk, GBM, OU process
-
-paper/
-└── forex_systematic_research.md
+archive/                       # earlier work, kept for reference
 
 research/
-├── audit/
-├── strategy_specs/               # One-page signal specs for 3 strategies
-└── deployment/
-    └── live_deployment_plan.md
+├── applied_analysis/          # flat exploratory analysis scripts
+├── audit_images/              # plots and figures referenced in audits
+├── daily_audit/               # daily research audit documents
+├── papers/                    # reference papers and reading notes
+├── portfolio/                 # portfolio-construction research
+├── signals/                   # signal-specific research notes
+├── weekly_reviews/            # weekly review documents
+└── framework_map.md           # roadmap and module-by-module plan
+
+results/
+└── new_results/
+
+src/
+├── __init__.py
+├── analysis/
+│   ├── __init__.py
+│   ├── performance_analyzer.py   # Sharpe, Sortino, drawdown, DSR, run_report
+│   └── portfolio_stats.py        # covariance, portfolio variance/return
+├── data/
+│   ├── __init__.py
+│   ├── stationarity.py           # ADF, KPSS, ACF/PACF, Ljung-Box
+│   └── time_series.py            # ARIMA fitting and order selection
+├── evaluation/
+│   ├── __init__.py
+│   ├── bootstrap_ci.py           # bootstrap confidence intervals
+│   └── significance.py           # Bonferroni, Benjamini-Hochberg, permutation tests
+├── features/
+│   ├── __init__.py
+│   └── pca.py                    # eigendecomposition, PCA from scratch
+├── signals/
+│   ├── __init__.py
+│   └── cointegration.py          # Engle-Granger, Johansen, OU half-life
+└── stats/
+    ├── __init__.py
+    ├── correlation.py            # rolling correlation, regime breaks
+    ├── distributions.py          # normal, log-normal, Student-t
+    ├── hypothesis_tests.py       # t-test, p-values, Cohen's d, power analysis
+    └── regression.py             # OLS, residual diagnostics
+
+tests/
+├── __init__.py
+├── test_cointegration.py
+├── test_correlation.py
+├── test_distributions.py
+├── test_hypothesis_tests.py
+├── test_pca.py
+├── test_performance_analyzer.py
+├── test_portfolio_stats.py
+├── test_regression.py
+├── test_significance.py
+├── test_stationarity.py
+└── test_time_series.py
+
+.gitignore
+README.md
+requirements.txt
 ```
+
+This is a living structure — `signals/`, `features/`, and `evaluation/` will keep growing as research findings turn into strategy specs, strategy specs turn into signal code, and signal code feeds backtest, stress-test, and parameter-optimization scripts.
+
+---
+
+## Validation Pipeline
+
+Every strategy that goes in comes out with a verdict, not a vibe:
+
+1. **Input** — the strategy's logic and a written hypothesis: entry, exit, sizing, and the economic reason an edge should exist.
+2. **Backtest** — full-history performance under realistic and worst-case execution assumptions.
+3. **Statistical validation** — hypothesis testing, bootstrap confidence intervals, deflated Sharpe, multiple testing correction applied across every strategy tested, not just the one that looks best.
+4. **Stress test** — performance under different volatility regimes, correlation breaks, and parameter perturbations, to see what actually breaks the edge.
+5. **Optimization** — parameters and position sizing tuned to the conditions where the edge holds, not the conditions that happened to produce the best backtest.
+6. **Decision** — validated and live-implementation-ready, or invalidated and documented as to why.
+
+A strategy that can't survive this isn't a strategy. It's a curve fit with good marketing.
 
 ---
 
 ## Research Outputs
 
-Applied findings are logged daily to `research/audit/`. Each document connects a theoretical concept to real data from the strategy — the goal is a paper trail that shows not just *what* the code produces but *what it means*.
-
----
-
-## Limitations
-
-Open questions guiding the research.
-
-**Sample size.** The backtest covers 216 trades. The t-statistic on the mean return is the primary basis for assessing edge significance; power analysis and confidence interval work is documented progressively in `research/audit/` as the hypothesis testing curriculum unfolds.
-
-**Overfitting risk.** Parameters were selected on in-sample data. Walk-forward results are presented in the original paper, but data-snooping bias from the initial signal design cannot be fully ruled out. Multiple testing correction — deflated Sharpe, Benjamini-Hochberg — will be applied across all candidate strategies and documented explicitly before any is selected for live deployment.
-
-**Execution assumptions.** "Realistic" execution uses modeled spread data. Live transaction costs could differ materially. A transaction cost breakeven analysis is planned for Day 57.
-
-**Signal theory.** BOS/FVG logic lacks microstructure justification. Whether the observed pattern reflects a genuine, persistent edge or a well-specified artifact is the central open question — and one of the primary motivations for the cointegration and factor model work ahead.
+Applied findings are logged to `research/daily_audit/`, with supporting figures in `research/audit_images/`. Each document connects a theoretical concept to real data — the goal is a paper trail that shows not just *what* the code produces but *what it means*, including the times the data disagreed with what I expected going in.
 
 ---
 
 ## Setup
 
 ```bash
-git clone https://github.com/<your-handle>/quant-trading-system.git
-cd quant-trading-system
+git clone https://github.com/cbaumann0912-prog/summer2026.git
+cd summer2026
 pip install -r requirements.txt
 ```
 
-Dependencies: `numpy`, `pandas`, `scipy`, `pytest`
+Dependencies: `numpy`, `pandas`, `scipy`, `statsmodels`, `matplotlib`, `pytest`
 
 ```bash
 python -m pytest
@@ -131,4 +141,4 @@ python -m pytest
 
 ## Development Notes
 
-The original BOS/FVG backtesting framework has been archived. Everything in src/ is written from scratch as part of this curriculum — no inherited logic, no functions carried forward that I can't derive independently.
+Everything in `src/` is written from scratch — no inherited logic, no functions carried forward that I can't derive independently.

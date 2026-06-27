@@ -19,8 +19,11 @@ class TestSharpe:
         assert result > 0
 
     def test_sharpe_zero_rf(self):
-        result = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).compute_sharpe()
-        expected = (POSITIVE_RETURNS.mean() / POSITIVE_RETURNS.std()) * np.sqrt(252)
+        analyzer = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None)
+        result = analyzer.compute_sharpe()
+        ann_factor = analyzer.compute_ann_factor()
+        expected = (POSITIVE_RETURNS.mean() / POSITIVE_RETURNS.std()) * np.sqrt(ann_factor)
+    
         assert result == expected
 
 class TestMaxDrawdown:

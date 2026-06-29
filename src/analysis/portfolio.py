@@ -13,10 +13,6 @@ def markowitz_sharpe(
     """
     Compute the annualized Sharpe ratio of a Markowitz portfolio.
 
-    portfolio_return and portfolio_variance are assumed to be
-    per-observation-period quantities, consistent with the sampling
-    frequency implied by ``ann_factor``.
-
     Parameters
     ----------
     portfolio_return : float
@@ -52,12 +48,6 @@ def markowitz_weights(
 ) -> dict:
     """
     Solve the minimum-variance Markowitz portfolio for a target return.
-
-    Solves the equality-constrained quadratic program
-
-        min xᵀΣx
-        s.t. μᵀx = target_return
-             1ᵀx = 1
 
     Parameters
     ----------
@@ -135,4 +125,168 @@ def markowitz_weights(
         "portfolio_return": portfolio_return,
         "portfolio_variance": portfolio_variance,
         "sharpe": sharpe,
+    }
+
+
+def _solve_affine_weight_coefficients(returns: pd.DataFrame) -> tuple:
+    """
+    Derive x(r) = a + b*r for the unconstrained Markowitz solution.
+
+    Returns
+    -------
+    a, b : np.ndarray, shape (n_assets,)
+        Coefficients such that weights(r) = a + b * r.
+    """
+    p_bar = returns.mean().to_numpy()
+    sigma = compute_covariance_matrix(returns)
+    sigma_inv = np.linalg.inv(sigma)
+    ones = np.ones(returns.shape[1])
+
+    A = p_bar @ sigma_inv @ p_bar
+    B = p_bar @ sigma_inv @ ones
+    C = ones @ sigma_inv @ ones
+    denom = A * C - B ** 2
+
+    lam1 = 2 * C / denom
+    nu1 = 2 * B / denom
+    lam0 = -2 * B / denom
+    nu0 = -2 * A / denom
+
+    a = 0.5 * sigma_inv @ (lam0 * p_bar - nu0 * ones)
+    b = 0.5 * sigma_inv @ (lam1 * p_bar - nu1 * ones)
+
+    return a, b
+
+
+def leverage_bounded_return_range(
+    returns: pd.DataFrame,
+    leverage_caps: np.ndarray,
+) -> tuple:
+    """
+    Compute the feasible target-return range [r_min, r_max] such that
+    every asset's weight stays within its leverage cap: |x_i(r)| <= L_i.
+
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        Asset return series, columns = assets.
+    leverage_caps : np.ndarray, shape (n_assets,)
+        Max gross leverage per asset (e.g. 50.0 for 50:1).
+
+    Returns
+    -------
+    r_min, r_max : float
+        Feasible sweep range satisfying all per-asset leverage caps
+        simultaneously (intersection of per-asset bounds).
+    """
+    a, b = _solve_affine_weight_coefficients(returns)
+    leverage_caps = np.asarray(leverage_caps)
+
+    lower_bounds = np.empty(len(a))
+    upper_bounds = np.empty(len(a))
+
+    for i in range(len(a)):
+        L_i = leverage_caps[i]
+        candidate_1 = (-L_i - a[i]) / b[i]
+        candidate_2 = (L_i - a[i]) / b[i]
+        lower_bounds[i] = min(candidate_1, candidate_2)
+        upper_bounds[i] = max(candidate_1, candidate_2)
+
+    r_min = lower_bounds.max()
+    r_max = upper_bounds.min()
+
+    if r_min > r_max:
+        raise ValueError(
+            f"Infeasible leverage caps: r_min={r_min} exceeds r_max={r_max}. "
+            "No target return satisfies all per-asset leverage constraints."
+        )
+
+    return r_min, r_max
+
+
+def efficient_frontier(
+    returns: pd.DataFrame,
+    n_points: int = 50,
+    leverage_caps: np.ndarray = None,
+) -> dict:
+    """
+    Sweep target returns across their feasible range and compute the
+    minimum-variance portfolio at each target via markowitz_weights().
+
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        Asset return series, columns = assets (EUR/USD, GBP/USD, USD/JPY).
+    n_points : int
+        Number of target-return points to sweep across the frontier.
+    leverage_caps : np.ndarray, shape (n_assets,), optional
+        If provided, bounds the sweep range to [r_min, r_max] such that
+        every asset's weight stays within its leverage cap (see
+        leverage_bounded_return_range). If None, falls back to the
+        plotting-convention range [p_bar.min(), p_bar.max()].
+
+    Returns
+    -------
+    dict with keys:
+        'returns'      : np.ndarray, shape (n_points,)
+        'volatilities' : np.ndarray, shape (n_points,)
+        'sharpes'      : np.ndarray, shape (n_points,)
+        'weights'      : np.ndarray, shape (n_points, n_assets)
+    """
+    if leverage_caps is not None:
+        r_min, r_max = leverage_bounded_return_range(returns, leverage_caps)
+    else:
+        p_bar = returns.mean().to_numpy()
+        r_min, r_max = p_bar.min(), p_bar.max()
+
+    target_returns = np.linspace(r_min, r_max, n_points)
+
+    volatilities = np.empty(n_points)
+    sharpes = np.empty(n_points)
+    weights = np.empty((n_points, returns.shape[1]))
+
+    for i, r in enumerate(target_returns):
+        result = markowitz_weights(returns, target_return=r, allow_short=True)
+        volatilities[i] = np.sqrt(result["portfolio_variance"])
+        sharpes[i] = result["sharpe"]
+        weights[i] = result["weights"]
+
+    return {
+        "returns": target_returns,
+        "volatilities": volatilities,
+        "sharpes": sharpes,
+        "weights": weights,
+    }
+ 
+ 
+def minimum_variance_portfolio(returns: pd.DataFrame) -> dict:
+    """
+    Find the global minimum-variance portfolio directly via closed form
+ 
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        Asset return series, columns = assets.
+ 
+    Returns
+    -------
+    dict with keys:
+        'weights'  : np.ndarray, shape (n_assets,)
+        'return'   : float  -- r*, the return at the minimum-variance point
+        'variance' : float  -- sigma^2 at the minimum-variance point
+    """
+    sigma = compute_covariance_matrix(returns)
+    ones = np.ones(len(sigma))
+    sigma_inv = np.linalg.pinv(sigma)
+
+    weights = sigma_inv @ ones
+    weights /= ones @ sigma_inv @ ones
+    
+    portfolio_return = compute_portfolio_return(weights, returns.mean().to_numpy())        
+    portfolio_variance = compute_portfolio_variance(weights, sigma) 
+
+    return {
+    "weights": weights,
+    "return": portfolio_return,
+    "variance": portfolio_variance
     }

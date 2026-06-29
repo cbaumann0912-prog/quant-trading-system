@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.analysis.portfolio import markowitz_weights
+from src.analysis.portfolio import (
+    efficient_frontier,
+    markowitz_weights,
+    minimum_variance_portfolio,
+    leverage_bounded_return_range,
+    _solve_affine_weight_coefficients,
+)
 
 np.random.seed(28)
 
@@ -16,6 +22,13 @@ RETURNS = pd.DataFrame(
 )
 
 TARGET_RETURN = RETURNS.mean().mean()
+
+
+@pytest.fixture
+def sample_returns():
+    # FIX: this fixture was referenced by every new Day 33 test below but
+    # never defined -- none of those tests could be collected without it.
+    return RETURNS
 
 
 @pytest.fixture
@@ -80,3 +93,111 @@ def test_allow_short_false_raises():
 @pytest.mark.skip(reason="Known gap: no conditioning check on near-singular Sigma yet (see TODO in portfolio.py)")
 def test_near_singular_sigma_conditioning():
     pass
+
+
+def test_frontier_length_matches_n_points(sample_returns):
+    n_points = 25
+
+    result = efficient_frontier(sample_returns, n_points=n_points)
+
+    assert len(result["returns"]) == n_points
+    assert len(result["volatilities"]) == n_points
+    assert len(result["sharpes"]) == n_points
+    assert result["weights"].shape == (n_points, sample_returns.shape[1])
+
+
+def test_frontier_volatilities_positive(sample_returns):
+    result = efficient_frontier(sample_returns, n_points=20)
+
+    vols = result["volatilities"]
+
+    assert np.all(np.isfinite(vols))
+    assert np.all(vols > 0)
+
+
+def test_frontier_returns_monotonic_and_linspace(sample_returns):
+    n_points = 30
+    result = efficient_frontier(sample_returns, n_points=n_points)
+
+    r = result["returns"]
+
+    assert np.all(np.diff(r) > 0)  # strictly increasing
+
+    # must match internal linspace construction
+    p_bar = sample_returns.mean().to_numpy()
+    r_min, r_max = p_bar.min(), p_bar.max()
+
+    expected = np.linspace(r_min, r_max, n_points)
+    np.testing.assert_allclose(r, expected)
+
+
+def test_frontier_weights_sum_to_one(sample_returns):
+    result = efficient_frontier(sample_returns, n_points=20)
+
+    weights = result["weights"]
+
+    row_sums = weights.sum(axis=1)
+
+    np.testing.assert_allclose(row_sums, np.ones(len(row_sums)), atol=1e-10)
+
+
+def test_leverage_bounds_respect_caps(sample_returns):
+    caps = np.array([10.0] * sample_returns.shape[1])
+
+    r_min, r_max = leverage_bounded_return_range(sample_returns, caps)
+
+    a, b = _solve_affine_weight_coefficients(sample_returns)
+
+    for r in [r_min, r_max]:
+        w = a + b * r
+        assert np.all(np.abs(w) <= caps + 1e-8)
+
+
+def test_leverage_bounds_infeasible_raises(sample_returns):
+    caps = np.array([1e-12] * sample_returns.shape[1])  # absurdly tight
+
+    with pytest.raises(ValueError):
+        leverage_bounded_return_range(sample_returns, caps)
+
+
+def test_leverage_bounds_match_manual_affine_intersection(sample_returns):
+    caps = np.array([5.0, 5.0, 5.0])
+
+    expected_r_min = -0.0017381386295733101
+    expected_r_max = 0.0031198179061657123
+
+    r_min, r_max = leverage_bounded_return_range(sample_returns, caps)
+
+    np.testing.assert_allclose(r_min, expected_r_min, atol=1e-8)
+    np.testing.assert_allclose(r_max, expected_r_max, atol=1e-8)
+
+
+def test_min_variance_lowest_vol(sample_returns):
+    mv = minimum_variance_portfolio(sample_returns)
+
+    frontier = efficient_frontier(sample_returns, n_points=50)
+
+    frontier_vars = frontier["volatilities"] ** 2
+
+    assert mv["variance"] <= np.min(frontier_vars) + 1e-8
+
+
+def test_min_variance_weights_sum_to_one(sample_returns):
+    mv = minimum_variance_portfolio(sample_returns)
+
+    np.testing.assert_allclose(mv["weights"].sum(), 1.0, atol=1e-10)
+
+
+def test_affine_coefficients_reconstruct_markowitz_weights(sample_returns):
+    a, b = _solve_affine_weight_coefficients(sample_returns)
+
+    p_bar = sample_returns.mean().to_numpy()
+
+    # use same implied feasible range as frontier
+    r_min, r_max = p_bar.min(), p_bar.max()
+
+    for r in np.linspace(r_min, r_max, 7):
+        expected = markowitz_weights(sample_returns, r, allow_short=True)["weights"]
+        actual = a + b * r
+
+        np.testing.assert_allclose(actual, expected, atol=1e-10)

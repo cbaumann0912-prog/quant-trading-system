@@ -26,8 +26,6 @@ TARGET_RETURN = RETURNS.mean().mean()
 
 @pytest.fixture
 def sample_returns():
-    # FIX: this fixture was referenced by every new Day 33 test below but
-    # never defined -- none of those tests could be collected without it.
     return RETURNS
 
 

@@ -112,11 +112,8 @@ def markowitz_weights(
         [A, -B],
         [B, -C],
     ])
-
     rhs = np.array([target_return, 1.0])
-
     lam, nu = np.linalg.solve(kkt, rhs)
-
     x = 0.5 * sigma_inv @ (lam * p_bar - nu * ones)
 
     portfolio_return = compute_portfolio_return(x, p_bar)

@@ -50,7 +50,7 @@ target_grid = np.linspace(minvar_return, upper_bound, n_points)
 results = []
 for target in target_grid:
     try:
-        res = markowitz_weights(returns, target_return=target, allow_short=True)
+        res = markowitz_weights(returns, target_return=target)
         results.append({
             "target_return": target,
             "weights": res["weights"],

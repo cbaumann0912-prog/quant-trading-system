@@ -42,7 +42,7 @@ def markowitz_sharpe(
 def markowitz_weights(
     returns: pd.DataFrame,
     target_return: float,
-    allow_short: bool = False,
+    allow_short: bool = True,
     ann_factor: float = 252.0,
     risk_free_rate: float = 0.0,
 ) -> dict:
@@ -55,15 +55,8 @@ def markowitz_weights(
         Asset return series, one column per asset.
     target_return : float
         Required expected portfolio return per observation period.
-    allow_short : bool, default=False
+    allow_short : bool, default=True
         Whether short selling is permitted.
-
-        If True, solves the unconstrained Markowitz problem using the
-        closed-form KKT solution, which may produce negative weights.
-
-        If False, raises NotImplementedError because long-only
-        optimization requires inequality constraints (x >= 0) and a
-        numerical optimizer (e.g. scipy.optimize.SLSQP).
     ann_factor : float, default=252.0
         Number of observations per year used to annualize the Sharpe
         ratio.
@@ -82,8 +75,8 @@ def markowitz_weights(
     """
     if not allow_short:
         raise NotImplementedError(
-            "Long-only Markowitz optimization requires inequality "
-            "constraints (x >= 0) and must be solved numerically."
+            "Constrained Markowitz optimization requires inequality "
+            "constraints and must be solved numerically via scipy SLSQP"
         )
 
     p_bar = returns.mean().to_numpy()
@@ -325,7 +318,7 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 252.0) -> dic
     x0=np.ones(n) / n,
     args=(sigma,),
     method="SLSQP",
-    bounds=[(1e-6, 1.0)] * n,
+    bounds=[(-1.0, 1.0)] * n,
     constraints={"type": "eq", "fun": lambda w: np.sum(w) - 1},
     options={"ftol": 1e-12, "maxiter": 1000},
 )

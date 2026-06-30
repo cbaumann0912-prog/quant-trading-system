@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from src.analysis.portfolio_stats import compute_covariance_matrix, compute_portfolio_return, compute_portfolio_variance
-
+from scipy.optimize import minimize
 
 def markowitz_sharpe(
     portfolio_return: float,
@@ -221,9 +221,7 @@ def efficient_frontier(
         Number of target-return points to sweep across the frontier.
     leverage_caps : np.ndarray, shape (n_assets,), optional
         If provided, bounds the sweep range to [r_min, r_max] such that
-        every asset's weight stays within its leverage cap (see
-        leverage_bounded_return_range). If None, falls back to the
-        plotting-convention range [p_bar.min(), p_bar.max()].
+        every asset's weight stays within its leverage cap 
 
     Returns
     -------
@@ -289,4 +287,58 @@ def minimum_variance_portfolio(returns: pd.DataFrame) -> dict:
     "weights": weights,
     "return": portfolio_return,
     "variance": portfolio_variance
+    }
+
+
+def _risk_parity_objective(w, sigma):
+    vol = np.sqrt(w @ sigma @ w)
+    rc = w * (sigma @ w) / vol
+    return np.sum((rc[:, None] - rc[None, :]) ** 2)
+
+
+def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 252.0) -> dict:
+    """
+    Compute equal risk contribution (ERC) portfolio weights via numerical optimization.
+
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        Asset return time series. Rows = observations, columns = assets.
+    ann_factor : float, default=252.0
+        Number of observations per year used to annualize portfolio_vol.
+
+    Returns
+    -------
+    dict with keys:
+        weights : np.ndarray, shape (n,)
+            ERC portfolio weights, sums to 1.
+        risk_contributions : np.ndarray, shape (n,)
+            Per-asset risk contributions, sums to portfolio_vol.
+        portfolio_vol : float
+            Annualized portfolio volatility at ERC weights.
+    """
+    sigma = compute_covariance_matrix(returns)
+    n = sigma.shape[0]
+
+    result = minimize(
+    _risk_parity_objective,
+    x0=np.ones(n) / n,
+    args=(sigma,),
+    method="SLSQP",
+    bounds=[(1e-6, 1.0)] * n,
+    constraints={"type": "eq", "fun": lambda w: np.sum(w) - 1},
+    options={"ftol": 1e-12, "maxiter": 1000},
+)
+
+    if not result.success:
+        raise RuntimeError(f"Optimization failed: {result.message}")
+
+    weights = result.x
+    portfolio_vol = np.sqrt(weights @ sigma @ weights) * np.sqrt(ann_factor)
+    risk_contributions = weights * (sigma @ weights) / portfolio_vol
+
+    return {
+        "weights": weights,
+        "risk_contributions": risk_contributions,
+        "portfolio_vol": portfolio_vol,
     }

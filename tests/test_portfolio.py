@@ -8,6 +8,7 @@ from src.analysis.portfolio import (
     minimum_variance_portfolio,
     leverage_bounded_return_range,
     _solve_affine_weight_coefficients,
+    risk_parity_weights
 )
 
 np.random.seed(28)
@@ -199,3 +200,24 @@ def test_affine_coefficients_reconstruct_markowitz_weights(sample_returns):
         actual = a + b * r
 
         np.testing.assert_allclose(actual, expected, atol=1e-10)
+
+
+def test_risk_parity_weights_sum_to_one():
+    result = risk_parity_weights(RETURNS)
+
+    assert np.isclose(result["weights"].sum(), 1.0, atol=1e-8)
+
+def test_risk_parity_contributions_equal():
+    result = risk_parity_weights(RETURNS)
+    rc = result["risk_contributions"]
+
+    assert np.max(rc) - np.min(rc) < 1e-6
+
+def test_risk_parity_low_vol_gets_higher_weight():
+    rng = np.random.default_rng(28)
+    RETURNS_VOL = pd.DataFrame({
+        "low":  rng.normal(0, 0.005, 1000),
+        "high": rng.normal(0, 0.030, 1000),
+    })
+    result = risk_parity_weights(RETURNS_VOL)
+    assert result["weights"][0] > result["weights"][1]

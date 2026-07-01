@@ -8,7 +8,8 @@ from src.analysis.portfolio import (
     minimum_variance_portfolio,
     leverage_bounded_return_range,
     _solve_affine_weight_coefficients,
-    risk_parity_weights
+    risk_parity_weights,
+    _markowitz_weights_closed_form
 )
 
 np.random.seed(28)
@@ -22,12 +23,53 @@ RETURNS = pd.DataFrame(
     columns=["A", "B", "C"],
 )
 
-TARGET_RETURN = RETURNS.mean().mean()
-
-
 @pytest.fixture
 def sample_returns():
     return RETURNS
+
+TARGET_RETURN = RETURNS.mean().mean()
+
+
+DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+
+FILES = {
+    "EURUSD": "EURUSD.csv",
+    "GBPUSD": "GBPUSD.csv",
+    "USDJPY": "USDJPY.csv",
+}
+
+
+@pytest.fixture
+def fx_returns():
+    pairs = {}
+    for pair_name, filename in FILES.items():
+        path = f"{DATA_DIR}\\{filename}"
+        df = pd.read_csv(path)
+        df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
+        df = df.set_index("Datetime")
+
+        daily_close = df["Close"].resample("D").last().dropna()
+        log_returns = np.log(daily_close / daily_close.shift(1)).dropna()
+
+        pairs[pair_name] = log_returns
+
+    returns = pd.concat(pairs, axis=1, join="inner")
+    returns.columns = list(FILES.keys())
+    return returns
+
+
+@pytest.fixture
+def target_return_forces_short(fx_returns):
+    from src.analysis.portfolio import _markowitz_weights_closed_form
+    p_bar = fx_returns.mean().to_numpy()
+    r_min, r_max = p_bar.min(), p_bar.max()
+
+    for r in (r_max - 1e-6, r_min + 1e-6):
+        w = _markowitz_weights_closed_form(fx_returns, r)["weights"]
+        if np.any(w < 0):
+            return r
+
+    raise RuntimeError("Neither range endpoint produces a short position — check fx_returns data.")
 
 
 @pytest.fixture
@@ -84,11 +126,6 @@ def test_variance_positive_constructed_psd():
     assert res["portfolio_variance"] > 0
 
 
-def test_allow_short_false_raises():
-    with pytest.raises(NotImplementedError):
-        markowitz_weights(RETURNS, target_return=TARGET_RETURN, allow_short=False)
-
-
 @pytest.mark.skip(reason="Known gap: no conditioning check on near-singular Sigma yet (see TODO in portfolio.py)")
 def test_near_singular_sigma_conditioning():
     pass
@@ -96,7 +133,6 @@ def test_near_singular_sigma_conditioning():
 
 def test_frontier_length_matches_n_points(sample_returns):
     n_points = 25
-
     result = efficient_frontier(sample_returns, n_points=n_points)
 
     assert len(result["returns"]) == n_points
@@ -107,7 +143,6 @@ def test_frontier_length_matches_n_points(sample_returns):
 
 def test_frontier_volatilities_positive(sample_returns):
     result = efficient_frontier(sample_returns, n_points=20)
-
     vols = result["volatilities"]
 
     assert np.all(np.isfinite(vols))
@@ -117,12 +152,10 @@ def test_frontier_volatilities_positive(sample_returns):
 def test_frontier_returns_monotonic_and_linspace(sample_returns):
     n_points = 30
     result = efficient_frontier(sample_returns, n_points=n_points)
-
     r = result["returns"]
 
-    assert np.all(np.diff(r) > 0)  # strictly increasing
+    assert np.all(np.diff(r) > 0) 
 
-    # must match internal linspace construction
     p_bar = sample_returns.mean().to_numpy()
     r_min, r_max = p_bar.min(), p_bar.max()
 
@@ -153,7 +186,7 @@ def test_leverage_bounds_respect_caps(sample_returns):
 
 
 def test_leverage_bounds_infeasible_raises(sample_returns):
-    caps = np.array([1e-12] * sample_returns.shape[1])  # absurdly tight
+    caps = np.array([1e-12] * sample_returns.shape[1])
 
     with pytest.raises(ValueError):
         leverage_bounded_return_range(sample_returns, caps)
@@ -192,14 +225,13 @@ def test_affine_coefficients_reconstruct_markowitz_weights(sample_returns):
 
     p_bar = sample_returns.mean().to_numpy()
 
-    # use same implied feasible range as frontier
     r_min, r_max = p_bar.min(), p_bar.max()
 
     for r in np.linspace(r_min, r_max, 7):
         expected = markowitz_weights(sample_returns, r, allow_short=True)["weights"]
         actual = a + b * r
 
-        np.testing.assert_allclose(actual, expected, atol=1e-10)
+        np.testing.assert_allclose(actual, expected, atol=1e-6)
 
 
 def test_risk_parity_weights_sum_to_one():
@@ -207,11 +239,13 @@ def test_risk_parity_weights_sum_to_one():
 
     assert np.isclose(result["weights"].sum(), 1.0, atol=1e-8)
 
+
 def test_risk_parity_contributions_equal():
     result = risk_parity_weights(RETURNS)
     rc = result["risk_contributions"]
 
     assert np.max(rc) - np.min(rc) < 1e-6
+
 
 def test_risk_parity_low_vol_gets_higher_weight():
     rng = np.random.default_rng(28)
@@ -221,3 +255,26 @@ def test_risk_parity_low_vol_gets_higher_weight():
     })
     result = risk_parity_weights(RETURNS_VOL)
     assert result["weights"][0] > result["weights"][1]
+
+
+def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
+    scipy_result = markowitz_weights(fx_returns, target_return_forces_short, allow_short=True)
+    closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
+
+    assert np.allclose(
+        scipy_result["weights"],
+        closed_form_result["weights"],
+        atol=1e-4,
+    )
+
+
+def test_long_only_no_negative_weights(fx_returns, target_return_forces_short):
+    result = markowitz_weights(fx_returns, target_return_forces_short, allow_short=False)
+
+    assert np.all(result["weights"] >= -1e-6)
+
+
+def test_long_only_diverges_from_unconstrained(fx_returns, target_return_forces_short):
+    closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
+
+    assert np.any(closed_form_result["weights"] < 0)

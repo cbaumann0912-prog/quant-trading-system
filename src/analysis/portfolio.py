@@ -3,6 +3,7 @@ import pandas as pd
 
 from src.analysis.portfolio_stats import compute_covariance_matrix, compute_portfolio_return, compute_portfolio_variance
 from scipy.optimize import minimize
+from src.stats.optimization import constrained_optimize
 
 def markowitz_sharpe(
     portfolio_return: float,
@@ -73,31 +74,43 @@ def markowitz_weights(
         portfolio_variance,
         sharpe.
     """
-    if not allow_short:
-        raise NotImplementedError(
-            "Constrained Markowitz optimization requires inequality "
-            "constraints and must be solved numerically via scipy SLSQP"
-        )
 
     p_bar = returns.mean().to_numpy()
     sigma = compute_covariance_matrix(returns)
+    n = returns.shape[1]
 
-    n_assets = returns.shape[1]
-    ones = np.ones(n_assets)
+    SCALE = 1e6
+    objective = lambda w: (w @ sigma @ w) * SCALE
+    jac = lambda w: 2 * sigma @ w * SCALE
 
-    sigma_inv = np.linalg.inv(sigma)
+    constraints = [
+        {"type": "eq", "fun": lambda w: np.sum(w) - 1},
+        {"type": "eq", "fun": lambda w: w @ p_bar - target_return},
+    ]
+    bounds = [(-1.0, 1.0)] * n if allow_short else [(0, None)] * n
+    options = {"ftol": 1e-9, "maxiter": 2000}
 
-    A = p_bar @ sigma_inv @ p_bar
-    B = p_bar @ sigma_inv @ ones
-    C = ones @ sigma_inv @ ones
+    try:
+        result = constrained_optimize(
+            objective, x0=np.ones(n) / n, constraints=constraints,
+            bounds=bounds, jac=jac, options=options,
+        )
+    except RuntimeError:
+        sigma_inv = np.linalg.inv(sigma)
+        ones = np.ones(n)
+        A = ones @ sigma_inv @ ones
+        B = ones @ sigma_inv @ p_bar
+        C = p_bar @ sigma_inv @ p_bar
+        kkt_matrix = np.array([[C, B], [B, A]])
+        rhs = np.array([2 * target_return, 2.0])
+        lam, nu = np.linalg.solve(kkt_matrix, rhs)
+        x0_fallback = 0.5 * sigma_inv @ (lam * p_bar + nu * ones)
+        result = constrained_optimize(
+            objective, x0=x0_fallback, constraints=constraints,
+            bounds=bounds, jac=jac, options=options,
+        )
 
-    kkt = 0.5 * np.array([
-        [A, -B],
-        [B, -C],
-    ])
-    rhs = np.array([target_return, 1.0])
-    lam, nu = np.linalg.solve(kkt, rhs)
-    x = 0.5 * sigma_inv @ (lam * p_bar - nu * ones)
+    x = result.x
 
     portfolio_return = compute_portfolio_return(x, p_bar)
     portfolio_variance = compute_portfolio_variance(x, sigma)
@@ -118,6 +131,57 @@ def markowitz_weights(
         "portfolio_return": portfolio_return,
         "portfolio_variance": portfolio_variance,
         "sharpe": sharpe,
+    }
+
+
+def _markowitz_weights_closed_form(returns: pd.DataFrame, target_return: float) -> dict:
+    """
+    Closed-form (KKT, equality-only) solution to Markowitz mean-variance.
+
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        Asset return series, columns = assets.
+    target_return : float
+        Required expected portfolio return per observation period.
+
+    Returns
+    -------
+    dict with keys:
+        weights, portfolio_return, portfolio_variance
+    """
+    p_bar = returns.mean().to_numpy()
+    sigma = compute_covariance_matrix(returns)
+    n = returns.shape[1]
+
+    ones = np.ones(n)
+    sigma_inv = np.linalg.inv(sigma)
+
+    A = ones @ sigma_inv @ ones
+    B = ones @ sigma_inv @ p_bar
+    C = p_bar @ sigma_inv @ p_bar
+
+    kkt_matrix = np.array([
+        [C, B],
+        [B, A],
+    ])
+    rhs = np.array([2 * target_return, 2.0])
+
+    lam, nu = np.linalg.solve(kkt_matrix, rhs)
+
+    x = 0.5 * sigma_inv @ (lam * p_bar + nu * ones)
+
+    assert np.isclose(x.sum(), 1.0, atol=1e-10), (
+        f"Weights sum to {x.sum()}, expected 1."
+    )
+
+    portfolio_return = compute_portfolio_return(x, p_bar)
+    portfolio_variance = compute_portfolio_variance(x, sigma)
+
+    return {
+        "weights": x,
+        "portfolio_return": portfolio_return,
+        "portfolio_variance": portfolio_variance,
     }
 
 
@@ -313,15 +377,17 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 252.0) -> dic
     sigma = compute_covariance_matrix(returns)
     n = sigma.shape[0]
 
+    SCALE = 1e8
+
     result = minimize(
-    _risk_parity_objective,
-    x0=np.ones(n) / n,
-    args=(sigma,),
-    method="SLSQP",
-    bounds=[(-1.0, 1.0)] * n,
-    constraints={"type": "eq", "fun": lambda w: np.sum(w) - 1},
-    options={"ftol": 1e-12, "maxiter": 1000},
-)
+        lambda w, s: _risk_parity_objective(w, s) * SCALE,
+        x0=np.ones(n) / n,
+        args=(sigma,),
+        method="SLSQP",
+        bounds=[(-1.0, 1.0)] * n,
+        constraints={"type": "eq", "fun": lambda w: np.sum(w) - 1},
+        options={"ftol": 1e-9, "maxiter": 2000},
+    )
 
     if not result.success:
         raise RuntimeError(f"Optimization failed: {result.message}")

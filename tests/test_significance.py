@@ -25,4 +25,3 @@ def test_all_rejected_when_all_tiny():
 
     assert sum(result_bf) == len(result_bf)
     assert sum(result_bh) == len(result_bh)
-

@@ -4,7 +4,7 @@ import pandas as pd
 import scipy
 
 from src.stats.hypothesis_tests import t_test_mean, p_value_interpretation, compute_effect_size_cohens_d, compute_required_sample_size, compute_achieved_power
-from src.evaluation.bootstrap_ci import bootstrap_confidence_interval 
+from src.evaluation.bootstrap import bootstrap_confidence_interval 
 
 @pytest.fixture
 def eurusd_returns():

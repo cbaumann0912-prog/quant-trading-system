@@ -100,7 +100,7 @@ def pca(X: np.ndarray, n_components: int | None = None) -> tuple[np.ndarray, np.
         Eigenvalues corresponding to retained components.
     projected : np.ndarray
         X projected onto the principal components,
-        shape (n_observations, n_components).
+        shape (n_features, n_components).
     """
     X_c = X - X.mean(axis=0)
 

@@ -41,8 +41,10 @@ for est_year in estimation_years:
     if len(train) < 63:
         continue
 
+    ann_factor_train = len(train) / ((train.index.max() - train.index.min()).days / 365.25)
+
     mv  = minimum_variance_portfolio(train)
-    erc = risk_parity_weights(train)
+    erc = risk_parity_weights(train, ann_factor=ann_factor_train)
 
     oos_year = est_year + 1
     oos = returns[returns.index.year == oos_year]

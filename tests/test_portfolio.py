@@ -77,6 +77,7 @@ def result():
     return markowitz_weights(
         RETURNS,
         target_return=TARGET_RETURN,
+        ann_factor=252.0,
         allow_short=True,
     )
 
@@ -121,7 +122,7 @@ def test_variance_positive_constructed_psd():
     )
 
     target = constructed_returns.mean().mean()
-    res = markowitz_weights(constructed_returns, target_return=target, allow_short=True)
+    res = markowitz_weights(constructed_returns, target_return=target, ann_factor=252.0, allow_short=True)
 
     assert res["portfolio_variance"] > 0
 
@@ -133,7 +134,7 @@ def test_near_singular_sigma_conditioning():
 
 def test_frontier_length_matches_n_points(sample_returns):
     n_points = 25
-    result = efficient_frontier(sample_returns, n_points=n_points)
+    result = efficient_frontier(sample_returns, ann_factor=252.0, n_points=n_points)
 
     assert len(result["returns"]) == n_points
     assert len(result["volatilities"]) == n_points
@@ -142,7 +143,7 @@ def test_frontier_length_matches_n_points(sample_returns):
 
 
 def test_frontier_volatilities_positive(sample_returns):
-    result = efficient_frontier(sample_returns, n_points=20)
+    result = efficient_frontier(sample_returns, ann_factor=252.0, n_points=20)
     vols = result["volatilities"]
 
     assert np.all(np.isfinite(vols))
@@ -151,7 +152,7 @@ def test_frontier_volatilities_positive(sample_returns):
 
 def test_frontier_returns_monotonic_and_linspace(sample_returns):
     n_points = 30
-    result = efficient_frontier(sample_returns, n_points=n_points)
+    result = efficient_frontier(sample_returns, ann_factor=252.0, n_points=n_points)
     r = result["returns"]
 
     assert np.all(np.diff(r) > 0) 
@@ -164,7 +165,7 @@ def test_frontier_returns_monotonic_and_linspace(sample_returns):
 
 
 def test_frontier_weights_sum_to_one(sample_returns):
-    result = efficient_frontier(sample_returns, n_points=20)
+    result = efficient_frontier(sample_returns, ann_factor=252.0, n_points=20)
 
     weights = result["weights"]
 
@@ -207,7 +208,7 @@ def test_leverage_bounds_match_manual_affine_intersection(sample_returns):
 def test_min_variance_lowest_vol(sample_returns):
     mv = minimum_variance_portfolio(sample_returns)
 
-    frontier = efficient_frontier(sample_returns, n_points=50)
+    frontier = efficient_frontier(sample_returns, ann_factor=252.0, n_points=50)
 
     frontier_vars = frontier["volatilities"] ** 2
 
@@ -228,20 +229,20 @@ def test_affine_coefficients_reconstruct_markowitz_weights(sample_returns):
     r_min, r_max = p_bar.min(), p_bar.max()
 
     for r in np.linspace(r_min, r_max, 7):
-        expected = markowitz_weights(sample_returns, r, allow_short=True)["weights"]
+        expected = markowitz_weights(sample_returns, r, ann_factor=252.0, allow_short=True)["weights"]
         actual = a + b * r
 
         np.testing.assert_allclose(actual, expected, atol=1e-6)
 
 
 def test_risk_parity_weights_sum_to_one():
-    result = risk_parity_weights(RETURNS)
+    result = risk_parity_weights(RETURNS, ann_factor=252.0)
 
     assert np.isclose(result["weights"].sum(), 1.0, atol=1e-8)
 
 
 def test_risk_parity_contributions_equal():
-    result = risk_parity_weights(RETURNS)
+    result = risk_parity_weights(RETURNS, ann_factor=252.0)
     rc = result["risk_contributions"]
 
     assert np.max(rc) - np.min(rc) < 1e-6
@@ -253,12 +254,12 @@ def test_risk_parity_low_vol_gets_higher_weight():
         "low":  rng.normal(0, 0.005, 1000),
         "high": rng.normal(0, 0.030, 1000),
     })
-    result = risk_parity_weights(RETURNS_VOL)
+    result = risk_parity_weights(RETURNS_VOL, ann_factor=252.0)
     assert result["weights"][0] > result["weights"][1]
 
 
 def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
-    scipy_result = markowitz_weights(fx_returns, target_return_forces_short, allow_short=True)
+    scipy_result = markowitz_weights(fx_returns, target_return_forces_short, ann_factor=252.0, allow_short=True)
     closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
 
     assert np.allclose(
@@ -269,7 +270,7 @@ def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
 
 
 def test_long_only_no_negative_weights(fx_returns, target_return_forces_short):
-    result = markowitz_weights(fx_returns, target_return_forces_short, allow_short=False)
+    result = markowitz_weights(fx_returns, target_return_forces_short, ann_factor=252.0, allow_short=False)
 
     assert np.all(result["weights"] >= -1e-6)
 

@@ -43,8 +43,8 @@ def markowitz_sharpe(
 def markowitz_weights(
     returns: pd.DataFrame,
     target_return: float,
+    ann_factor: float,
     allow_short: bool = True,
-    ann_factor: float = 312.0,
     risk_free_rate: float = 0.0,
 ) -> dict:
     """
@@ -56,11 +56,11 @@ def markowitz_weights(
         Asset return series, one column per asset.
     target_return : float
         Required expected portfolio return per observation period.
-    allow_short : bool, default=True
-        Whether short selling is permitted.
-    ann_factor : float, default=312.0
+    ann_factor : float
         Number of observations per year used to annualize the Sharpe
         ratio.
+    allow_short : bool, default=True
+        Whether short selling is permitted.
     risk_free_rate : float, default=0.0
         Annualized risk-free rate passed through to
         ``markowitz_sharpe``.
@@ -263,6 +263,7 @@ def leverage_bounded_return_range(
 
 def efficient_frontier(
     returns: pd.DataFrame,
+    ann_factor: float,
     n_points: int = 50,
     leverage_caps: np.ndarray = None,
 ) -> dict:
@@ -274,11 +275,14 @@ def efficient_frontier(
     ----------
     returns : pd.DataFrame
         Asset return series, columns = assets (EUR/USD, GBP/USD, USD/JPY).
+    ann_factor : float
+        Number of observations per year passed through to markowitz_weights
+        for Sharpe annualization.
     n_points : int
         Number of target-return points to sweep across the frontier.
     leverage_caps : np.ndarray, shape (n_assets,), optional
         If provided, bounds the sweep range to [r_min, r_max] such that
-        every asset's weight stays within its leverage cap 
+        every asset's weight stays within its leverage cap
 
     Returns
     -------
@@ -301,7 +305,7 @@ def efficient_frontier(
     weights = np.empty((n_points, returns.shape[1]))
 
     for i, r in enumerate(target_returns):
-        result = markowitz_weights(returns, target_return=r, allow_short=True)
+        result = markowitz_weights(returns, target_return=r, ann_factor=ann_factor, allow_short=True)
         volatilities[i] = np.sqrt(result["portfolio_variance"])
         sharpes[i] = result["sharpe"]
         weights[i] = result["weights"]
@@ -353,7 +357,7 @@ def _risk_parity_objective(w, sigma):
     return np.sum((rc[:, None] - rc[None, :]) ** 2)
 
 
-def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 312.0) -> dict:
+def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
     """
     Compute equal risk contribution (ERC) portfolio weights via numerical optimization.
 
@@ -361,7 +365,7 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 312.0) -> dic
     ----------
     returns : pd.DataFrame
         Asset return time series. Rows = observations, columns = assets.
-    ann_factor : float, default=312.0
+    ann_factor : float
         Number of observations per year used to annualize portfolio_vol.
 
     Returns

@@ -31,8 +31,10 @@ returns.columns = list(FILES.keys())
 
 LEVERAGE_CAPS = np.array([50.0, 50.0, 50.0])
 
+ann_factor = len(returns) / ((returns.index.max() - returns.index.min()).days / 365.25)
+
 mv = minimum_variance_portfolio(returns)
-frontier = efficient_frontier(returns, n_points=50)
+frontier = efficient_frontier(returns, ann_factor=ann_factor, n_points=50)
 
 p_bar = returns.mean().to_numpy()
 n_assets = returns.shape[1]

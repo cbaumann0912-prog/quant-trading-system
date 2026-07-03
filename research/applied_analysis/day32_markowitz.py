@@ -47,10 +47,12 @@ upper_bound = 1.5 * p_bar.max()
 n_points = 50
 target_grid = np.linspace(minvar_return, upper_bound, n_points)
 
+ann_factor = len(returns) / ((returns.index.max() - returns.index.min()).days / 365.25)
+
 results = []
 for target in target_grid:
     try:
-        res = markowitz_weights(returns, target_return=target)
+        res = markowitz_weights(returns, target_return=target, ann_factor=ann_factor)
         results.append({
             "target_return": target,
             "weights": res["weights"],

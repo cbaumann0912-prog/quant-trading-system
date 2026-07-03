@@ -62,7 +62,7 @@ def test_output_shape_matches_n_samples():
 
     result = block_bootstrap(series, block_size=5, n_samples=n_samples, statistic_fn=np.mean, seed=1)
 
-    assert result.shape == (n_samples)
+    assert result.shape == (n_samples,)
 
 
 def test_block_bootstrap_different_from_iid_bootstrap_on_autocorrelated_series():

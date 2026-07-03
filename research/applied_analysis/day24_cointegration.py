@@ -12,7 +12,7 @@ from src.signals.cointegration import engle_granger_test, cointegration_spread
 from src.stats.regression import fit_ols
 
 DATA_PATH = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
-ROLLING_WINDOW = 252
+ROLLING_WINDOW = 312
 COMBINATIONS = [
     ("EURUSD", "GBPUSD"),
     ("EURUSD", "USDJPY"),
@@ -108,7 +108,7 @@ plt.show()
 print("\nSpread plot saved to research/audit/day24_spreads.png")
 
 fig2, axes2 = plt.subplots(3, 1, figsize=(12, 10), sharex=False)
-fig2.suptitle("Day 24 — Rolling Hedge Ratio Stability (252-day window)", fontsize=13)
+fig2.suptitle("Day 24 — Rolling Hedge Ratio Stability (312-day window)", fontsize=13)
 
 for i, col in enumerate(rolling_df.columns):
     axes2[i].plot(rolling_df.index, rolling_df[col].values, linewidth=0.8, color="darkorange")

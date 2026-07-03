@@ -16,7 +16,7 @@ FILES = {
     "USDJPY": "USDJPY.csv",
 }
 
-ANN_FACTOR = 252
+ANN_FACTOR = 312
 
 pairs = {}
 for pair_name, filename in FILES.items():

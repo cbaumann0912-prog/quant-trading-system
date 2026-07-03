@@ -43,7 +43,7 @@ class TestDeflatedSharpeRatio:
         result = PerformanceAnalyzer(returns=POSITIVE_RETURNS, trades=None).deflated_sharpe_ratio(
         observed_sharpe=1.5,
         n_trials=10,
-        n_obs=252,
+        n_obs=312,
         skewness=0.0,
         kurtosis=3.0
         )

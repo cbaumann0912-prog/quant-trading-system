@@ -8,7 +8,7 @@ from src.stats.optimization import constrained_optimize
 def markowitz_sharpe(
     portfolio_return: float,
     portfolio_variance: float,
-    ann_factor: float = 252.0,
+    ann_factor: float = 312.0,
     risk_free_rate: float = 0.0,
 ) -> float:
     """
@@ -20,7 +20,7 @@ def markowitz_sharpe(
         Expected portfolio return per observation period.
     portfolio_variance : float
         Portfolio variance per observation period.
-    ann_factor : float, default=252.0
+    ann_factor : float, default=312.0
         Number of observations per year.
     risk_free_rate : float, default=0.0
         Annualized risk-free rate
@@ -44,7 +44,7 @@ def markowitz_weights(
     returns: pd.DataFrame,
     target_return: float,
     allow_short: bool = True,
-    ann_factor: float = 252.0,
+    ann_factor: float = 312.0,
     risk_free_rate: float = 0.0,
 ) -> dict:
     """
@@ -58,7 +58,7 @@ def markowitz_weights(
         Required expected portfolio return per observation period.
     allow_short : bool, default=True
         Whether short selling is permitted.
-    ann_factor : float, default=252.0
+    ann_factor : float, default=312.0
         Number of observations per year used to annualize the Sharpe
         ratio.
     risk_free_rate : float, default=0.0
@@ -353,7 +353,7 @@ def _risk_parity_objective(w, sigma):
     return np.sum((rc[:, None] - rc[None, :]) ** 2)
 
 
-def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 252.0) -> dict:
+def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 312.0) -> dict:
     """
     Compute equal risk contribution (ERC) portfolio weights via numerical optimization.
 
@@ -361,7 +361,7 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float = 252.0) -> dic
     ----------
     returns : pd.DataFrame
         Asset return time series. Rows = observations, columns = assets.
-    ann_factor : float, default=252.0
+    ann_factor : float, default=312.0
         Number of observations per year used to annualize portfolio_vol.
 
     Returns

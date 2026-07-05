@@ -161,3 +161,83 @@ def permutation_test(
         "p_value": float(p_value),
         "null_distribution": null_distribution,
     }
+
+
+def paired_sign_permutation_test(
+    diffs: np.ndarray,
+    n_permutations: int = 10000,
+    seed: int = 28,
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided",
+) -> dict:
+    """
+    Permutation test for whether a set of paired differences has a mean
+    distinguishable from zero, via sign-flipping.
+
+    Parameters
+    ----------
+    diffs : np.ndarray
+        One difference per matched pair.
+    n_permutations : int, default 10000
+        Number of random sign-flip permutations to draw.
+    seed : int, default 28
+        Seed for the random number generator, for reproducibility.
+    alternative : {"two-sided", "greater", "less"}, default "two-sided"
+        Same convention as permutation_test: pre-committed direction,
+        chosen before observing the sign of the true mean difference.
+
+    Returns
+    -------
+    dict
+        observed_mean_diff : float
+            Mean of the observed paired differences.
+        p_value : float
+            Empirical p-value using the (1 + count) / (n_permutations + 1)
+            correction.
+        null_distribution : np.ndarray
+            Array of length n_permutations containing the permuted mean
+            differences.
+
+    Raises
+    ------
+    ValueError
+        If diffs is empty, or alternative is not one of the three
+        allowed values.
+
+    Notes
+    -----
+    Null hypothesis: each pair's difference is equally likely to have
+    been positive or negative.
+    """
+    if len(diffs) == 0:
+        raise ValueError("diffs must not be empty")
+    if alternative not in ("two-sided", "greater", "less"):
+        raise ValueError(
+            f"alternative must be 'two-sided', 'greater', or 'less', "
+            f"got {alternative!r}"
+        )
+
+    rng = np.random.default_rng(seed)
+    diffs = np.asarray(diffs, dtype=float)
+    n = len(diffs)
+
+    observed_mean_diff = float(np.mean(diffs))
+
+    signs = rng.choice(np.array([-1.0, 1.0]), size=(n_permutations, n))
+    null_distribution = (signs * diffs).mean(axis=1)
+
+    if alternative == "greater":
+        count_as_extreme = np.sum(null_distribution >= observed_mean_diff)
+    elif alternative == "less":
+        count_as_extreme = np.sum(null_distribution <= observed_mean_diff)
+    else:
+        count_as_extreme = np.sum(
+            np.abs(null_distribution) >= np.abs(observed_mean_diff)
+        )
+
+    p_value = (1 + count_as_extreme) / (n_permutations + 1)
+
+    return {
+        "observed_mean_diff": observed_mean_diff,
+        "p_value": float(p_value),
+        "null_distribution": null_distribution,
+    }

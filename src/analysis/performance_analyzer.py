@@ -135,7 +135,7 @@ class PerformanceAnalyzer:
         """
         ann_factor = self.compute_ann_factor()
         std = self.returns.std()
-        if std == 0:
+        if std < 1e-10:
             return float("nan")
         return (self.returns.mean() - self.risk_free_rate) / std * np.sqrt(ann_factor)
 
@@ -186,7 +186,7 @@ class PerformanceAnalyzer:
             )
 
         z = (sr_period - SR_star) / se
-        
+
         return float(stats.norm.cdf(z))
 
     def compute_sortino(self) -> float:
@@ -329,7 +329,7 @@ class PerformanceAnalyzer:
         n = len(self.returns)
         std = self.returns.std()
 
-        if std == 0:
+        if std < 1e-10:
             return float("nan")
 
         return float(self.returns.mean() / (std / np.sqrt(n)))
@@ -514,3 +514,96 @@ class PerformanceAnalyzer:
                 "end_date": self.returns.index.max(),
             },
         )
+
+
+def information_coefficient(
+    signal: pd.Series,
+    forward_returns: pd.Series,
+    method: str = "spearman",
+) -> float:
+    """Compute the Information Coefficient between a signal and forward returns.
+
+    Parameters
+    ----------
+    signal : pd.Series
+        Signal values at time t. Must already be aligned with
+        ``forward_returns`` (no lookahead) by the caller.
+    forward_returns : pd.Series
+        Realized returns over the period following each signal observation.
+    method : str, optional
+        "spearman" or "pearson". Defaults to "spearman", consistent with
+        the rank-based, distribution-agnostic approach used throughout
+        this framework's significance testing.
+
+    Returns
+    -------
+    float
+        IC value.
+    """
+    aligned_signal, aligned_forward_returns = signal.align(forward_returns, join="inner")
+
+    if method == "spearman":
+        ic, _ = stats.spearmanr(aligned_signal.to_numpy(), aligned_forward_returns.to_numpy())
+    elif method == "pearson":
+        ic, _ = stats.pearsonr(aligned_signal.to_numpy(), aligned_forward_returns.to_numpy())
+    else:
+        raise ValueError(f"Unknown method: {method}. Must be 'spearman' or 'pearson'.")
+
+    return float(ic)
+
+
+def information_ratio(
+    ic_values,
+    method: str = "fundamental_law",
+    breadth: Optional[int] = None,
+) -> float:
+    """Compute Information Ratio from IC, either via the Fundamental Law or
+    empirically from a time series of realized ICs.
+
+    Parameters
+    ----------
+    ic_values : float or array-like
+        A single IC estimate (used with method="fundamental_law") or a
+        time series of period-by-period IC values (used with
+        method="empirical").
+    method : str, optional
+        "fundamental_law": computes ``IC * sqrt(breadth)``. Requires
+        ``breadth``. Assumes constant IC across independent bets.
+        "empirical": computes ``mean(ic_values) / std(ic_values)`` directly
+        from a realized IC time series. Makes no independence or
+        constant-IC assumption, but requires an actual IC series rather
+        than a single pooled estimate.
+    breadth : int, optional
+        Number of independent bets per year. Required if
+        method="fundamental_law", ignored otherwise.
+
+    Returns
+    -------
+    float
+        IR value.
+    """
+    if method == "fundamental_law":
+        if breadth is None:
+            raise ValueError("breadth is required when method='fundamental_law'.")
+        if not np.isscalar(ic_values):
+            raise ValueError(
+                "ic_values must be a single scalar IC estimate when "
+                "method='fundamental_law'."
+            )
+        return float(ic_values) * np.sqrt(breadth)
+
+    elif method == "empirical":
+        ic_array = np.asarray(ic_values, dtype=float)
+        ic_array = ic_array[~np.isnan(ic_array)]
+
+        if ic_array.size < 2:
+            return float("nan")
+
+        ic_std = ic_array.std(ddof=1)
+        if ic_std < 1e-10:
+            return float("nan")
+
+        return float(ic_array.mean() / ic_std)
+
+    else:
+        raise ValueError(f"Unknown method: {method}. Must be 'fundamental_law' or 'empirical'.")

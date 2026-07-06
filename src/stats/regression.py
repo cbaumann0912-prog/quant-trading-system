@@ -1,9 +1,9 @@
+import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
 from typing import Dict
 import scipy.stats
 import scipy.optimize
-import scipy.stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
 
@@ -26,30 +26,30 @@ def fit_ols(X: NDArray[np.float64], y: NDArray[np.float64], add_intercept: bool 
     """
     if add_intercept:
         X = np.column_stack([np.ones(len(y)), X])
-    
+
     AtA = X.T @ X
     Atb = X.T @ y
-    
-    beta = np.linalg.solve(AtA, Atb)   
-    
-    y_hat = X @ beta        
-    residuals = y - y_hat   
-    
+
+    beta = np.linalg.solve(AtA, Atb)
+
+    y_hat = X @ beta
+    residuals = y - y_hat
+
     R_squared = r_squared(y, y_hat)
-    
+
     n, p = X.shape
     RSS = np.sum(residuals**2)
     sigma_squared = RSS / (n - p)
 
     var_beta = sigma_squared * np.linalg.inv(AtA)
     std_errors = np.sqrt(np.diag(var_beta))
-    
+
     return {
     'coefficients': beta,
     'residuals':    residuals,
     'r_squared':    R_squared,
     'std_errors':   std_errors,
-} 
+}
 
 
 def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
@@ -72,7 +72,7 @@ def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
     TSS = np.sum((y-np.mean(y))**2)
     r2 = 1 - (RSS / TSS)
     return r2
-    
+
 
 def adj_r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64], p: int) -> float:
     """
@@ -92,7 +92,7 @@ def adj_r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64], p: int) ->
     float
         Adjusted R².
     """
-    
+
     r2 = r_squared(y, y_hat)
     n = y.shape[0]
 
@@ -145,7 +145,7 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
 def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
     """
     Fit Ridge regression using the closed-form solution.
-    
+
     Parameters
     ----------
     X
@@ -201,14 +201,14 @@ def lasso_objective(beta: np.ndarray, X_c: np.ndarray, y_c: np.ndarray, lambda_:
     """
     residuals = y_c - X_c @ beta
     rss = residuals @ residuals
-    l1_penalty = lambda_ * np.sum(np.abs(beta))  # <-- this is the Σ|βⱼ|
+    l1_penalty = lambda_ * np.sum(np.abs(beta))
     return rss + l1_penalty
 
 
 def lasso_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
     """
     Fit Lasso regression using scipy.optimize.minimize with L1 penalty.
-    
+
     Parameters
     ----------
     X
@@ -247,4 +247,121 @@ def lasso_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
         'intercept': intercept,
         'lambda_': lambda_,
         'n_nonzero': int(np.sum(beta != 0))
+    }
+
+
+def interaction_regression(
+    y: pd.Series,
+    x1: pd.Series,
+    x2: pd.Series,
+) -> dict:
+    """
+    Fit y = b0 + b1*x1 + b2*x2 + b3*(x1*x2) + epsilon via OLS, using the
+    full matrix formulation so standard errors reflect the joint
+    covariance structure of all four estimated coefficients rather than
+    treating each term as if it were estimated in isolation.
+    
+    Parameters
+    ----------
+    y : pd.Series
+        Response variable (e.g. forward return).
+    x1 : pd.Series
+        First predictor (e.g. PC2 signal level).
+    x2 : pd.Series
+        Second predictor (e.g. rolling volatility regime variable).
+
+    Returns
+    -------
+    dict with keys:
+        'coefficients' : dict {'intercept', 'x1', 'x2', 'interaction'}
+        'std_errors' : dict, same keys as coefficients
+        't_stats' : dict, same keys
+        'p_values' : dict, same keys
+        'r_squared' : float
+        'adj_r_squared' : float
+        'n_obs' : int
+        'condition_number' : float -- condition number of X'X; flag
+            values above ~1e10 as a sign of near-singular design matrix
+            (severe collinearity between x1, x2, and x1*x2), which
+            inflates all standard errors and can make coefficients
+            numerically unstable even when the fit itself looks fine.
+    """
+    y_aligned, x1_aligned = y.align(x1, join="inner")
+    y_aligned, x2_aligned = y_aligned.align(x2, join="inner")
+    x1_aligned = x1_aligned.reindex(y_aligned.index)
+    x2_aligned = x2_aligned.reindex(y_aligned.index)
+
+    valid = (
+        y_aligned.notna()
+        & x1_aligned.notna()
+        & x2_aligned.notna()
+    )
+    y_vals = y_aligned[valid].to_numpy()
+    x1_vals = x1_aligned[valid].to_numpy()
+    x2_vals = x2_aligned[valid].to_numpy()
+
+    n = y_vals.shape[0]
+    k = 4
+
+    interaction_vals = x1_vals * x2_vals
+
+    design_matrix = np.column_stack([
+        np.ones(n),
+        x1_vals,
+        x2_vals,
+        interaction_vals,
+    ])
+
+    xtx = design_matrix.T @ design_matrix
+    condition_number = np.linalg.cond(xtx)
+
+    xtx_inv = np.linalg.pinv(xtx)
+    beta_hat = xtx_inv @ design_matrix.T @ y_vals
+
+    fitted = design_matrix @ beta_hat
+    residuals = y_vals - fitted
+
+    ssr = np.sum(residuals ** 2)
+    y_mean = y_vals.mean()
+    sst = np.sum((y_vals - y_mean) ** 2)
+
+    df = n - k
+
+    if df <= 0:
+        raise ValueError(
+            f"Insufficient observations: n={n}, need more than k={k} "
+            f"parameters to estimate degrees of freedom."
+        )
+
+    if sst < 1e-10:
+        r_squared_val = np.nan
+        adj_r_squared_val = np.nan
+    else:
+        r_squared_val = 1 - ssr / sst
+        adj_r_squared_val = 1 - (1 - r_squared_val) * (n - 1) / df
+
+    sigma_sq_hat = ssr / df
+    cov_beta = sigma_sq_hat * xtx_inv
+
+    se = np.sqrt(np.diag(cov_beta))
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t_vals = np.where(se > 1e-10, beta_hat / se, np.nan)
+
+    p_vals = np.array([
+        2 * (1 - scipy.stats.t.cdf(np.abs(t), df)) if not np.isnan(t) else np.nan
+        for t in t_vals
+    ])
+
+    labels = ["intercept", "x1", "x2", "interaction"]
+
+    return {
+        "coefficients": dict(zip(labels, beta_hat)),
+        "std_errors": dict(zip(labels, se)),
+        "t_stats": dict(zip(labels, t_vals)),
+        "p_values": dict(zip(labels, p_vals)),
+        "r_squared": r_squared_val,
+        "adj_r_squared": adj_r_squared_val,
+        "n_obs": n,
+        "condition_number": condition_number,
     }

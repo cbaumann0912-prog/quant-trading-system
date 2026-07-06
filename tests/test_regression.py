@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.typing import NDArray
-from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics, ridge_fit, lasso_objective, lasso_fit
+from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics, ridge_fit, lasso_objective, lasso_fit, interaction_regression
 
 
 @pytest.fixture
@@ -69,16 +70,16 @@ def test_adj_r_squared_leq_r_squared():
     y_hat = np.random.normal(0, 1, 20)
     adj_r2 = adj_r_squared(y, y_hat, 2)
     r2 = r_squared(y, y_hat)
-    
+
     assert adj_r2 <= r2
 
 
 def test_adj_r_squared_guard_fires():
     y = np.array([3.0, 8.0, 4.0])
     y_hat = np.array([4.0, 5.0, 13.0])
-    
+
     with pytest.raises(ValueError): adj_r_squared(y, y_hat, 5)
-    
+
 
 def test_adj_r_squared_penalty_direction():
     np.random.seed(28)
@@ -171,3 +172,102 @@ def test_ridge_lambda_zero_matches_ols():
         result_ols["coefficients"][1:],
         rtol=1e-5
     )
+
+
+def test_recovers_true_coefficients_with_low_noise():
+    rng = np.random.default_rng(1)
+    n = 2000
+    x1 = pd.Series(rng.normal(0, 1, n))
+    x2 = pd.Series(rng.normal(0, 1, n))
+    noise = rng.normal(0, 0.05, n)
+    y = pd.Series(0.3 + 1.0 * x1 + -0.5 * x2 + 1.5 * (x1 * x2) + noise)
+
+    result = interaction_regression(y, x1, x2)
+
+    assert result["coefficients"]["intercept"] == pytest.approx(0.3, abs=0.05)
+    assert result["coefficients"]["x1"] == pytest.approx(1.0, abs=0.05)
+    assert result["coefficients"]["x2"] == pytest.approx(-0.5, abs=0.05)
+    assert result["coefficients"]["interaction"] == pytest.approx(1.5, abs=0.05)
+    assert result["r_squared"] > 0.99
+
+
+def test_null_interaction_gives_small_insignificant_coefficient():
+    rng = np.random.default_rng(2)
+    n = 1000
+    x1 = pd.Series(rng.normal(0, 1, n))
+    x2 = pd.Series(rng.normal(0, 1, n))
+    noise = rng.normal(0, 1, n)
+    y = pd.Series(0.1 + 0.4 * x1 + 0.2 * x2 + noise)
+
+    result = interaction_regression(y, x1, x2)
+
+    assert abs(result["t_stats"]["interaction"]) < 2.5
+    assert result["p_values"]["interaction"] > 0.05
+
+
+def test_output_keys_present():
+    rng = np.random.default_rng(3)
+    n = 200
+    x1 = pd.Series(rng.normal(0, 1, n))
+    x2 = pd.Series(rng.normal(0, 1, n))
+    y = pd.Series(rng.normal(0, 1, n))
+
+    result = interaction_regression(y, x1, x2)
+
+    expected_top_keys = {
+        "coefficients", "std_errors", "t_stats", "p_values",
+        "r_squared", "adj_r_squared", "n_obs", "condition_number",
+    }
+    assert set(result.keys()) == expected_top_keys
+
+    expected_term_keys = {"intercept", "x1", "x2", "interaction"}
+
+    assert set(result["coefficients"].keys()) == expected_term_keys
+    assert set(result["std_errors"].keys()) == expected_term_keys
+    assert set(result["t_stats"].keys()) == expected_term_keys
+    assert set(result["p_values"].keys()) == expected_term_keys
+
+
+def test_misaligned_indices_are_aligned_by_inner_join():
+    rng = np.random.default_rng(4)
+    y = pd.Series(rng.normal(0, 1, 100), index=range(0, 100))
+    x1 = pd.Series(rng.normal(0, 1, 100), index=range(10, 110))
+    x2 = pd.Series(rng.normal(0, 1, 100), index=range(10, 110))
+
+    result = interaction_regression(y, x1, x2)
+
+    assert result["n_obs"] == 90
+
+
+def test_nan_rows_are_dropped():
+    rng = np.random.default_rng(5)
+    y = pd.Series(rng.normal(0, 1, 100))
+    x1 = pd.Series(rng.normal(0, 1, 100))
+    x2 = pd.Series(rng.normal(0, 1, 100))
+    x1.iloc[5] = np.nan
+    y.iloc[10] = np.nan
+
+    result = interaction_regression(y, x1, x2)
+
+    assert result["n_obs"] == 98
+
+
+def test_high_condition_number_flags_collinearity():
+    rng = np.random.default_rng(6)
+    n = 300
+    x1 = pd.Series(rng.normal(1000, 0.001, n))
+    x2 = pd.Series(rng.normal(1000, 0.001, n))
+    y = pd.Series(rng.normal(0, 1, n))
+
+    result = interaction_regression(y, x1, x2)
+
+    assert result["condition_number"] > 1e6
+
+
+def test_insufficient_observations_raises():
+    y = pd.Series([1.0, 2.0, 3.0])
+    x1 = pd.Series([1.0, 2.0, 3.0])
+    x2 = pd.Series([1.0, 2.0, 3.0])
+
+    with pytest.raises(ValueError):
+        interaction_regression(y, x1, x2)

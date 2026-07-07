@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.analysis.factor_models import capm_expected_return
+from src.analysis.factor_models import capm_expected_return, pca_factor_decomposition
 
 
 def test_beta_one_for_market_itself():
@@ -60,3 +60,45 @@ def test_alpha_t_stat_sign_matches_alpha_sign():
 
     assert result["alpha"] > 0
     assert result["alpha_t_stat"] > 0
+
+
+@pytest.fixture
+def sample_returns():
+    rng = np.random.default_rng(42)
+    n_obs = 500
+    factor1 = rng.normal(0, 0.01, n_obs)
+    factor2 = rng.normal(0, 0.005, n_obs)
+    eurusd = 0.8 * factor1 + 0.3 * factor2 + rng.normal(0, 0.001, n_obs)
+    gbpusd = 0.7 * factor1 - 0.2 * factor2 + rng.normal(0, 0.001, n_obs)
+    usdjpy = -0.6 * factor1 + 0.5 * factor2 + rng.normal(0, 0.001, n_obs)
+    
+    return pd.DataFrame(
+        {"EURUSD": eurusd, "GBPUSD": gbpusd, "USDJPY": usdjpy},
+        index=pd.date_range("2020-01-01", periods=n_obs, freq="D")
+    )
+
+
+def test_factor_returns_shape(sample_returns):
+    n_factors = 2
+    result = pca_factor_decomposition(sample_returns, n_factors)
+
+    assert result["factor_returns"].shape == (len(sample_returns), n_factors)
+    assert result["loadings"].shape == (sample_returns.shape[1], n_factors)
+    assert len(result["explained_variance"]) == n_factors
+
+
+def test_residuals_lower_variance_than_raw(sample_returns):
+    result = pca_factor_decomposition(sample_returns, n_factors=1)
+    raw_variance = sample_returns.var().sum()
+    residual_variance = result["residual_returns"].var().sum()
+
+    assert residual_variance < raw_variance
+
+
+def test_loadings_orthogonal(sample_returns):
+    result = pca_factor_decomposition(sample_returns, n_factors=3)
+    V = result["loadings"].values
+    gram = V.T @ V
+    off_diagonal = gram - np.diag(np.diag(gram))
+
+    assert np.all(np.abs(off_diagonal) < 1e-10)

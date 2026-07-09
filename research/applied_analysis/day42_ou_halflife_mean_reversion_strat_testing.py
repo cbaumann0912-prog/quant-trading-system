@@ -23,15 +23,13 @@ N_BOOTSTRAP = 1000
 BLOCK_SIZE = 20
 N_PERMUTATIONS = 10000
 ALPHA = 0.05
-SEED = 42
+SEED = 28
 
 rng = np.random.default_rng(SEED)
 
 
-print("=" * 70)
 print("SECTION 1 — MA WINDOW SELECTION VIA HALF-LIFE PLATEAU SEARCH")
 print("DISREGARDED: no plateau found, half-life scales mechanically with window")
-print("=" * 70)
 
 DAYS_PER_MONTH = 26
 MONTHS = list(range(3, 25, 3))
@@ -68,10 +66,8 @@ for pair in PAIRS:
     print(pair_table.to_string(index=False))
 
 
-print("\n" + "=" * 70)
 print("SECTION 2 — Z-SCORE CONSTRUCTION, THRESHOLD SEPARATION, HALF-LIFE")
 print("ADOPTED: informed threshold cutoff (1.5) and censoring cap (3x half-life)")
-print("=" * 70)
 
 Z_THRESHOLDS = np.round(np.arange(1.0, 3.1, 0.1), 1)
 
@@ -104,11 +100,9 @@ for pair in PAIRS:
         print(f"  |z| >= {threshold:.1f}: {count_above:6d} obs ({pct_above:5.2f}%)")
 
 
-print("\n" + "=" * 70)
 print("SECTION 3 — PEAK-CONFIRMATION BUFFER (X) DIAGNOSTIC")
 print("DISREGARDED: monotonic decline, distance-to-target confound, no plateau")
 print("ADOPTED BY CONVENTION INSTEAD: X = 1.0 (matches entry threshold)")
-print("=" * 70)
 
 X_CANDIDATES = np.round(np.arange(0.3, 1.01, 0.1), 1)
 MAX_LOOKFORWARD_DIAGNOSTIC = 100
@@ -194,10 +188,8 @@ for x in X_CANDIDATES:
           f"retouched_first={combined_retouched[x]:4d}  unresolved={combined_unresolved[x]:4d}  total={total}")
 
 
-print("\n" + "=" * 70)
 print("SECTION 4 — TEST 1: BASE MEAN-REVERSION EXISTENCE (ADF, KPSS, OU THETA CI)")
 print("RESULT: PASSED on ADF/KPSS agreement; bootstrap CI on theta unreliable, disregarded")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -252,10 +244,8 @@ for pair in PAIRS:
     print(f"Test 1 (base mean-reversion existence): {'PASS' if test1_pass else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SECTION 5 — TEST 2: NONLINEARITY VIA REVERSION TIME (PERMUTATION TEST)")
 print("RESULT: FAILED, all three pairs")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -336,10 +326,8 @@ for pair in PAIRS:
     print(f"  Test 2: {'PASS' if (p_value < ALPHA and observed_diff > 0) else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SECTION 6 — TEST 2b: NONLINEARITY VIA 5-DAY FORWARD RETURN (PERMUTATION TEST)")
 print("RESULT: FAILED, all three pairs (2 of 3 wrong-signed)")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -409,10 +397,8 @@ for pair in PAIRS:
     print(f"  Test 2b: {'PASS' if (p_value < ALPHA and observed_diff > 0) else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SECTION 7 — TEST 2c: NONLINEARITY VIA IC (SPEARMAN, PERMUTATION TEST)")
 print("RESULT: FAILED, all three pairs, closest to zero of any variant")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -478,7 +464,5 @@ for pair in PAIRS:
     print(f"  Test 2c: {'PASS' if (p_value < ALPHA and observed_ic > 0) else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SUMMARY: OU Half-Life Mean-Reversion (Z-Score Threshold) — DISCARDED")
 print("Test 1 PASSED. Tests 2, 2b, 2c all FAILED. Strategy candidate closed.")
-print("=" * 70)

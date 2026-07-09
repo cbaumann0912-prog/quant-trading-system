@@ -13,7 +13,7 @@ LOOKBACK = 26
 HOLDING = 5
 N_PERMUTATIONS = 10000
 ALPHA = 0.05
-SEED = 42
+SEED = 28S
 BLOCK_SIZE = LOOKBACK + HOLDING
 
 rng = np.random.default_rng(SEED)
@@ -41,10 +41,8 @@ def compute_signal_outcome(daily_prices):
     return pd.DataFrame(records)
 
 
-print("=" * 70)
 print("SECTION 1 — WINDOW ALIGNMENT VERIFICATION")
 print("Confirms zero overlap between trailing and forward windows, corrected construction")
-print("=" * 70)
 
 filepath = os.path.join(DATA_DIR, "EURUSD.csv")
 df = pd.read_csv(filepath)
@@ -57,10 +55,8 @@ print(check_df[["date", "trailing_start", "trailing_end", "forward_start", "forw
 print("\nVerified: forward_start is exactly 1 day after trailing_end/date, zero shared days between windows.")
 
 
-print("\n" + "=" * 70)
 print("SECTION 2 — TEST A, METHOD 1: NON-OVERLAPPING SUBSAMPLE, PERMUTATION TEST")
 print("RESULT: FAILED, all three pairs")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -89,10 +85,8 @@ for pair in PAIRS:
     print(f"  Method 1: {'PASS' if (p_value < ALPHA and observed_ic > 0) else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SECTION 3 — TEST A, METHOD 2: OVERLAPPING DAILY DATA, BLOCK PERMUTATION TEST")
 print("RESULT: FAILED, all three pairs — agrees with Method 1")
-print("=" * 70)
 
 for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
@@ -126,9 +120,7 @@ for pair in PAIRS:
     print(f"  Method 2: {'PASS' if (p_value < ALPHA and observed_ic > 0) else 'FAIL'}")
 
 
-print("\n" + "=" * 70)
 print("SUMMARY: FX Momentum with ML Regime Filter — DISCARDED")
 print("Test A (base momentum IC) FAILED under both methodologies after correcting")
 print("an initial window-alignment bug that had produced a spurious IC ~0.30.")
 print("Claim B (ML regime filter) never tested — moot, no base effect to condition.")
-print("=" * 70)

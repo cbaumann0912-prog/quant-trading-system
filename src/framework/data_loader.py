@@ -198,3 +198,26 @@ class DataLoader:
                 r = data.pct_change(fill_method=None)
             self._returns[log] = r.dropna(how="all")
         return self._returns[log]
+
+
+_RATE_SERIES = {
+    "us": "IR3TIB01USM156N",
+    "ea": "IR3TIB01EZM156N",
+    "uk": "IR3TIB01GBM156N",
+    "jp": "IR3TIB01JPM156N",
+}
+_FRED_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+
+
+def fetch_rate_differentials(data_dir: str | Path) -> None:
+    """
+    Refreshes the four OECD 3-month interbank rate CSVs
+    ({region}_3m_interbank.csv) in `data_dir` from FRED's public CSV
+    endpoint (no API key required). Monthly, not seasonally adjusted.
+    """
+    for region, series_id in _RATE_SERIES.items():
+        df = pd.read_csv(_FRED_CSV_URL.format(series_id=series_id))
+        df.columns = ["date", "value"]
+        df["date"] = pd.to_datetime(df["date"])
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")  # FRED uses "." for missing
+        df.to_csv(Path(data_dir) / f"{region}_3m_interbank.csv", index=False)

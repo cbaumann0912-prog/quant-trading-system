@@ -108,6 +108,8 @@ Both mean-centered before the interaction term. `b3` is the term of interest. Fo
 
 **Verdict:** each leg evaluated independently; strategy-level PASS requires both legs to pass. A momentum-only pass is a different strategy, not this one. Subject to project-wide BH correction (Section 1, item 5) before appearing as a PASS anywhere.
 
+**Lockbox holdout:** a recent slice (e.g. 2024-2026) is reserved and never enters the walk-forward folds at all, development or robustness checks. It is opened once, only if this strategy passes everything above and becomes a genuine deployment candidate. This is a single-use test per hypothesis, not another round of tuning; if the lockbox result disagrees with the walk-forward verdict, that disagreement is reported as-is, not explained away.
+
 ## 11. Open Questions / Known Gaps
 - PCA adds no real value over equal-weighting (kept for citability/consistency with PC2, not because it's doing work).
 - The ladder (Section 5) has no academic citation; adds 3 free parameters versus single-threshold entry.

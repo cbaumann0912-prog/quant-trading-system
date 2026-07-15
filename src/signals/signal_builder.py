@@ -78,30 +78,6 @@ class SignalBuilder:
         self._forward_returns: Optional[pd.Series] = None
 
     def compute(self, data: pd.DataFrame) -> pd.Series:
-        """
-        Run `signal_fn(data, self.lookback)`, validate the result, and
-        return it.
-
-        Parameters
-        ----------
-        data : pd.DataFrame
-            Feature data to compute the signal over. Usually `self.data`,
-            but callers (e.g. `validate_no_lookahead`) may pass a truncated
-            slice.
-
-        Returns
-        -------
-        pd.Series
-            Raw signal values. NaNs are permitted (e.g. warm-up period
-            before `lookback` bars are available).
-
-        Raises
-        ------
-        TypeError
-            If signal_fn's return value is not a pd.Series.
-        ValueError
-            If the returned Series' index is not a subset of `data.index`.
-        """
         signal = self.signal_fn(data, self.lookback)
 
         if not isinstance(signal, pd.Series):
@@ -114,17 +90,6 @@ class SignalBuilder:
         return signal
 
     def compute_forward_returns(self) -> pd.Series:
-        """
-        Compute `holding_period`-ahead returns from `self.data[price_col]`,
-        so that `forward_returns[t]` is the return realized over
-        `(t, t + holding_period]` -- the return an entry at t would capture.
-
-        Returns
-        -------
-        pd.Series
-            Indexed like `self.data`, with the last `holding_period` rows
-            NaN (no forward return observable yet).
-        """
         if self._forward_returns is not None:
             return self._forward_returns
 
@@ -140,21 +105,6 @@ class SignalBuilder:
         return forward_returns
 
     def compute_ic(self, forward_returns: pd.Series) -> float:
-        """
-        Pooled IC (per `self.ic_method`) between the signal computed on
-        `self.data` and `forward_returns`.
-
-        Parameters
-        ----------
-        forward_returns : pd.Series
-            Realized forward returns, e.g. from `compute_forward_returns()`.
-
-        Returns
-        -------
-        float
-            IC value over all overlapping non-NaN (signal, forward_return)
-            pairs. NaN if fewer than 2 valid pairs remain.
-        """
         signal = self.compute(self.data)
 
         aligned = pd.concat(
@@ -171,28 +121,6 @@ class SignalBuilder:
         )
 
     def compute_rolling_ic(self, forward_returns: pd.Series, window: int) -> pd.Series:
-        """
-        IC computed on non-overlapping rolling windows.
-
-        Parameters
-        ----------
-        forward_returns : pd.Series
-            Realized forward returns, e.g. from `compute_forward_returns()`.
-        window : int
-            Number of (aligned, non-NaN) bars per IC estimate. Must be >= 2.
-
-        Returns
-        -------
-        pd.Series
-            One IC value per window, indexed by each window's start
-            timestamp. `len(result) == n_valid_obs // window`. Windows with
-            fewer than 2 valid observations are skipped.
-
-        Raises
-        ------
-        ValueError
-            If `window < 2`.
-        """
         if window < 2:
             raise ValueError("window must be >= 2")
 
@@ -212,33 +140,19 @@ class SignalBuilder:
             chunk = aligned.iloc[start : start + window]
             if len(chunk) < 2:
                 continue
+            if chunk["signal"].nunique() < 2 or chunk["forward_returns"].nunique() < 2:
+                continue
             ic = information_coefficient(
                 chunk["signal"], chunk["forward_returns"], method=self.ic_method
             )
+            if np.isnan(ic):
+                continue
             ic_values.append(ic)
             ic_index.append(aligned.index[start])
 
         return pd.Series(ic_values, index=ic_index)
 
     def validate_no_lookahead(self, cutoff: pd.Timestamp) -> bool:
-        """
-        Mechanical leakage check: recompute the signal using only
-        `self.data.loc[:cutoff]`, and assert it exactly matches
-        `self.compute(self.data).loc[:cutoff]`.
-
-        Parameters
-        ----------
-        cutoff : pd.Timestamp
-            Must leave enough leading history in `self.data.loc[:cutoff]`
-            for `lookback` bars, or every value will be NaN and the check
-            is vacuous rather than informative.
-
-        Returns
-        -------
-        bool
-            True if the truncated and full-sample signals agree exactly
-            (NaN == NaN treated as agreement) on `[data.index.min(), cutoff]`.
-        """
         truncated_data = self.data.loc[:cutoff]
 
         full_signal = self.compute(self.data)

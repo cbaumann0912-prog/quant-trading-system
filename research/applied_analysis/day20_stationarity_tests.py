@@ -63,7 +63,7 @@ X = log_gbp.values.reshape(-1, 1)
 ols_eur_gbp   = fit_ols(X, y, True)
 beta_eur_gbp  = ols_eur_gbp["coefficients"][1]
 resid_eur_gbp = ols_eur_gbp["residuals"]
-stat_eur_gbp  = check_stationarity(pd.Series(resid_eur_gbp))                      # check_stationarity on pd.Series(resid_eur_gbp)
+stat_eur_gbp  = check_stationarity(pd.Series(resid_eur_gbp))
 verdict_eur_gbp = "I(0) cointegrated" if stat_eur_gbp["is_stationary"] else "I(1) no cointegration"
 
 print(f"{'EUR/USD ~ GBP/USD':<25} {beta_eur_gbp:>8.4f} {stat_eur_gbp['adf_stat']:>10.4f} {stat_eur_gbp['adf_p']:>8.4f} {stat_eur_gbp['kpss_stat']:>10.4f} {stat_eur_gbp['kpss_p']:>8.4f}  {verdict_eur_gbp}")

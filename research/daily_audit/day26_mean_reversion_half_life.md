@@ -44,4 +44,4 @@ The half-life results are consistent with the Day 24 and Day 25 findings: EUR/US
 The rolling hedge ratio instability documented in Day 24 also means the EUR/USD on GBP/USD residual series is not a stable object. The OU parameters estimated here use a full-sample, fixed-hedge-ratio spread, which may not generalize to a rolling implementation.
 
 ## 7. Next Steps
-Carry the half-life finding into the Day 30 strategy candidate decision. Three independent tests — Engle-Granger, Johansen, and OU half-life — now point in the same direction for Multi-Pair Forex Stat Arb. Document the rationale for moving this candidate to invalid status and evaluate replacement candidates (PC2 Carry Regime Signal, or forex scope expansion).
+Carry the half-life finding into the strategy candidate decision, put off for a later date. Three independent tests — Engle-Granger, Johansen, and OU half-life — now point in the same direction for Multi-Pair Forex Stat Arb. Document the rationale for moving this candidate to invalid status and evaluate replacement candidates (PC2 Carry Regime Signal, or forex scope expansion).

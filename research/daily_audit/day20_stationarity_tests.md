@@ -18,8 +18,8 @@ Mean-reversion pair trading only works if the spread has a mean to revert to. Th
 ## 4. Assumptions
 - Log price levels are I(1). Engle-Granger requires both inputs to be integrated of order one. If any series is I(2) or already I(0), the framework breaks down. Layer 1 checks this.
 - The cointegrating relationship is linear. OLS estimates a linear hedge ratio and will miss non-linear structure.
-- The hedge ratio is stable over time. One regression over 15 years assumes beta is constant. Structural breaks violate this. Walk-forward stability is deferred to Day 45.
-- Residuals are approximately homoskedastic. ADF and KPSS are sensitive to volatility clustering. FX residuals likely exhibit GARCH effects — a known violation, addressed formally on Day 55.
+- The hedge ratio is stable over time. One regression over 15 years assumes beta is constant. Structural breaks violate this. Walk-forward stability is put off for a later date.
+- Residuals are approximately homoskedastic. ADF and KPSS are sensitive to volatility clustering. FX residuals likely exhibit GARCH effects — a known violation, addressed formally at a later date.
 - No lookahead bias. Only daily closing prices are used.
 
 ## 5. Findings
@@ -64,4 +64,4 @@ The null result does not rule out a relationship between these pairs — it rule
 - Does GARCH-adjusted stationarity testing on the EUR/USD ~ GBP/USD residuals push the ADF stat past -2.86?
 
 ## Conclusion
-EUR/USD, GBP/USD, and USD/JPY log price levels are all I(1). No pairwise combination produced stationary residuals under the combined ADF-KPSS framework. After BH correction, none of the three spreads meets the statistical threshold for cointegration. These pairs should not be treated as mean-reversion candidates under a static full-sample hedge ratio. The EUR/USD ~ GBP/USD borderline result is worth revisiting with Johansen on Day 25 before writing the pair off entirely.
+EUR/USD, GBP/USD, and USD/JPY log price levels are all I(1). No pairwise combination produced stationary residuals under the combined ADF-KPSS framework. After BH correction, none of the three spreads meets the statistical threshold for cointegration. These pairs should not be treated as mean-reversion candidates under a static full-sample hedge ratio. The EUR/USD ~ GBP/USD borderline result is worth revisiting with Johansen at a later date before writing the pair off entirely.

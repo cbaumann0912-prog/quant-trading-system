@@ -12,7 +12,7 @@ check, not a validation run; the prose below is intentionally short.
 strategy spec) through `SignalBuilder` on all 3 supported pairs, real daily
 closes 2011-01-02 to 2026-03-31 via `DataLoader`, `holding_period=26`
 (Section 10's shared validation horizon). No regime gating, no
-walk-forward — those don't exist yet (Day 45/46).
+walk-forward — those are put off for a later date.
 
 ## Findings
 

@@ -97,7 +97,7 @@ def test_stationarity_condition(result):
     ones = np.ones(len(x))
 
     target_vec = 2 * sigma @ x
-    basis = np.column_stack([p_bar, -ones])  # columns: p_bar, -1
+    basis = np.column_stack([p_bar, -ones])
 
     coeffs, residuals, rank, _ = np.linalg.lstsq(basis, target_vec, rcond=None)
     reconstructed = basis @ coeffs

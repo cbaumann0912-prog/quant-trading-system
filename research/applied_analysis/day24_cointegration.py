@@ -70,8 +70,7 @@ for y_name, x_name in COMBINATIONS:
         window = prices.iloc[end - ROLLING_WINDOW:end]
         y_w = window[y_name].values
         x_w = window[x_name].values
-        # OLS inline — no ADF, just the beta
-        A = x_w.reshape(-1, 1)  # fit_ols adds intercept internally
+        A = x_w.reshape(-1, 1)
         b = y_w
         ols = fit_ols(A, b)
         betas.append(ols["coefficients"][1])

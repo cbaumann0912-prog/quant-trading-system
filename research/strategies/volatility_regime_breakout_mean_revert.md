@@ -27,7 +27,7 @@ If the edge exists, it comes from identifying a regime switch before the market 
 Full-sample means are not centered near zero or symmetric across pairs (`eurusd_rate_diff` -1.00, `gbpusd_rate_diff` -0.16, `usdjpy_rate_diff` +1.49), which is why the regime threshold below is z-scored rather than an absolute cutoff.
 
 ## 4. Signal Logic
-A simple rolling-threshold classifier, not a Hamilton-filter Markov-switching model (that's reserved for Days 55-56 per the roadmap). This tests a simplified proxy for Ang & Bekaert's regime concept, not their actual model.
+A simple rolling-threshold classifier, not a Hamilton-filter Markov-switching model (that's put off for a later date per the roadmap). This tests a simplified proxy for Ang & Bekaert's regime concept, not their actual model.
 
 1. **Regime features:** 78-day (1 quarter, `trading_days_per_year // 12 * 3`) rolling realized volatility of log returns, plus the rate differential (2-month-lagged, forward-filled).
 2. **Regime combination:** both z-scored and combined via PCA (1st component), sign-normalized so volatility loading is positive. Must be refit inside each walk-forward window in production; the Day 43 script fits full-sample for threshold selection only. Full findings and numbers: `research/daily_audit/day43_regime_composite_threshold_analysis.md`.
@@ -117,7 +117,7 @@ Both mean-centered before the interaction term. `b3` is the term of interest. Fo
 - Cross-pair concentration doesn't distinguish independent bets from correlated USD bets (accepted gap, Section 8).
 - EUR/USD shows no reversion signal; Section 10's per-leg (not per-pair) verdict could mask a pair-level failure if EUR/USD alone fails.
 - Threshold selection (1.0/1.5/2.0) has a look-ahead caveat: chosen from the same descriptive data the strategy will later be tested against.
-- Dynamic `1/n` rescaling and per-window classifier refitting are not yet implemented; both are real work for SignalBuilder (Day 44+).
+- Dynamic `1/n` rescaling and per-window classifier refitting are not yet implemented; both are real work for SignalBuilder, put off for a later date.
 
 ## 12. Judgmental Adjustments to Statistical Inputs
 None of these come from a hypothesis test; each is a documented judgment call.

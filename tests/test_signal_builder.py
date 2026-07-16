@@ -130,11 +130,6 @@ class TestComputeRollingIC:
 
         rolling_ic = builder.compute_rolling_ic(forward_returns, window=window)
 
-        # compute_rolling_ic skips windows where signal or forward_returns is
-        # constant (undefined correlation) -- see Day 44 pipeline test finding
-        # (34% of 60-bar windows were constant-signal for a 78-day-lookback
-        # momentum signal). So len(result) is an upper bound, not exact, on a
-        # random-walk fixture -- but should still be > 0 for a reasonable window.
         assert 0 < len(rolling_ic) <= max_possible_windows
 
     def test_rolling_ic_window_too_small_raises(self):
@@ -145,16 +140,13 @@ class TestComputeRollingIC:
             builder.compute_rolling_ic(forward_returns, window=1)
 
     def test_rolling_ic_skips_constant_signal_windows(self):
-        # First window's signal is forced constant (all +1, since price rises
-        # monotonically over the whole lookback+window span); the second
-        # window uses genuinely varying prices so its signal isn't constant.
         n = 60
         lookback = 5
         window = 20
         index = pd.date_range("2024-01-01", periods=lookback + n, freq="1D")
 
         rng = np.random.default_rng(7)
-        rising = 100 + np.arange(lookback + window)  # strictly increasing -> signal always +1
+        rising = 100 + np.arange(lookback + window)
         varying = 100 + np.cumsum(rng.normal(0, 1, n - window))
         prices = np.concatenate([rising, varying + (rising[-1] - varying[0])])
         data = pd.DataFrame({"price": prices}, index=index)

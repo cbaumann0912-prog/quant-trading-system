@@ -197,7 +197,7 @@ def _simulate_ou(theta, mu, sigma, n=3000, dt=1.0, x0=0.0, seed=42):
 def test_fast_reverting_series_short_half_life():
     fast_series = _simulate_ou(theta=0.5, mu=0.0, sigma=0.1, n=3000)
     result = ou_half_life(fast_series)
-    expected = np.log(2) / 0.5  # ~1.386 bars
+    expected = np.log(2) / 0.5
  
     assert result["half_life"] < 5
     assert abs(result["half_life"] - expected) < 1.0

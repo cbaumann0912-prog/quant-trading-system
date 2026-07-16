@@ -12,8 +12,6 @@ def _make_data(n_years: int = 10, seed: int = 0) -> pd.DataFrame:
 
 
 def _dummy_signal_fn(data: pd.DataFrame, lookback: int) -> pd.Series:
-    # Placeholder matching the SignalBuilder-style contract; unused by this
-    # skeleton's run(), just needs to exist for the constructor.
     price = data["price"]
     return np.sign(price / price.shift(lookback) - 1)
 
@@ -100,9 +98,6 @@ def test_rolling_not_expanding():
 
     len0 = windows[0]["train_end"] - windows[0]["train_start"]
     len1 = windows[1]["train_end"] - windows[1]["train_start"]
-    # DateOffset(years=3) can differ by 1 day across a leap day depending on
-    # which calendar years the window spans -- assert near-equality, not
-    # exact equality.
     assert abs((len0 - len1).days) <= 1
 
 

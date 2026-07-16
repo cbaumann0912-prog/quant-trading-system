@@ -33,7 +33,7 @@ Script: `research/applied_analysis/day43_regime_composite_threshold_analysis.py`
 
 ## Next steps
 - Threshold locked: |composite z| > 1.5 = turbulent, < 1.0 = calm, 1.0-1.5 = deadzone.
-- SignalBuilder (Day 44+) must refit z-scoring/PCA per walk-forward window, not reuse these full-sample statistics.
+- SignalBuilder, put off for a later date, must refit z-scoring/PCA per walk-forward window, not reuse these full-sample statistics.
 - Worth checking GBP/USD's sign stability across sub-periods before the eventual paper's limitations section.
 
 ---

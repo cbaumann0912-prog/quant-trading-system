@@ -8,8 +8,8 @@ import pandas as pd
 from src.signals.cointegration import engle_granger_test, ou_half_life
 
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
-BAR_DURATION_DAYS = 1  # set to whatever resampling you used in Day 24/25 (daily = 1)
-TRANSACTION_COST_BPS = 2.0  # round-trip cost in bps, adjust to your actual cost model
+BAR_DURATION_DAYS = 1
+TRANSACTION_COST_BPS = 2.0
 
 eurusd = pd.read_csv(f"{DATA_DIR}\\EURUSD.csv")
 eurusd["Datetime"] = pd.to_datetime(eurusd["Datetime"], format="%Y%m%d %H%M%S")

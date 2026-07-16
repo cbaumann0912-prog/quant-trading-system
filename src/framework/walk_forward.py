@@ -10,12 +10,6 @@ class WalkForwardValidator:
     Rolling-window walk-forward split generator with an embargo gap between
     train and test.
 
-    Skeleton scope (Day 45): window generation and embargo only. `signal_fn`
-    is stored but not yet invoked -- `run()` returns the train/test slices
-    for each window without scoring. Wiring this into SignalBuilder /
-    PerformanceAnalyzer for actual OOS scoring is deliberately deferred to a
-    later day rather than guessed at here.
-
     Parameters
     ----------
     signal_fn : Callable
@@ -140,9 +134,7 @@ class WalkForwardValidator:
 
     def run(self) -> Dict[str, Any]:
         """
-        Generate windows and slice train/test data for each. Scoring
-        (signal_fn invocation, IC/Sharpe) is not implemented in this
-        skeleton -- see class docstring.
+        Generate windows and slice train/test data for each.
 
         Returns
         -------

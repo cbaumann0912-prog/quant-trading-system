@@ -21,9 +21,9 @@ IMAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 START = "2011-01-01"
 END = "2026-05-01"
-LOOKBACK = 78          # strategy spec Section 4: 1 quarter, 312-day FX year
-HOLDING_PERIOD = 26    # strategy spec Section 10: shared validation horizon
-ROLLING_WINDOW = 60    # smoke-test choice: midpoint of Day 40's 20-120 grid
+LOOKBACK = 78
+HOLDING_PERIOD = 26
+ROLLING_WINDOW = 60
 
 rolling_ic_by_pair = {}
 

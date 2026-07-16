@@ -1,7 +1,7 @@
 # PC2 Effective Breadth — Follow-On Note (raised Day 40, deferred)
 
-**Status:** Exploratory, not scheduled. Not part of the Day 40 deliverable. Revisit during
-Days 41–42 (rolling PCA re-estimation window) or later as a standalone audit — do not let
+**Status:** Exploratory, not scheduled. Not part of the Day 40 deliverable. Revisit at a
+later date (rolling PCA re-estimation window) or later as a standalone audit — do not let
 this displace scheduled curriculum days.
 
 ## Origin
@@ -35,7 +35,7 @@ autocorrelated in time (regime persistence), not just correlated cross-sectional
 2. **P-hacking risk.** Any regime-conditional breadth/IR analysis is being proposed *after*
    seeing that the pooled result was null and the split-sample results looked more
    promising. If this path is pursued, the post-hoc nature of the regime split must be
-   disclosed in the Day 66 paper limitations section, regardless of what the analysis shows.
+   disclosed in the paper limitations section (put off for a later date), regardless of what the analysis shows.
 3. **Regime boundary definition.** Regime-conditional breadth requires defining regimes as
    contiguous spans (not just per-day sign of the signal), which needs an explicit rule for
    what counts as "still the same regime" vs. noise crossing zero. Not yet defined.

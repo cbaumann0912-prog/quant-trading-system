@@ -20,7 +20,7 @@ Read AML Ch. 3 (Labeling) in full, Ch. 4 §4.1–4.3 (Sample Weights, overlappin
 ## Interpretation
 Barrier widths for the shortlisted strategies need a real causal, rolling vol estimate — not a fixed percent, nothing computed with knowledge of how the window turned out. `h` and `ptSl` aren't knobs to tune until the labels look nice; they have to match what's already in each strategy's exit rule. Overlapping windows are unavoidable at any sane sampling frequency, so whatever validation gets used downstream has to account for that — straight line to purged CV, not optional.
 
-## Open questions for Day 36
+## Open questions, put off for a later date
 - Sign-of-return vs. 0 on vertical touches — needs a real decision before `triple_barrier_labels` gets written.
 - `ptSl` and `h` aren't derived anywhere in the chapter — they have to trace back to each candidate's actual spec, not get picked for a nicer label distribution.
 - Symmetric vs. asymmetric barriers — learning the side of a bet instead of assuming it needs either no horizontal barriers or symmetric ones. Matters if any shortlisted strategy doesn't have a fixed long/short side going in.

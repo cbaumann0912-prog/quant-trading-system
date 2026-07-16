@@ -16,5 +16,6 @@ regime-dependent correlation structure in these three forex pairs, an
 automatically-selected block length would still be a stationarity-blind
 default, not a guarantee of correctness across regime breaks.
 
-Status: not implemented. Candidate for buffer block (Days 72-77) or as a
-limitations footnote in the paper (Day 66) rather than in-scope for Day 37.
+Status: not implemented. Candidate for a buffer block, put off for a later
+date, or as a limitations footnote in the paper, also put off for a later
+date, rather than in-scope for Day 37.

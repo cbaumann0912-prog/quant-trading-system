@@ -3,6 +3,8 @@ import pandas as pd
 from scipy.stats import spearmanr
 from typing import Literal
 
+from src.stats.regression import interaction_regression_centered
+
 def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
     """Apply Bonferroni correction across m hypothesis tests.
 
@@ -240,4 +242,100 @@ def paired_sign_permutation_test(
         "observed_mean_diff": observed_mean_diff,
         "p_value": float(p_value),
         "null_distribution": null_distribution,
+    }
+
+
+def permutation_test_interaction_coefficient(
+    y: pd.Series,
+    x1: pd.Series,
+    dummy: pd.Series,
+    n_permutations: int = 1000,
+    seed: int = 42,
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided",
+) -> dict:
+    """
+    Null hypothesis: b3 (the signal x regime interaction effect) is no
+    different from what you'd see if the regime label were random noise.
+
+    Parameters
+    ----------
+    y : pd.Series
+        Response variable (e.g. forward return over the shared horizon).
+    x1 : pd.Series
+        Continuous predictor (e.g. momentum_signal or price_z). Held fixed
+        across all permutations -- only `dummy` is shuffled.
+    dummy : pd.Series
+        0/1 regime indicator (e.g. turbulent_dummy or calm_dummy).
+    n_permutations : int, default 1000
+        Number of permutations used to build the null distribution, per
+        Section 10 (1000 permutations, pre-registered).
+    seed : int, default 42
+        Seed for the random number generator, for reproducibility.
+    alternative : {"two-sided", "greater", "less"}, default "two-sided"
+        Same convention as `permutation_test`. Two-sided is appropriate
+        here since Section 10 does not pre-commit to a sign for b3.
+
+    Returns
+    -------
+    dict
+        observed_b3 : float
+            Interaction coefficient from the unpermuted fit.
+        p_value : float
+            Empirical p-value using the (1 + count) / (n_permutations + 1)
+            correction.
+        null_distribution : np.ndarray
+            Array of length n_permutations containing the permuted b3
+            values.
+        n_obs : int
+            Number of observations used in the unpermuted fit (post
+            alignment/NaN-drop), for reference.
+
+    Raises
+    ------
+    ValueError
+        Propagated from `interaction_regression_centered` if the aligned,
+        NaN-dropped sample has too few observations to fit the model, or
+        if `alternative` is not one of the three allowed values.
+    """
+    if alternative not in ("two-sided", "greater", "less"):
+        raise ValueError(
+            f"alternative must be 'two-sided', 'greater', or 'less', "
+            f"got {alternative!r}"
+        )
+
+    observed_result = interaction_regression_centered(y, x1, dummy)
+    observed_b3 = observed_result["coefficients"]["interaction"]
+    n_obs = observed_result["n_obs"]
+
+    y_aligned, x1_aligned = y.align(x1, join="inner")
+    y_aligned, dummy_aligned = y_aligned.align(dummy, join="inner")
+    x1_aligned = x1_aligned.reindex(y_aligned.index)
+    dummy_aligned = dummy_aligned.reindex(y_aligned.index)
+    valid = y_aligned.notna() & x1_aligned.notna() & dummy_aligned.notna()
+
+    y_vals = y_aligned[valid].reset_index(drop=True)
+    x1_vals = x1_aligned[valid].reset_index(drop=True)
+    dummy_vals = dummy_aligned[valid].reset_index(drop=True).to_numpy()
+
+    rng = np.random.default_rng(seed)
+    null_distribution = np.empty(n_permutations, dtype=float)
+    for i in range(n_permutations):
+        permuted_dummy = pd.Series(rng.permutation(dummy_vals))
+        result = interaction_regression_centered(y_vals, x1_vals, permuted_dummy)
+        null_distribution[i] = result["coefficients"]["interaction"]
+
+    if alternative == "greater":
+        count_as_extreme = np.sum(null_distribution >= observed_b3)
+    elif alternative == "less":
+        count_as_extreme = np.sum(null_distribution <= observed_b3)
+    else:
+        count_as_extreme = np.sum(np.abs(null_distribution) >= np.abs(observed_b3))
+
+    p_value = (1 + count_as_extreme) / (n_permutations + 1)
+
+    return {
+        "observed_b3": float(observed_b3),
+        "p_value": float(p_value),
+        "null_distribution": null_distribution,
+        "n_obs": n_obs,
     }

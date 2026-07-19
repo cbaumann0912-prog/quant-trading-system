@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from numpy.typing import NDArray
-from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics, ridge_fit, lasso_objective, lasso_fit, interaction_regression
+from src.stats.regression import fit_ols, r_squared, adj_r_squared, residual_diagnostics, ridge_fit, lasso_objective, lasso_fit, interaction_regression, compute_vif, interaction_regression_centered
 
 
 @pytest.fixture
@@ -271,3 +271,145 @@ def test_insufficient_observations_raises():
 
     with pytest.raises(ValueError):
         interaction_regression(y, x1, x2)
+
+
+def test_vif_uncorrelated_columns_near_one():
+    rng = np.random.default_rng(7)
+    n = 5000
+    X = rng.normal(0, 1, size=(n, 3))
+    vif = compute_vif(X)
+
+    for v in vif.values():
+        assert v == pytest.approx(1.0, abs=0.1)
+
+
+def test_vif_single_column_is_one():
+    rng = np.random.default_rng(8)
+    X = rng.normal(0, 1, size=(100, 1))
+    vif = compute_vif(X)
+
+    assert vif["x0"] == 1.0
+
+
+def test_vif_flags_near_duplicate_columns():
+    rng = np.random.default_rng(9)
+    n = 500
+    x0 = rng.normal(0, 1, n)
+    x1 = x0 + rng.normal(0, 1e-6, n)  # near-duplicate of x0
+    x2 = rng.normal(0, 1, n)
+    vif = compute_vif(np.column_stack([x0, x1, x2]))
+
+    assert vif["x0"] > 100
+    assert vif["x1"] > 100
+    assert vif["x2"] < 5
+
+
+def test_vif_uses_provided_labels():
+    rng = np.random.default_rng(10)
+    X = rng.normal(0, 1, size=(200, 2))
+    vif = compute_vif(X, labels=["signal", "dummy"])
+
+    assert set(vif.keys()) == {"signal", "dummy"}
+
+
+def test_vif_bad_label_length_raises():
+    rng = np.random.default_rng(11)
+    X = rng.normal(0, 1, size=(200, 2))
+
+    with pytest.raises(ValueError):
+        compute_vif(X, labels=["only_one"])
+
+
+def test_vif_too_few_rows_raises():
+    with pytest.raises(ValueError):
+        compute_vif(np.array([[1.0, 2.0]]))
+
+
+def test_centered_recovers_interaction_coefficient():
+    rng = np.random.default_rng(12)
+    n = 2000
+    x1 = pd.Series(rng.normal(5, 1, n))     
+    x2 = pd.Series(rng.integers(0, 2, n).astype(float))
+    noise = rng.normal(0, 0.05, n)
+    x1_c = x1 - x1.mean()
+    x2_c = x2 - x2.mean()
+    y = pd.Series(0.3 + 1.0 * x1_c + -0.5 * x2_c + 1.5 * (x1_c * x2_c) + noise)
+    result = interaction_regression_centered(y, x1, x2)
+
+    assert result["coefficients"]["interaction"] == pytest.approx(1.5, abs=0.1)
+
+
+def test_centered_matches_uncentered_interaction_coefficient():
+    rng = np.random.default_rng(13)
+    n = 2000
+    x1 = pd.Series(rng.normal(5, 2, n))
+    x2 = pd.Series(rng.integers(0, 2, n).astype(float))
+    y = pd.Series(rng.normal(0, 1, n) + 0.8 * x1 * x2)
+    uncentered = interaction_regression(y, x1, x2)
+    centered = interaction_regression_centered(y, x1, x2)
+
+    assert centered["coefficients"]["interaction"] == pytest.approx(
+        uncentered["coefficients"]["interaction"], abs=1e-6
+    )
+
+
+def test_centering_improves_condition_number_for_offset_dummy_interaction():
+    rng = np.random.default_rng(14)
+    n = 1000
+    x1 = pd.Series(rng.normal(1000, 1, n))
+    x2 = pd.Series(rng.integers(0, 2, n).astype(float))
+    y = pd.Series(rng.normal(0, 1, n))
+    uncentered = interaction_regression(y, x1, x2)
+    centered = interaction_regression_centered(y, x1, x2)
+
+    assert centered["condition_number"] < uncentered["condition_number"]
+
+
+def test_reliability_gate_fails_on_collinear_design():
+    rng = np.random.default_rng(15)
+    n = 300
+    x1 = pd.Series(rng.normal(1000, 0.001, n))
+    x2 = pd.Series(rng.normal(1000, 0.001, n))
+    y = pd.Series(rng.normal(0, 1, n))
+    result = interaction_regression_centered(y, x1, x2)
+
+    assert result["reliability_gate_passed"] is False
+
+
+def test_reliability_gate_passes_on_well_conditioned_design():
+    rng = np.random.default_rng(16)
+    n = 2000
+    x1 = pd.Series(rng.normal(0, 1, n))
+    x2 = pd.Series(rng.integers(0, 2, n).astype(float))
+    y = pd.Series(0.5 * x1 + 0.3 * x2 + 0.2 * (x1 * x2) + rng.normal(0, 1, n))
+    result = interaction_regression_centered(y, x1, x2)
+
+    assert result["reliability_gate_passed"] is True
+    assert result["condition_number"] < 1e10
+    assert all(v < 10.0 for v in result["vif"].values())
+
+
+def test_centered_output_keys_present():
+    rng = np.random.default_rng(17)
+    n = 200
+    x1 = pd.Series(rng.normal(0, 1, n))
+    x2 = pd.Series(rng.integers(0, 2, n).astype(float))
+    y = pd.Series(rng.normal(0, 1, n))
+    result = interaction_regression_centered(y, x1, x2, x1_label="signal", x2_label="turbulent_dummy")
+    expected_keys = {
+        "coefficients", "std_errors", "t_stats", "p_values", "r_squared",
+        "adj_r_squared", "n_obs", "condition_number", "vif",
+        "reliability_gate_passed", "centering_means",
+    }
+    
+    assert set(result.keys()) == expected_keys
+    assert set(result["vif"].keys()) == {"signal", "turbulent_dummy", "interaction"}
+
+
+def test_centered_insufficient_observations_raises():
+    y = pd.Series([1.0, 2.0, 3.0])
+    x1 = pd.Series([1.0, 2.0, 3.0])
+    x2 = pd.Series([1.0, 2.0, 3.0])
+
+    with pytest.raises(ValueError):
+        interaction_regression_centered(y, x1, x2)

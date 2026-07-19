@@ -12,7 +12,7 @@ FX volatility and correlation structure go through genuine regime shifts (Ang & 
 2. Primary threshold: p < 0.05, uncorrected.
 3. Reliability gate (from the Day 41 PC2 failure): interaction regression condition number < ~1e10 (VIF < 10), main effects mean-centered before the interaction term. This strategy needs two such regressions, one per leg (`signal x regime_indicator`), since it has two signals rather than PC2's one.
 4. Robustness: primary test + both robustness checks (Section 10) must unanimously agree. Any single null kills the hypothesis.
-5. Multiple-testing: final PASS/FAIL must survive Benjamini-Hochberg correction across all 5 strategies tested project-wide. Since the other 4 are already null, a real finding here needs p < 0.01 (BH critical value, rank 1 of 5) to survive.
+5. Multiple-testing: final PASS/FAIL must survive Benjamini-Hochberg correction across all 4 strategies tested project-wide. Since the other 3 are already null, a real finding here needs p < 0.0125 (BH critical value, rank 1 of 4) to survive.
 
 ## 2. Economic Rationale
 If the edge exists, it comes from identifying a regime switch before the market fully adjusts. Natural counterparties and why this hasn't been arbitraged away are not addressed in the source write-up. Depends on there being two genuinely distinct regimes, per Ang & Bekaert's state-change claim.

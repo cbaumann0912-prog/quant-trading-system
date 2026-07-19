@@ -52,7 +52,7 @@ VIFs ≈ 1.00 for both fits. Sign is consistent (positive) across the primary an
 
 **Verdict: PASS.** 
 
-**This PASS is provisional**, not a final strategy verdict, for two explicit reasons: (1) it has not yet been passed through the project-wide Benjamini-Hochberg correction across all 5 strategies tested this project; the spec itself notes a real finding here needs p < 0.01 to survive BH at rank 1 of 5 — momentum's primary p (0.00016) and permutation p (0.0020) clear that bar comfortably, but reversion's primary p (0.00549) does not. (2) the Section 10 lockbox holdout (2024-2026) has not been opened — this PASS is a walk-forward-only result.
+**This PASS is provisional**, not a final strategy verdict, for two explicit reasons: (1) it has not yet been passed through the project-wide Benjamini-Hochberg correction across all 4 strategies tested this project; the spec notes a real finding here needs p < 0.0125 to survive BH at rank 1 of 4 — both momentum (p=0.00016) and reversion (p=0.00549) clear that bar comfortably. (2) the Section 10 lockbox holdout (2024-2026) has not been opened — this PASS is a walk-forward-only result.
 
 ## Alternative Explanations
 - **Reversion leg's main effects are individually null.** The interaction alone carries the reversion leg's significance, with both main effects individually insignificant, is consistent with genuine regime-dependence. Today's test cannot distinguish "genuine regime-conditional mean-reversion" from "calm_dummy proxies for an omitted calm-period factor" — that would require a separate specification test not run here.
@@ -60,7 +60,7 @@ VIFs ≈ 1.00 for both fits. Sign is consistent (positive) across the primary an
 - **156-day alternate window is not fully independent of the 78-day primary window** (156 = 2 x 78, substantial autocorrelation in the underlying rolling vol estimates), so robustness check 1 is a weaker independent replication than an unrelated regime definition would be.
 
 ## Next Steps
-- Before treating this as a strategy-level PASS: run Benjamini-Hochberg correction across all 5 project strategies once all 5 have a final Section 10 (or equivalent) p-value on record, using reversion leg's p = 0.00549 as the binding constraint (momentum already clears the p < 0.01 bar with margin).
+- Before treating this as a strategy-level PASS: run Benjamini-Hochberg correction across all 4 project strategies once all 4 have a final Section 10 (or equivalent) p-value on record, using reversion leg's p = 0.00549 as the binding constraint (both legs already clear the p < 0.0125 bar individually).
 - Address the cross-sectional/overlapping-window standard error concern before relying on any of today's p-values at face value — likely via a cluster-robust or block-bootstrap standard error estimator added to `interaction_regression_centered` or a new variant of it.
 - Only after the above: open the Section 10 lockbox holdout (2024-2026) once, as a single-use confirmatory test — not another round of tuning. If the lockbox result disagrees with today's walk-forward verdict, report the disagreement as-is per the pre-registered lockbox protocol, rather than explaining it away.
 - Residual diagnostics (Ljung-Box, kurtosis) on both pooled fits' residuals were not run in this audit; worth checking before treating standard errors as trustworthy, independent of the clustering concern above.

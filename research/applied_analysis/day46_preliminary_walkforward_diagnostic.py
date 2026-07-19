@@ -157,5 +157,5 @@ for pair in PAIRS:
     print(f"  reversion  Sharpe distribution: {r_sharpe_dist}")
     print()
 
-print("Reminder: preliminary diagnostic only, NOT trial #5. Full-sample-fit regime")
-print("classifier + embargo-only (unpurged) windows -- see module docstring.")
+print("Reminder: preliminary diagnostic only, NOT the official validation run. Full-sample-fit")
+print("regime classifier + embargo-only (unpurged) windows -- see module docstring.")

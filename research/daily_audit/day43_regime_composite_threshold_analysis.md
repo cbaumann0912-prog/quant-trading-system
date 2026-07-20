@@ -54,3 +54,9 @@ Script: `research/applied_analysis/day43_regime_composite_threshold_analysis.py`
 **Caveat:** this threshold was chosen because it looks strongest in this in-sample descriptive pass, a mild form of look-ahead. It's a defensible design choice, not evidence the strategy works. The actual test is Section 10's out-of-sample walk-forward validation (strategy spec).
 
 **Flag:** EUR/USD's null result alongside GBP/USD and USD/JPY's real ones suggests this strategy may not have a uniform edge across all three pairs. Not a surprise if EUR/USD's Section 10 results come back null.
+
+---
+
+## Addendum (2026-07-19): lockbox leakage in this analysis
+
+`day43_regime_composite_threshold_analysis.py` loads data through 2026-05-01, which includes the Section 10 lockbox holdout (2024-2026). All descriptive statistics above, including the per-pair conditional forward-return findings, were computed on a range that was never lockbox-clean. The leak was found and fixed in the Day 48/49 walk-forward pipelines; this script was left as-is by decision, not oversight. Findings above should be read with that caveat — they were not rederived on dev-only (pre-2024) data.

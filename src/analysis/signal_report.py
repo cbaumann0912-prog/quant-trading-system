@@ -15,7 +15,7 @@ PROJECT_WIDE_PREREGISTERED_BAR_P = 0.0125
 
 @dataclass
 class LegSignalStats:
-    """Out-of-sample diagnostics for a single leg (momentum or reversion)."""
+    """Out-of-sample diagnostics for a single leg."""
 
     leg_name: str
 
@@ -131,9 +131,6 @@ def _summarize_sharpe(sharpe_by_window: Sequence[float]) -> dict:
 
 
 def _compute_leg_dsr(regime_gated_returns: pd.Series, n_trials: int) -> dict:
-    """Deflated Sharpe inputs/output for one leg's pooled, regime-gated,
-    unsized, no-cost exposure x forward-return series.
-    """
     clean = regime_gated_returns.dropna()
     analyzer = PerformanceAnalyzer(returns=clean)
     observed_sharpe = analyzer.compute_sharpe()
@@ -182,11 +179,11 @@ def build_signal_report(
     leg_regime_gated_returns : dict[str, pd.Series]
         Per leg, the pooled (across pairs/windows) regime-gated
         exposure x forward-return series feeding that leg's DSR.
-    n_trials : int, default 5
+    n_trials : int, default 4
         See DEFAULT_PROJECT_WIDE_N_TRIALS docstring above.
     bh_alpha : float, default 0.05
         Alpha for the in-report two-leg Benjamini-Hochberg correction.
-    project_wide_bar_p : float, default 0.01
+    project_wide_bar_p : float, default 0.0125
         Reported for comparison only -- see PROJECT_WIDE_PREREGISTERED_BAR_P.
     extra_caveats : sequence[str], optional
         Additional caveats appended after the default set below.
@@ -250,10 +247,10 @@ def build_signal_report(
         "versus a single-pair basis -- DSR here is optimistically biased. "
         "Known, documented gap; not corrected in this build.",
         f"The BH correction above (alpha={bh_alpha}) is applied only across "
-        f"this strategy's 2 legs, not the full project-wide 5 strategies the "
+        f"this strategy's 2 legs, not the full project-wide 4 strategies the "
         f"spec pre-registers (Section 1, item 5: needs p<{project_wide_bar_p} "
-        f"at rank 1 of 5). The other 4 strategies' final p-values are not "
-        "logged anywhere in the repo yet, so a true 5-way BH cannot be run. "
+        f"at rank 1 of 4). The other 3 strategies' final p-values are not "
+        "logged anywhere in the repo yet, so a true 4-way BH cannot be run. "
         "The project-wide bar column above is shown for comparison, not as "
         "a substitute for that correction.",
         "This report covers only the two-leg multiple-testing check and "

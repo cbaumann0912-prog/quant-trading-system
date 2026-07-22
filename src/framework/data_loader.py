@@ -5,7 +5,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-SUPPORTED_PAIRS = {"EURUSD", "GBPUSD", "USDJPY"}
+SUPPORTED_PAIRS = {
+    "EURUSD", "GBPUSD", "USDJPY",
+    "USDCHF", "AUDUSD", "USDCAD", 
+    "NZDUSD", "EURGBP", "EURJPY", 
+    "EURCHF",
+}
 
 
 class DataLoader:
@@ -205,6 +210,10 @@ _RATE_SERIES = {
     "ea": "IR3TIB01EZM156N",
     "uk": "IR3TIB01GBM156N",
     "jp": "IR3TIB01JPM156N",
+    "ch": "IR3TIB01CHM156N",
+    "ca": "IR3TIB01CAM156N",
+    "au": "IR3TIB01AUM156N",
+    "nz": "IR3TIB01NZM156N",
 }
 _FRED_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
 

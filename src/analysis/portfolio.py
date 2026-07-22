@@ -405,3 +405,58 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
         "risk_contributions": risk_contributions,
         "portfolio_vol": portfolio_vol,
     }
+
+
+def kelly_fraction(mu: float, sigma: float) -> float:
+    """
+    Compute the full Kelly fraction for continuous returns.
+
+    Parameters
+    ----------
+    mu : float
+        Expected (mean) return of the strategy, same period basis as sigma.
+    sigma : float
+        Standard deviation of returns, same period basis as mu.
+
+    Returns
+    -------
+    float
+        Full Kelly fraction f* = mu / sigma^2.
+
+    Raises
+    ------
+    ValueError
+        If sigma <= 0.
+    """
+    if sigma <= 0:
+        raise ValueError(f"sigma must be positive, got {sigma}")
+    return mu / sigma**2
+
+
+def fractional_kelly(mu: float, sigma: float, fraction: float = 0.5) -> float:
+    """
+    Compute a fractional Kelly position size.
+
+    Parameters
+    ----------
+    mu : float
+        Expected (mean) return of the strategy.
+    sigma : float
+        Standard deviation of returns.
+    fraction : float, default 0.5
+        Fraction of full Kelly to apply (e.g. 0.5 for half-Kelly, 0.25 for quarter-Kelly).
+        Must be in (0, 1].
+
+    Returns
+    -------
+    float
+        fraction * kelly_fraction(mu, sigma).
+
+    Raises
+    ------
+    ValueError
+        If fraction is not in (0, 1].
+    """
+    if not (0 < fraction <= 1):
+        raise ValueError(f"fraction must be in (0, 1], got {fraction}")
+    return fraction * kelly_fraction(mu, sigma)

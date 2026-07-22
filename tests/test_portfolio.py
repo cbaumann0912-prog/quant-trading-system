@@ -9,7 +9,9 @@ from src.analysis.portfolio import (
     leverage_bounded_return_range,
     _solve_affine_weight_coefficients,
     risk_parity_weights,
-    _markowitz_weights_closed_form
+    _markowitz_weights_closed_form,
+    kelly_fraction,
+    fractional_kelly
 )
 
 np.random.seed(28)
@@ -279,3 +281,57 @@ def test_long_only_diverges_from_unconstrained(fx_returns, target_return_forces_
     closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
 
     assert np.any(closed_form_result["weights"] < 0)
+
+
+def test_kelly_positive_edge():
+    mu = 0.10
+    sigma = 0.20
+    expected = mu / sigma**2
+
+    assert kelly_fraction(mu, sigma) == pytest.approx(expected)
+
+
+def test_kelly_zero_edge_returns_zero():
+    result = kelly_fraction(mu=0.0, sigma=0.15)
+
+    assert result == pytest.approx(0.0)
+
+
+def test_kelly_negative_sigma_raises():
+    with pytest.raises(ValueError):
+        kelly_fraction(mu=0.10, sigma=0.0)
+    with pytest.raises(ValueError):
+        kelly_fraction(mu=0.10, sigma=-0.05)
+
+
+def test_fractional_less_than_full():
+    mu = 0.12
+    sigma = 0.18
+    full = kelly_fraction(mu, sigma)
+
+    for f in (0.1, 0.25, 0.5, 0.75, 0.99):
+        assert fractional_kelly(mu, sigma, fraction=f) < full
+
+
+def test_fractional_invalid_fraction_raises():
+    mu, sigma = 0.10, 0.20
+
+    with pytest.raises(ValueError):
+        fractional_kelly(mu, sigma, fraction=0.0)
+    with pytest.raises(ValueError):
+        fractional_kelly(mu, sigma, fraction=-0.5)
+    with pytest.raises(ValueError):
+        fractional_kelly(mu, sigma, fraction=1.5)
+    fractional_kelly(mu, sigma, fraction=1.0)
+
+
+def test_fractional_reuses_kelly_fraction():
+    mu = 0.10
+    sigma = 0.20
+    fraction = 0.25
+    expected = 0.625
+    
+    assert fractional_kelly(mu, sigma, fraction) == pytest.approx(expected)
+    assert fractional_kelly(mu, sigma, fraction) == pytest.approx(
+        fraction * kelly_fraction(mu, sigma)
+    )

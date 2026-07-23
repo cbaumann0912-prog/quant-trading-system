@@ -3,6 +3,7 @@ import pandas as pd
 
 from src.analysis.portfolio_stats import compute_covariance_matrix, compute_portfolio_return, compute_portfolio_variance
 from scipy.optimize import minimize
+from scipy.stats import norm
 from src.stats.optimization import constrained_optimize
 
 def markowitz_sharpe(
@@ -460,3 +461,156 @@ def fractional_kelly(mu: float, sigma: float, fraction: float = 0.5) -> float:
     if not (0 < fraction <= 1):
         raise ValueError(f"fraction must be in (0, 1], got {fraction}")
     return fraction * kelly_fraction(mu, sigma)
+
+
+def var_historical(returns: pd.Series, confidence: float) -> float:
+    """
+    Compute historical (empirical simulation) Value-at-Risk.
+
+    Parameters
+    ----------
+    returns : pd.Series
+        Periodic strategy or asset returns (not prices).
+    confidence : float
+        Confidence level alpha, e.g. 0.95 or 0.99.
+
+    Returns
+    -------
+    float
+        VaR as a loss magnitude, in the same units as ``returns``.
+
+    Raises
+    ------
+    ValueError
+        If confidence is not in (0, 1).
+    """
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+
+    percentile = (1.0 - confidence) * 100.0
+    return float(-np.percentile(returns, percentile))
+
+
+def var_parametric(returns: pd.Series, confidence: float) -> float:
+    """
+    Compute parametric (variance-covariance) Value-at-Risk.
+
+    Assumes returns ~ N(mu, sigma^2) and solves for the loss threshold
+    such that P(loss > VaR) = 1 - confidence:
+
+        VaR_alpha = sigma * Phi^-1(alpha) - mu
+
+    where Phi^-1 is the inverse standard normal CDF.
+
+    Parameters
+    ----------
+    returns : pd.Series
+        Periodic strategy or asset returns (not prices).
+    confidence : float
+        Confidence level alpha, e.g. 0.95 or 0.99.
+
+    Returns
+    -------
+    float
+        VaR as a loss magnitude, in the same units as ``returns``.
+
+    Raises
+    ------
+    ValueError
+        If confidence is not in (0, 1).
+    """
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+
+    mu = returns.mean()
+    sigma = returns.std(ddof=1)
+    z = norm.ppf(confidence)
+    return float(z * sigma - mu)
+
+
+def var_monte_carlo(
+    returns: pd.Series,
+    confidence: float,
+    n_simulations: int = 100_000,
+    seed: int = None,
+) -> float:
+    """
+    Compute Monte Carlo Value-at-Risk.
+
+    Fits mu and sigma from the historical sample, simulates
+    ``n_simulations`` draws from N(mu, sigma^2), and reads the empirical
+    (1 - confidence) percentile off the simulated distribution.
+
+    Parameters
+    ----------
+    returns : pd.Series
+        Periodic strategy or asset returns (not prices), used only to fit
+        mu and sigma.
+    confidence : float
+        Confidence level alpha, e.g. 0.95 or 0.99.
+    n_simulations : int, default 100_000
+        Number of Monte Carlo draws.
+    seed : int, optional
+        Seed for reproducibility.
+
+    Returns
+    -------
+    float
+        VaR as a loss magnitude, in the same units as ``returns``.
+
+    Raises
+    ------
+    ValueError
+        If confidence is not in (0, 1), or n_simulations is not positive.
+    """
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+    if n_simulations <= 0:
+        raise ValueError(f"n_simulations must be positive, got {n_simulations}")
+
+    mu = returns.mean()
+    sigma = returns.std(ddof=1)
+    rng = np.random.default_rng(seed)
+    simulated_returns = rng.normal(mu, sigma, n_simulations)
+
+    percentile = (1.0 - confidence) * 100.0
+    return float(-np.percentile(simulated_returns, percentile))
+
+
+def cvar(returns: pd.Series, confidence: float) -> float:
+    """
+    Compute historical Conditional Value-at-Risk (Expected Shortfall).
+
+    The expected loss conditional on breaching historical VaR:
+
+        CVaR_alpha = -E[R | R <= -VaR_hist_alpha]
+
+    Parameters
+    ----------
+    returns : pd.Series
+        Periodic strategy or asset returns (not prices).
+    confidence : float
+        Confidence level alpha, e.g. 0.95 or 0.99.
+
+    Returns
+    -------
+    float
+        CVaR as a loss magnitude. By construction, cvar(returns,
+        confidence) >= var_historical(returns, confidence) for the same
+        series and confidence level.
+
+    Raises
+    ------
+    ValueError
+        If confidence is not in (0, 1).
+    """
+    if not (0.0 < confidence < 1.0):
+        raise ValueError(f"confidence must be in (0, 1), got {confidence}")
+
+    percentile = (1.0 - confidence) * 100.0
+    threshold = np.percentile(returns, percentile)
+    tail = returns[returns <= threshold]
+
+    if len(tail) == 0:
+        return float(-threshold)
+    return float(-np.mean(tail))

@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scipy.stats import norm
+
 from src.analysis.portfolio import (
     efficient_frontier,
     markowitz_weights,
@@ -11,7 +13,11 @@ from src.analysis.portfolio import (
     risk_parity_weights,
     _markowitz_weights_closed_form,
     kelly_fraction,
-    fractional_kelly
+    fractional_kelly,
+    var_historical,
+    var_parametric,
+    var_monte_carlo,
+    cvar,
 )
 
 np.random.seed(28)
@@ -330,8 +336,60 @@ def test_fractional_reuses_kelly_fraction():
     sigma = 0.20
     fraction = 0.25
     expected = 0.625
-    
+
     assert fractional_kelly(mu, sigma, fraction) == pytest.approx(expected)
     assert fractional_kelly(mu, sigma, fraction) == pytest.approx(
         fraction * kelly_fraction(mu, sigma)
     )
+
+
+@pytest.fixture
+def strategy_returns():
+    rng = np.random.default_rng(42)
+    return pd.Series(rng.normal(loc=0.0005, scale=0.01, size=1000))
+
+
+def test_var_historical_is_percentile(strategy_returns):
+    for confidence in (0.95, 0.99):
+        expected = -np.percentile(strategy_returns, (1 - confidence) * 100)
+        assert var_historical(strategy_returns, confidence) == pytest.approx(expected, rel=1e-9)
+
+
+def test_var_parametric_known_value():
+    returns = pd.Series([0.01, -0.02, 0.015, -0.01, 0.005, -0.005, 0.02, -0.015])
+    mu = returns.mean()
+    sigma = returns.std(ddof=1)
+
+    for confidence in (0.95, 0.99):
+        expected = norm.ppf(confidence) * sigma - mu
+        assert var_parametric(returns, confidence) == pytest.approx(expected, rel=1e-9)
+
+
+def test_cvar_greater_than_var_historical(strategy_returns):
+    for confidence in (0.95, 0.99):
+        var = var_historical(strategy_returns, confidence)
+        es = cvar(strategy_returns, confidence)
+        assert es >= var
+
+
+def test_var_monte_carlo_converges_to_parametric(strategy_returns):
+    for confidence in (0.95, 0.99):
+        parametric = var_parametric(strategy_returns, confidence)
+        mc = var_monte_carlo(strategy_returns, confidence, n_simulations=200_000, seed=28)
+        assert mc == pytest.approx(parametric, abs=0.005)
+
+
+def test_var_confidence_out_of_bounds_raises(strategy_returns):
+    with pytest.raises(ValueError):
+        var_historical(strategy_returns, 1.5)
+    with pytest.raises(ValueError):
+        var_parametric(strategy_returns, 0.0)
+    with pytest.raises(ValueError):
+        var_monte_carlo(strategy_returns, 1.0)
+    with pytest.raises(ValueError):
+        cvar(strategy_returns, -0.1)
+
+
+def test_var_monte_carlo_invalid_n_simulations_raises(strategy_returns):
+    with pytest.raises(ValueError):
+        var_monte_carlo(strategy_returns, 0.95, n_simulations=0)

@@ -22,7 +22,6 @@ def sample_returns() -> pd.DataFrame:
 
 
 def _correlated_series(n, rho, seed):
-    """Two standard-normal series with fixed population correlation rho."""
     rng = np.random.default_rng(seed)
     z1 = rng.standard_normal(n)
     z2 = rng.standard_normal(n)
@@ -32,11 +31,9 @@ def _correlated_series(n, rho, seed):
     return pd.Series(x1, index=idx), pd.Series(x2, index=idx)
 
 
-# --- compute_correlation_matrix ---------------------------------------
-
 def test_diagonal_is_one(sample_returns):
-    """Every asset is perfectly correlated with itself: diagonal must be 1.0."""
     corr = compute_correlation_matrix(sample_returns)
+
     for col in corr.columns:
         assert corr.loc[col, col] == pytest.approx(1.0), (
             f"Diagonal entry for {col} is not 1.0"
@@ -44,53 +41,47 @@ def test_diagonal_is_one(sample_returns):
 
 
 def test_symmetric(sample_returns):
-    """Pearson correlation is symmetric: corr(A, B) == corr(B, A)."""
     corr = compute_correlation_matrix(sample_returns)
+
     pd.testing.assert_frame_equal(corr, corr.T)
 
 
 def test_rolling_corr_length(sample_returns):
-    """Rolling correlation output is aligned to the input length, with the
-    first (window - 1) entries NaN since a full window isn't yet available."""
     window = 5
     result = rolling_correlation(
         sample_returns["EURUSD"],
         sample_returns["GBPUSD"],
         window=window,
     )
+
     assert len(result) == len(sample_returns)
     assert result.iloc[: window - 1].isna().all()
 
 
 def test_bounds(sample_returns):
-    """Pearson correlation is mathematically bounded to [-1, 1]."""
     corr = compute_correlation_matrix(sample_returns)
+
     assert (corr.values >= -1).all() and (corr.values <= 1).all()
 
 
 def test_column_labels_preserved(sample_returns):
-    """Output index/columns should match the input asset names, in order."""
     corr = compute_correlation_matrix(sample_returns)
+
     assert list(corr.columns) == list(sample_returns.columns)
     assert list(corr.index) == list(sample_returns.columns)
 
 
 def test_empty_raises():
-    """An empty DataFrame has no correlations to compute."""
     with pytest.raises(ValueError, match="empty"):
         compute_correlation_matrix(pd.DataFrame())
 
 
 def test_single_series_raises():
-    """Correlation is undefined for a single series; need at least 2 columns."""
     with pytest.raises(ValueError, match="at least 2"):
         compute_correlation_matrix(pd.DataFrame({"EURUSD": [0.1, 0.2]}))
 
 
-# --- rolling_correlation -------------------------------------------------
-
 def test_window_larger_than_series_raises(sample_returns):
-    """A window longer than the data can never produce a single estimate."""
     with pytest.raises(ValueError, match="larger than"):
         rolling_correlation(
             sample_returns["EURUSD"],
@@ -100,7 +91,6 @@ def test_window_larger_than_series_raises(sample_returns):
 
 
 def test_window_less_than_two_raises(sample_returns):
-    """Correlation needs at least 2 points per window to be defined."""
     with pytest.raises(ValueError, match="at least 2"):
         rolling_correlation(
             sample_returns["EURUSD"],
@@ -110,7 +100,6 @@ def test_window_less_than_two_raises(sample_returns):
 
 
 def test_rolling_correlation_mismatched_lengths_raises():
-    """s1 and s2 must be the same length to be paired index-for-index."""
     with pytest.raises(ValueError, match="same length"):
         rolling_correlation(
             pd.Series([0.1, 0.2, 0.3]),
@@ -120,13 +109,13 @@ def test_rolling_correlation_mismatched_lengths_raises():
 
 
 def test_perfect_correlation_with_self(sample_returns):
-    """A series correlated against itself should be exactly 1.0 everywhere
-    a full window is available."""
+
     result = rolling_correlation(
         sample_returns["EURUSD"],
         sample_returns["EURUSD"],
         window=5,
     ).dropna()
+    
     assert result.min() == pytest.approx(1.0)
 
 

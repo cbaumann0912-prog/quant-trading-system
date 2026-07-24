@@ -66,3 +66,87 @@ def rolling_correlation(
     if window > len(s1):
         raise ValueError("window must not be larger than len(s1)")
     return s1.rolling(window).corr(s2)
+
+
+def detect_correlation_regime_shifts(
+    s1: pd.Series,
+    s2: pd.Series,
+    window: int = 60,
+    threshold: float = 2.0,
+    k: float = 0.5,
+    stride: int | None = None,
+) -> pd.Series:
+    """
+    Flag points where the rolling correlation between s1 and s2 has
+    undergone a statistically significant, sustained shift from its
+    baseline regime, using a Fisher z-transformed two-sided CUSUM
+    evaluated on non-overlapping windows.
+
+    Parameters
+    ----------
+    s1, s2 : pd.Series
+        Two return series with identical index and length.
+    window : int, default 60
+        Rolling window. Must be > 3 (Fisher z variance is 1/(window-3)).
+    threshold : float, default 2.0
+        CUSUM decision boundary h, in standardized units.
+    k : float, default 0.5
+        CUSUM allowance/reference value, in standardized units.
+    stride : int or None, default None
+        Spacing, in bars, between correlation windows fed to the CUSUM.
+        Defaults to `window`.
+
+    Returns
+    -------
+    pd.Series
+        Boolean flags, same length and index as s1. True only at the
+        (non-overlapping) evaluation points where a regime shift is
+        detected; False everywhere else.
+
+    Raises
+    ------
+    ValueError
+        If window <= 3 (Fisher z variance undefined), or if
+        `rolling_correlation` rejects s1/s2.
+    """
+    if window <= 3:
+        raise ValueError(
+            "window must be > 3 for the Fisher z variance "
+            "1/(window-3) to be defined."
+        )
+    stride = stride or window
+
+    rolling_corr = rolling_correlation(s1, s2, window=window)
+
+    r_clipped = rolling_corr.clip(-0.999999, 0.999999)
+    z = np.arctanh(r_clipped)
+
+    sigma = 1.0 / np.sqrt(window - 3)
+
+    flags = pd.Series(False, index=s1.index)
+
+    valid_idx = z.dropna().index
+    if len(valid_idx) == 0:
+        return flags
+
+    thinned_idx = valid_idx[::stride]
+
+    n_burn_in = min(5, len(thinned_idx))
+    burn_in_idx = thinned_idx[:n_burn_in]
+    mu0 = z.loc[burn_in_idx].mean()
+
+    monitor_idx = thinned_idx[n_burn_in:]
+
+    c_pos = 0.0
+    c_neg = 0.0
+    for t in monitor_idx:
+        diff = (z.loc[t] - mu0) / sigma
+        c_pos = max(0.0, c_pos + diff - k)
+        c_neg = max(0.0, c_neg - diff - k)
+
+        if c_pos > threshold or c_neg > threshold:
+            flags.loc[t] = True
+            c_pos = 0.0
+            c_neg = 0.0
+
+    return flags

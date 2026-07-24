@@ -115,6 +115,7 @@ def detect_correlation_regime_shifts(
             "1/(window-3) to be defined."
         )
     stride = stride or window
+    n_burn = 5
 
     rolling_corr = rolling_correlation(s1, s2, window=window)
 
@@ -131,22 +132,28 @@ def detect_correlation_regime_shifts(
 
     thinned_idx = valid_idx[::stride]
 
-    n_burn_in = min(5, len(thinned_idx))
-    burn_in_idx = thinned_idx[:n_burn_in]
-    mu0 = z.loc[burn_in_idx].mean()
+    pos = 0
+    n_thinned = len(thinned_idx)
+    while pos < n_thinned:
+        n_b = min(n_burn, n_thinned - pos)
+        if n_b < n_burn:
+            break
 
-    monitor_idx = thinned_idx[n_burn_in:]
+        burn_idx = thinned_idx[pos:pos + n_b]
+        mu0 = z.loc[burn_idx].mean()
+        pos += n_b
 
-    c_pos = 0.0
-    c_neg = 0.0
-    for t in monitor_idx:
-        diff = (z.loc[t] - mu0) / sigma
-        c_pos = max(0.0, c_pos + diff - k)
-        c_neg = max(0.0, c_neg - diff - k)
+        c_pos = 0.0
+        c_neg = 0.0
+        while pos < n_thinned:
+            t = thinned_idx[pos]
+            diff = (z.loc[t] - mu0) / sigma
+            c_pos = max(0.0, c_pos + diff - k)
+            c_neg = max(0.0, c_neg - diff - k)
+            pos += 1
 
-        if c_pos > threshold or c_neg > threshold:
-            flags.loc[t] = True
-            c_pos = 0.0
-            c_neg = 0.0
+            if c_pos > threshold or c_neg > threshold:
+                flags.loc[t] = True
+                break 
 
     return flags

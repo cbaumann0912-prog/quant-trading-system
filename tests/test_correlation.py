@@ -115,7 +115,7 @@ def test_perfect_correlation_with_self(sample_returns):
         sample_returns["EURUSD"],
         window=5,
     ).dropna()
-    
+
     assert result.min() == pytest.approx(1.0)
 
 
@@ -141,6 +141,17 @@ def test_sudden_shift_flagged():
     assert flags.any()
     first_flag_idx = flags[flags].index[0]
     assert first_flag_idx >= changepoint
+
+
+def test_rebaseline_avoids_repeated_firing_on_third_regime():
+    s1_a, s2_a = _correlated_series(n=400, rho=0.8, seed=1)
+    s1_b, s2_b = _correlated_series(n=400, rho=-0.3, seed=2)
+    s1_c, s2_c = _correlated_series(n=400, rho=0.5, seed=3)
+    s1 = pd.concat([s1_a, s1_b, s1_c], ignore_index=True)
+    s2 = pd.concat([s2_a, s2_b, s2_c], ignore_index=True)
+    flags = detect_correlation_regime_shifts(s1, s2, window=60, threshold=3.0)
+
+    assert flags.sum() == 2
 
 
 def test_output_length_matches_input():

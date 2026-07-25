@@ -607,3 +607,54 @@ def information_ratio(
 
     else:
         raise ValueError(f"Unknown method: {method}. Must be 'fundamental_law' or 'empirical'.")
+
+
+def _sharpe_or_nan(returns: pd.Series) -> float:
+    """Sharpe of a return subset, NaN instead of raising when the subset is
+    too degenerate to annualize (e.g. spans < 1 day, or is empty).
+    """
+    if len(returns) < 2:
+        return float("nan")
+    try:
+        return PerformanceAnalyzer(returns).compute_sharpe()
+    except ValueError:
+        return float("nan")
+
+
+def regime_conditional_performance(returns: pd.Series, regimes: pd.Series) -> dict:
+    """Split strategy returns by volatility regime and compare Sharpe ratios
+    conditional on regime.
+
+    Parameters
+    ----------
+    returns : pd.Series
+        Strategy daily returns as decimals, indexed by datetime.
+    regimes : pd.Series
+        Regime label per day, e.g. output of
+        `src.features.garch.classify_vol_regime` (values "high"/"low").
+        Aligned to `returns` via an inner join on the index -- days present
+        in only one of the two series are dropped before splitting.
+
+    Returns
+    -------
+    dict with keys:
+        high_vol_sharpe : float -- annualized Sharpe on days labeled "high".
+                                    NaN if fewer than 2 such days after
+                                    alignment.
+        low_vol_sharpe  : float -- annualized Sharpe on days labeled "low".
+                                    Same NaN condition.
+        high_vol_pct    : float -- fraction of aligned days labeled "high".
+        low_vol_pct     : float -- fraction of aligned days labeled "low".
+    """
+    aligned_returns, aligned_regimes = returns.align(regimes, join="inner")
+
+    high_mask = aligned_regimes == "high"
+    low_mask = aligned_regimes == "low"
+    n = len(aligned_regimes)
+
+    return {
+        "high_vol_sharpe": _sharpe_or_nan(aligned_returns[high_mask]),
+        "low_vol_sharpe": _sharpe_or_nan(aligned_returns[low_mask]),
+        "high_vol_pct": float(high_mask.sum() / n) if n > 0 else float("nan"),
+        "low_vol_pct": float(low_mask.sum() / n) if n > 0 else float("nan"),
+    }

@@ -5,6 +5,7 @@ from src.analysis.performance_analyzer import (
     PerformanceAnalyzer,
     information_coefficient,
     information_ratio,
+    regime_conditional_performance,
 )
 
 POSITIVE_RETURNS = pd.Series(
@@ -456,3 +457,57 @@ def test_ir_empirical_constant_series_is_nan():
 def test_ir_invalid_method_raises():
     with pytest.raises(ValueError):
         information_ratio(0.05, method="not_a_real_method", breadth=50)
+
+
+def _regime_fixture(n=100, seed=42):
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2024-01-01", periods=n, freq="D")
+    returns = pd.Series(rng.normal(0.001, 0.01, n), index=idx)
+    labels = np.where(np.arange(n) < n // 2, "low", "high")
+    regimes = pd.Series(labels, index=idx)
+    return returns, regimes
+
+
+def test_conditional_perf_dict_keys():
+    returns, regimes = _regime_fixture()
+    result = regime_conditional_performance(returns, regimes)
+
+    assert set(result.keys()) == {
+        "high_vol_sharpe",
+        "low_vol_sharpe",
+        "high_vol_pct",
+        "low_vol_pct",
+    }
+
+
+def test_conditional_perf_pct_sums_to_one():
+    returns, regimes = _regime_fixture()
+    result = regime_conditional_performance(returns, regimes)
+
+    assert result["high_vol_pct"] + result["low_vol_pct"] == pytest.approx(1.0)
+    assert result["high_vol_pct"] == pytest.approx(0.5)
+
+
+def test_conditional_perf_matches_manual_sharpe():
+    returns, regimes = _regime_fixture()
+    result = regime_conditional_performance(returns, regimes)
+
+    manual_high = PerformanceAnalyzer(returns[regimes == "high"]).compute_sharpe()
+    assert result["high_vol_sharpe"] == pytest.approx(manual_high)
+
+
+def test_conditional_perf_misaligned_index_uses_inner_join():
+    returns, regimes = _regime_fixture(n=100)
+    truncated_regimes = regimes.iloc[:60]
+    result = regime_conditional_performance(returns, truncated_regimes)
+
+    assert result["high_vol_pct"] + result["low_vol_pct"] == pytest.approx(1.0)
+
+
+def test_conditional_perf_empty_regime_is_nan():
+    returns, regimes = _regime_fixture()
+    all_low = pd.Series(["low"] * len(regimes), index=regimes.index)
+    result = regime_conditional_performance(returns, all_low)
+
+    assert np.isnan(result["high_vol_sharpe"])
+    assert result["high_vol_pct"] == 0.0

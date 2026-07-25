@@ -114,3 +114,106 @@ def fit_garch(returns: pd.Series) -> dict:
         "long_run_vol": long_run_vol,
         "conditional_vol": conditional_vol,
     }
+
+
+def _kmeans_1d(x: np.ndarray, k: int, n_init: int = 10, max_iter: int = 100) -> np.ndarray:
+    """Lloyd's algorithm k-means, specialized to 1-D data.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        1-D array of observations.
+    k : int
+        Number of clusters.
+    n_init : int, default 10
+        Number of random restarts.
+    max_iter : int, default 100
+        Max iterations per restart.
+
+    Returns
+    -------
+    np.ndarray
+        Integer cluster labels (0..k-1), same length as `x`.
+    """
+    rng = np.random.default_rng(55)
+    n = len(x)
+    best_labels = None
+    best_inertia = np.inf
+
+    for _ in range(n_init):
+        init_idx = rng.choice(n, size=k, replace=False)
+        centroids = x[init_idx].copy()
+
+        for _ in range(max_iter):
+            dist = np.abs(x[:, None] - centroids[None, :])
+            labels = np.argmin(dist, axis=1)
+
+            new_centroids = centroids.copy()
+            for c in range(k):
+                members = x[labels == c]
+                if len(members) > 0:
+                    new_centroids[c] = members.mean()
+
+            if np.allclose(new_centroids, centroids):
+                centroids = new_centroids
+                break
+            centroids = new_centroids
+
+        inertia = np.sum((x - centroids[labels]) ** 2)
+        if inertia < best_inertia:
+            best_inertia = inertia
+            best_labels = labels
+
+    return best_labels
+
+
+def classify_vol_regime(conditional_vol: pd.Series, n_regimes: int = 2) -> pd.Series:
+    """Classify each day's conditional volatility into a discrete regime via
+    1-D k-means clustering.
+
+    Parameters
+    ----------
+    conditional_vol : pd.Series
+        Conditional volatility path, e.g. `fit_garch(returns)["conditional_vol"]`.
+        NaNs are dropped before clustering.
+    n_regimes : int, default 2
+        Number of clusters. If 2, clusters are relabeled "low"/"high" by
+        ascending centroid value. If not 2, clusters are relabeled
+        "regime_0" (lowest centroid) through "regime_{n_regimes-1}" (highest).
+
+    Returns
+    -------
+    pd.Series
+        String-labeled regime per day, index = `conditional_vol.dropna()`.
+
+    Raises
+    ------
+    ValueError
+        If `n_regimes < 2` or exceeds the number of non-NaN observations.
+    """
+    clean = conditional_vol.dropna()
+    x = clean.to_numpy()
+
+    if n_regimes < 2:
+        raise ValueError(f"n_regimes must be >= 2, got {n_regimes}.")
+    if n_regimes > len(x):
+        raise ValueError(
+            f"n_regimes ({n_regimes}) cannot exceed the number of non-NaN "
+            f"observations ({len(x)})."
+        )
+
+    raw_labels = _kmeans_1d(x, k=n_regimes)
+    
+    centroid_by_cluster = {c: x[raw_labels == c].mean() for c in np.unique(raw_labels)}
+    rank_by_cluster = {
+        c: rank for rank, c in enumerate(sorted(centroid_by_cluster, key=centroid_by_cluster.get))
+    }
+
+    if n_regimes == 2:
+        name_by_rank = {0: "low", 1: "high"}
+    else:
+        name_by_rank = {r: f"regime_{r}" for r in range(n_regimes)}
+
+    labels = np.array([name_by_rank[rank_by_cluster[c]] for c in raw_labels])
+
+    return pd.Series(labels, index=clean.index, name="vol_regime")

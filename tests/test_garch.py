@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.volatility.garch import fit_garch
+from src.features.garch import fit_garch
 
 np.random.seed(55)
 
-
 def _simulate_garch(n=1500, omega=0.00001, alpha=0.08, beta=0.90):
-    """Simulate a GARCH(1,1) return path with known parameters."""
     sigma2 = np.zeros(n)
     eps = np.zeros(n)
     sigma2[0] = omega / (1 - alpha - beta)

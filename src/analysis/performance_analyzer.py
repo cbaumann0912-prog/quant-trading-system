@@ -658,3 +658,492 @@ def regime_conditional_performance(returns: pd.Series, regimes: pd.Series) -> di
         "high_vol_pct": float(high_mask.sum() / n) if n > 0 else float("nan"),
         "low_vol_pct": float(low_mask.sum() / n) if n > 0 else float("nan"),
     }
+
+
+# Nominal FX trading days per year, used ONLY as a fallback when a realized
+# trade count is unavailable.
+#
+# Which number is right is not a matter of taste, and this repo currently
+# carries two wrong ones:
+#   252  -- US *equity* convention (260 weekdays minus ~8 exchange holidays).
+#           FX spot does not close for most US equity holidays, so 252
+#           understates it.
+#   312  -- used in portfolio.markowitz_sharpe's default, day34/43/46 scripts,
+#           and the momentum/mean_reversion docstrings. 312 = 6 x 52, which
+#           assumes a six-session week. FX spot runs Sunday 17:00 ET to Friday
+#           17:00 ET, and the Sunday open carries Monday's value date, so the
+#           week is five sessions, not six.
+#   260  -- weekdays per year, which is what FX spot actually trades.
+#
+# Measured on this project's own data (research/applied_analysis/
+# _overshoot_cache, 2011-2023): 3,369 session days over 12.986 years = 259.44
+# per year, 258-260 in every single calendar year, zero weekend bars. 260 is
+# correct to within 0.2%; 312 is 20% high and inflates any Sharpe annualized
+# with it by sqrt(312/259.4) = 1.10.
+#
+# Prefer the empirical route regardless: PerformanceAnalyzer.compute_ann_factor
+# derives observations-per-year from the index and needs no constant at all.
+# That is the convention the rest of this module uses.
+FX_TRADING_DAYS_PER_YEAR = 260
+EQUITY_TRADING_DAYS_PER_YEAR = 252
+
+# Backwards-compatible alias. Points at the FX figure, since this is an FX repo.
+TRADING_DAYS_PER_YEAR = FX_TRADING_DAYS_PER_YEAR
+DEFAULT_DAY_COUNT = 360
+_JPY_PIP = 0.01
+_STANDARD_PIP = 0.0001
+
+def pip_size(pair: str) -> float:
+    """Price increment of one pip for an FX pair.
+
+    Parameters
+    ----------
+    pair : str
+        Six-character pair code, e.g. "EURUSD" or "USDJPY". Case-insensitive;
+        an embedded separator ("EUR/USD") is tolerated.
+
+    Returns
+    -------
+    float
+        0.01 for JPY-quoted pairs, 0.0001 otherwise.
+
+    Raises
+    ------
+    ValueError
+        If `pair` does not resolve to a six-character currency pair.
+    """
+    cleaned = pair.replace("/", "").replace("_", "").replace("-", "").upper()
+    if len(cleaned) != 6:
+        raise ValueError(
+            f"Expected a six-character currency pair, got {pair!r}."
+        )
+    return _JPY_PIP if cleaned[3:] == "JPY" else _STANDARD_PIP
+
+
+def pip_value_from_price(
+    pair: str,
+    quote_price: float,
+    lot_size: float = 100_000.0,
+) -> float:
+    """Quote-currency value of one pip on a position of `lot_size` base units.
+
+    Parameters
+    ----------
+    pair : str
+        Six-character pair code.
+    quote_price : float
+        Current quote (units of quote currency per unit of base currency).
+        Used only to validate positivity; pip value in the quote currency does
+        not depend on the level of the quote.
+    lot_size : float, optional
+        Position size in units of the base currency. Defaults to one standard
+        lot (100,000).
+
+    Returns
+    -------
+    float
+        Value of one pip, in units of the quote currency.
+
+    Raises
+    ------
+    ValueError
+        If `quote_price` or `lot_size` is not strictly positive.
+    """
+    if quote_price <= 0:
+        raise ValueError(f"quote_price must be positive, got {quote_price}.")
+    if lot_size <= 0:
+        raise ValueError(f"lot_size must be positive, got {lot_size}.")
+
+    return pip_size(pair) * lot_size
+
+
+def bps_per_pip(pair: str, quote_price: float) -> float:
+    """Basis points of notional represented by one pip, price-relative.
+
+    Parameters
+    ----------
+    pair : str
+        Six-character pair code.
+    quote_price : float
+        Current quote.
+
+    Returns
+    -------
+    float
+        Basis points of notional per pip.
+
+    Raises
+    ------
+    ValueError
+        If `quote_price` is not strictly positive.
+    """
+    if quote_price <= 0:
+        raise ValueError(f"quote_price must be positive, got {quote_price}.")
+
+    return pip_size(pair) / quote_price * 1e4
+
+
+def round_trip_cost_bps(
+    spread_pips: float,
+    pip_value: float,
+    notional: float,
+) -> float:
+    """Round-trip transaction cost in basis points of notional.
+
+    Parameters
+    ----------
+    spread_pips : float
+        Round-trip spread in pips. Must be non-negative.
+    pip_value : float
+        Currency value of one pip on the position.
+    notional : float
+        Position notional, in the same currency as `pip_value`.
+
+    Returns
+    -------
+    float
+        Round-trip cost in basis points of notional.
+
+    Raises
+    ------
+    ValueError
+        If `spread_pips` is negative, or `notional` is not strictly positive.
+    """
+    if spread_pips < 0:
+        raise ValueError(f"spread_pips must be non-negative, got {spread_pips}.")
+    if notional <= 0:
+        raise ValueError(f"notional must be positive, got {notional}.")
+
+    return spread_pips * pip_value / notional * 1e4
+
+
+def rollover_bps_per_day(
+    base_rate_annual: float,
+    quote_rate_annual: float,
+    direction: int = 1,
+    day_count: int = DEFAULT_DAY_COUNT,
+) -> float:
+    """Daily rollover as a **cost** in basis points of notional.
+
+    Parameters
+    ----------
+    base_rate_annual : float
+        Annualized deposit rate of the base currency, as a decimal (0.0425 for
+        4.25%, not 4.25).
+    quote_rate_annual : float
+        Annualized deposit rate of the quote currency, as a decimal.
+    direction : int, optional
+        +1 for long base / short quote, -1 for the reverse. Defaults to +1.
+    day_count : int, optional
+        Day-count basis. Defaults to 360.
+
+    Returns
+    -------
+    float
+        Rollover cost in basis points of notional per calendar day held.
+        Positive is a cost, negative is a credit.
+
+    Raises
+    ------
+    ValueError
+        If `direction` is not +1 or -1, or `day_count` is not positive.
+    """
+    if direction not in (1, -1):
+        raise ValueError(f"direction must be +1 or -1, got {direction}.")
+    if day_count <= 0:
+        raise ValueError(f"day_count must be positive, got {day_count}.")
+
+    return direction * (quote_rate_annual - base_rate_annual) / day_count * 1e4
+
+
+def implied_trades_per_year(
+    holding_period_days: float,
+    trading_days_per_year: float = FX_TRADING_DAYS_PER_YEAR,
+) -> float:
+    """Round trips per year implied by a holding period under continuous
+    deployment.
+
+    This is an **upper bound** on trade count, not a measurement, and the gap
+    is usually large. A strategy holding 5 days but in the market only 40% of
+    the time trades far less than 260/5 times a year. The intraday overshoot
+    book holds 0.167 days but trades 24.7 times a year, not 1,560. Where a
+    realized trade count exists, pass it explicitly to
+    `breakeven_annual_return` rather than relying on this.
+
+    Parameters
+    ----------
+    holding_period_days : float
+        Average holding period in trading days. Fractional values are valid --
+        an intraday book holding 09:00 to 13:00 has a holding period of ~0.167.
+    trading_days_per_year : float, optional
+        Sessions per year. Defaults to the FX weekday count (260). Pass
+        `PerformanceAnalyzer.compute_ann_factor()` to use the empirical figure
+        derived from the actual return index, which is preferred -- see the
+        note on `FX_TRADING_DAYS_PER_YEAR` for why the repo's other constants
+        (252 and 312) are both wrong for this data.
+
+    Returns
+    -------
+    float
+        Implied round trips per year.
+
+    Raises
+    ------
+    ValueError
+        If `holding_period_days` or `trading_days_per_year` is not strictly
+        positive.
+    """
+    if holding_period_days <= 0:
+        raise ValueError(
+            f"holding_period_days must be positive, got {holding_period_days}."
+        )
+    if trading_days_per_year <= 0:
+        raise ValueError(
+            f"trading_days_per_year must be positive, got {trading_days_per_year}."
+        )
+
+    return trading_days_per_year / holding_period_days
+
+
+def breakeven_annual_return(
+    cost_bps: float,
+    holding_period_days: float,
+    trades_per_year: Optional[float] = None,
+) -> float:
+    """Annualized gross return required to cover transaction costs.
+
+    Parameters
+    ----------
+    cost_bps : float
+        Total round-trip cost in basis points of notional.
+    holding_period_days : float
+        Average holding period in trading days. Used to imply trade count when
+        `trades_per_year` is not supplied.
+    trades_per_year : float, optional
+        Realized round trips per year. Overrides the implied count when given.
+        Prefer this whenever a realized trade count is available.
+
+    Returns
+    -------
+    float
+        Breakeven annualized return as a decimal (0.00504 for 0.504%).
+
+    Raises
+    ------
+    ValueError
+        If `cost_bps` is negative, `trades_per_year` is negative, or
+        `holding_period_days` is not positive and no `trades_per_year` is given.
+    """
+    if cost_bps < 0:
+        raise ValueError(f"cost_bps must be non-negative, got {cost_bps}.")
+
+    if trades_per_year is None:
+        n_trades = implied_trades_per_year(holding_period_days)
+    else:
+        if trades_per_year < 0:
+            raise ValueError(
+                f"trades_per_year must be non-negative, got {trades_per_year}."
+            )
+        n_trades = float(trades_per_year)
+
+    return n_trades * cost_bps / 1e4
+
+
+def breakeven_sharpe(
+    cost_bps: float,
+    holding_period_days: float,
+    annualized_vol: float,
+    trades_per_year: Optional[float] = None,
+) -> float:
+    """Gross Sharpe ratio required to break even after costs.
+
+    Parameters
+    ----------
+    cost_bps : float
+        Total round-trip cost in basis points of notional.
+    holding_period_days : float
+        Average holding period in trading days.
+    annualized_vol : float
+        Annualized standard deviation of strategy returns, as a decimal.
+    trades_per_year : float, optional
+        Realized round trips per year. Overrides the implied count.
+
+    Returns
+    -------
+    float
+        Breakeven Sharpe ratio.
+
+    Raises
+    ------
+    ValueError
+        If `annualized_vol` is not strictly positive, or any input fails
+        `breakeven_annual_return`'s validation.
+    """
+    if annualized_vol <= 0:
+        raise ValueError(
+            f"annualized_vol must be positive, got {annualized_vol}."
+        )
+
+    cost = breakeven_annual_return(cost_bps, holding_period_days, trades_per_year)
+    return cost / annualized_vol
+
+
+def max_viable_spread_pips(
+    gross_annual_return: float,
+    pair: str,
+    quote_price: float,
+    trades_per_year: float,
+    rollover_bps_per_day_: float = 0.0,
+    holding_period_days: float = 0.0,
+) -> float:
+    """Round-trip spread at which a strategy's gross edge is exactly consumed.
+
+    Parameters
+    ----------
+    gross_annual_return : float
+        Realized gross annualized return, as a decimal.
+    pair : str
+        Six-character pair code, for the pip-size lookup.
+    quote_price : float
+        Representative quote over the sample, for the pip-to-bps conversion.
+    trades_per_year : float
+        Realized round trips per year. Must be strictly positive.
+    rollover_bps_per_day_ : float, optional
+        Rollover cost in bps per day held, per `rollover_bps_per_day`.
+        Defaults to 0.0, which is exact for a book that is flat overnight.
+    holding_period_days : float, optional
+        Average holding period, used only to scale rollover. Defaults to 0.0.
+
+    Returns
+    -------
+    float
+        Maximum viable round-trip spread in pips. Returns 0.0 when the gross
+        edge is already non-positive net of rollover -- no spread is viable,
+        including zero.
+
+    Raises
+    ------
+    ValueError
+        If `trades_per_year` is not strictly positive.
+    """
+    if trades_per_year <= 0:
+        raise ValueError(
+            f"trades_per_year must be positive, got {trades_per_year}."
+        )
+
+    rollover_drag = (
+        trades_per_year * rollover_bps_per_day_ * holding_period_days / 1e4
+    )
+    net_of_rollover = gross_annual_return - rollover_drag
+
+    if net_of_rollover <= 0:
+        return 0.0
+
+    bpp = bps_per_pip(pair, quote_price)
+    return net_of_rollover * 1e4 / (trades_per_year * bpp)
+
+
+def cost_report(
+    pair: str,
+    notional: float,
+    holding_period_days: float,
+    spread_pips: float = 1.0,
+    quote_price: float = 1.0,
+    lot_size: Optional[float] = None,
+    trades_per_year: Optional[float] = None,
+    rollover_bps_per_day_: float = 0.0,
+    annualized_vol: Optional[float] = None,
+) -> dict:
+    """Full transaction-cost breakdown for one pair under one set of
+    assumptions.
+
+    Parameters
+    ----------
+    pair : str
+        Six-character pair code.
+    notional : float
+        Position notional. Interpreted in the quote currency unless `lot_size`
+        is supplied.
+    holding_period_days : float
+        Average holding period in trading days. Fractional values are valid.
+    spread_pips : float, optional
+        Assumed round-trip spread in pips. Defaults to 1.0.
+    quote_price : float, optional
+        Representative quote over the sample. Defaults to 1.0.
+    lot_size : float, optional
+        Position size in base-currency units. When omitted, derived as
+        `notional / quote_price` so that pip value and notional share a
+        currency.
+    trades_per_year : float, optional
+        Realized round trips per year. Falls back to `252 / holding_period_days`.
+    rollover_bps_per_day_ : float, optional
+        Rollover cost in bps/day per `rollover_bps_per_day`. Positive is a cost.
+        Defaults to 0.0, exact for a book flat overnight.
+    annualized_vol : float, optional
+        Annualized strategy vol, as a decimal. When supplied, the report
+        includes `breakeven_sharpe`; otherwise that key is NaN.
+
+    Returns
+    -------
+    dict with keys:
+        pair                : str   -- normalized pair code.
+        spread_bps          : float -- round-trip spread cost, bps of notional.
+        rollover_bps        : float -- rollover over the full holding period,
+                                       bps of notional. Positive is a cost.
+        total_bps           : float -- spread_bps + rollover_bps, per round trip.
+        breakeven_return    : float -- annualized gross return needed to cover
+                                       total_bps at the given trade count.
+        trades_per_year     : float -- trade count used, realized or implied.
+        holding_period_days : float -- echo of the input.
+        pip_value           : float -- quote-currency value of one pip.
+        bps_per_pip         : float -- price-relative pip-to-bps conversion.
+        breakeven_sharpe    : float -- breakeven_return / annualized_vol, or
+                                       NaN when no vol was supplied.
+
+    Raises
+    ------
+    ValueError
+        If `notional` or `quote_price` is not positive, or `spread_pips` is
+        negative, or `holding_period_days` is not positive and no
+        `trades_per_year` was given.
+    """
+    if notional <= 0:
+        raise ValueError(f"notional must be positive, got {notional}.")
+    if quote_price <= 0:
+        raise ValueError(f"quote_price must be positive, got {quote_price}.")
+
+    normalized = pair.replace("/", "").replace("_", "").replace("-", "").upper()
+
+    effective_lot = notional / quote_price if lot_size is None else lot_size
+    pv = pip_value_from_price(normalized, quote_price, effective_lot)
+
+    spread_bps = round_trip_cost_bps(spread_pips, pv, notional)
+    rollover_bps = rollover_bps_per_day_ * holding_period_days
+    total_bps = spread_bps + rollover_bps
+
+    n_trades = (
+        implied_trades_per_year(holding_period_days)
+        if trades_per_year is None
+        else float(trades_per_year)
+    )
+
+    breakeven = breakeven_annual_return(
+        max(total_bps, 0.0), holding_period_days, n_trades
+    )
+
+    be_sharpe = float("nan")
+    if annualized_vol is not None and annualized_vol > 0:
+        be_sharpe = breakeven / annualized_vol
+
+    return {
+        "pair": normalized,
+        "spread_bps": float(spread_bps),
+        "rollover_bps": float(rollover_bps),
+        "total_bps": float(total_bps),
+        "breakeven_return": float(breakeven),
+        "trades_per_year": float(n_trades),
+        "holding_period_days": float(holding_period_days),
+        "pip_value": float(pv),
+        "bps_per_pip": bps_per_pip(normalized, quote_price),
+        "breakeven_sharpe": float(be_sharpe),
+    }

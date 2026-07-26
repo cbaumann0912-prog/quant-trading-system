@@ -1,5 +1,3 @@
-# Day 57 Research Audit: H1 Failure, Month-End FX Rebalancing Flow
-
 ## Question
 Does the hedging-need signal predict returns specifically in month-end fix windows? Pre-registered as H1 in `research/strategies/month_end_fx_flow.md`, prediction b4 > 0, significance and sign both required.
 

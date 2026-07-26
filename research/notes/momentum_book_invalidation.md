@@ -1,5 +1,3 @@
-# Day 57 Research Audit: Invalidation of the Momentum-Only Pooled Book
-
 ## Question
 Does the momentum-only pooled book survive extension to all 10 pairs under its own Section 10 rules, and does the evidence behind the original 3-pair pass hold up on re-examination?
 

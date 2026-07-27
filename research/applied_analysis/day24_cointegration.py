@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from src.signals.cointegration import engle_granger_test, cointegration_spread
 from src.stats.regression import fit_ols
 
+DEV_END = "2023-12-31"
+
 DATA_PATH = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 ROLLING_WINDOW = 312
 COMBINATIONS = [
@@ -23,7 +25,7 @@ def load_prices(pair: str) -> pd.Series:
     path = rf"{DATA_PATH}\{pair}.csv"
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime").sort_index()
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     daily = df["Close"].resample("D").last().dropna()
     return daily
 

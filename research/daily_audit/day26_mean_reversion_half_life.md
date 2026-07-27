@@ -19,20 +19,20 @@ Implemented as `ou_half_life` in `src/signals/cointegration.py`. Applied to the 
 - The residual series follows an OU process (linear mean reversion, constant theta, constant sigma).
 - `dt = 1` (single bar step, daily resampling); no recalibration for irregular time gaps.
 - OLS estimation of theta assumes no autocorrelation in residuals beyond what the AR(1)-style regression already captures.
-- Treats each pair's hedge ratio as fixed for the full sample, despite the rolling hedge ratio instability already documented in the Day 24 audit for EUR/USD on GBP/USD (std=0.396, range=−0.11 to +1.57).
+- Treats each pair's hedge ratio as fixed for the full sample, despite the rolling hedge ratio instability already documented in the Day 24 audit for EUR/USD on GBP/USD (std=0.419, range=−0.07 to +1.54).
 
 ## 5. Findings
 | Pair | adf_p | theta | mu | sigma | half_life (days) |
 |---|---|---|---|---|---|
-| EUR/USD~GBP/USD | 0.0621 | 0.003154 | -0.001985 | 0.004432 | 219.79 |
-| EUR/USD~USD/JPY | 0.2749 | 0.001984 | 0.010239 | 0.005118 | 349.38 |
-| GBP/USD~USD/JPY | 0.4354 | 0.001628 | 0.012313 | 0.006743 | 425.81 |
+| EUR/USD~GBP/USD | 0.1060 | 0.003081 | -0.004333 | 0.004648 | 225.01 |
+| EUR/USD~USD/JPY | 0.1526 | 0.002909 | 0.006698 | 0.005430 | 238.24 |
+| GBP/USD~USD/JPY | 0.4034 | 0.001899 | 0.008650 | 0.007234 | 364.93 |
 
 Bar duration is daily, so half-life in bars equals half-life in calendar days directly.
 
-For EUR/USD on GBP/USD, the strongest of the three: half-life ≈ 220 calendar days (~7.3 months). A mean-reversion trade entered on this spread would expect to wait roughly 7 months before the deviation closes half its distance back to mu. EUR/USD on USD/JPY and GBP/USD on USD/JPY produced longer half-lives of 349 and 426 days respectively.
+For EUR/USD on GBP/USD, the strongest of the three: half-life ≈ 225 calendar days (~7.4 months). A mean-reversion trade entered on this spread would expect to wait roughly 7 months before the deviation closes half its distance back to mu. EUR/USD on USD/JPY and GBP/USD on USD/JPY produced longer half-lives of 238 and 365 days respectively.
 
-As a rough estimate, round-trip costs (spread + slippage) typically run on the order of 1–3 bps per trade for EUR/USD and GBP/USD. At a 220-day half-life, a single mean-reversion cycle implies roughly 1.6 round trips per year — at that trade frequency, a 1–3 bps cost is negligible relative to any plausible signal magnitude, since sigma = 0.004432 is more than the estimated cost. Transaction cost is therefore not the binding constraint on this candidate. The binding constraint is the holding period itself: a ~220-day expected holding period is incompatible with a forex execution framework built on 1-minute OHLCV data and designed for short-horizon trade cycles, independent of how cheap or expensive execution is.
+As a rough estimate, round-trip costs (spread + slippage) typically run on the order of 1–3 bps per trade for EUR/USD and GBP/USD. At a 225-day half-life, a single mean-reversion cycle implies roughly 1.6 round trips per year — at that trade frequency, a 1–3 bps cost is negligible relative to any plausible signal magnitude, since sigma = 0.004648 is more than the estimated cost. Transaction cost is therefore not the binding constraint on this candidate. The binding constraint is the holding period itself: a ~225-day expected holding period is incompatible with a forex execution framework built on 1-minute OHLCV data and designed for short-horizon trade cycles, independent of how cheap or expensive execution is.
 
 Z-score thresholds for EUR/USD on GBP/USD, derived from mu = -0.001985, sigma = 0.004432:
 - Entry: spread crosses mu ± 2σ → triggers at approximately -0.01086 or 0.00689

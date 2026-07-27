@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from src.data.stationarity import plot_acf_pacf, ljung_box_test
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = Path(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data")
 EURUSD_PATH = DATA_DIR / "EURUSD.csv"
 GBPUSD_PATH = DATA_DIR / "GBPUSD.csv"
@@ -19,7 +21,7 @@ MAX_LAG_LB   = 20
 def load_pair(path: Path) -> pd.Series:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime").sort_index()
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     daily = df["Close"].resample("D").last().dropna()
     log_returns = np.log(daily / daily.shift(1)).dropna()
     return log_returns

@@ -27,26 +27,26 @@ PC2 signal construction (train/test split at 2021-01-01, sign normalization to U
 
 | Term | Coefficient | Std. Error | t-stat | p-value |
 |---|---|---|---|---|
-| Intercept | -4.52e-06 | 3.24e-04 | -0.014 | 0.989 |
-| PC2 (x1) | 0.1601 | 0.0849 | 1.885 | 0.060 |
-| Vol (x2) | 0.0514 | 0.0750 | 0.685 | 0.493 |
-| PC2 × Vol (interaction) | -29.379 | 16.179 | -1.816 | 0.070 |
+| Intercept | -6.29e-05 | 4.28e-04 | -0.147 | 0.883 |
+| PC2 (x1) | 0.1371 | 0.1103 | 1.243 | 0.214 |
+| Vol (x2) | 0.0715 | 0.0996 | 0.717 | 0.473 |
+| PC2 × Vol (interaction) | -18.868 | 20.807 | -0.907 | 0.365 |
 
-R² = 0.0024. **Condition number of X'X = 2.27 × 10¹⁰** — above the ~1e10 threshold at which the design matrix is considered near-singular, meaning the standard errors above (and the p-values derived from them) are themselves numerically unreliable, not just individually non-significant.
+R² = 0.0031. **Condition number of X'X = 2.10 × 10¹⁰** — above the ~1e10 threshold at which the design matrix is considered near-singular, meaning the standard errors above (and the p-values derived from them) are themselves numerically unreliable, not just individually non-significant.
 
 **Robustness check 1 — 156-day rolling threshold, split-sample conditional IC:**
 
 | Regime | n | IC | p-value |
 |---|---|---|---|
-| High-vol | 712 | -0.0003 | 0.996 |
-| Low-vol | 926 | -0.0014 | 0.973 |
+| High-vol | 415 | 0.0693 | 0.155 |
+| Low-vol | 519 | 0.0004 | 0.989 |
 
 **Robustness check 2 — full-sample median split, conditional IC:**
 
 | Regime | n | IC | p-value |
 |---|---|---|---|
-| High-vol | 807 | 0.0047 | 0.902 |
-| Low-vol | 806 | -0.0078 | 0.830 |
+| High-vol | 454 | 0.0866 | 0.067 |
+| Low-vol | 455 | -0.0477 | 0.314 |
 
 All four robustness-check cells are indistinguishable from zero across both regime definitions and both regime sides.
 
@@ -54,8 +54,8 @@ All four robustness-check cells are indistinguishable from zero across both regi
 
 The reasoning, combining all three pieces of evidence:
 
-1. The interaction term's p = 0.070 is not a near-miss worth taking at face value — it comes from a regression whose design matrix is already flagged as near-singular. Severe collinearity between PC2, volatility, and their product inflates and destabilizes the coefficient's standard error, so the p-value itself is an unreliable estimate of significance rather than a borderline-but-trustworthy one.
-2. Even taken at face value, R² = 0.0024 means the full three-term model explains roughly a quarter of one percent of the variance in forward returns — a magnitude with no practical relevance regardless of whether any coefficient cleared a significance threshold.
+1. The interaction term at p = 0.365 is nowhere near significance, and in any case comes from a regression whose design matrix is already flagged as near-singular. Severe collinearity between PC2, volatility, and their product inflates and destabilizes the coefficient's standard error, so the p-value is an unreliable estimate of significance in either direction. The one number that comes closest to a threshold anywhere in this audit is the median-split high-vol IC at p = 0.067, which is one of four conditional slices tested and does not survive any correction for that.
+2. Even taken at face value, R² = 0.0031 means the full three-term model explains roughly a third of one percent of the variance in forward returns — a magnitude with no practical relevance regardless of whether any coefficient cleared a significance threshold.
 3. Most decisively: the pre-registered robustness checks — built specifically to prevent a single noisy primary-test result from being accepted uncritically — returned four independent, unanimous nulls across two different regime definitions and both regime sides each. A genuine conditional effect should surface under more than one reasonable way of asking the same question; this one did not surface under any.
 
 ## Alternative Explanations

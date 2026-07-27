@@ -11,7 +11,7 @@ Autocorrelation in returns means past values carry predictive information about 
 - Log returns computed as ln(Close_t / Close_{t-1}) on daily bars
 - ACF and PACF plotted to lag 40, significance bands at ±1.96/√n
 - Ljung-Box Q tested to lag 20; null hypothesis: no autocorrelation up to lag m
-- Analysis run on full 15-year sample (2011–2026)
+- Analysis run on full 13-year sample (2011–2023)
 
 ## 4. Results
 
@@ -19,11 +19,11 @@ Autocorrelation in returns means past values carry predictive information about 
 
 | Metric | Value |
 |--------|-------|
-| Obs | 4,759 |
-| Ljung-Box Q (lag 5) | 1.0684 |
-| p-value (lag 5) | 0.9569 |
-| Ljung-Box Q (lag 20) | 21.1693 |
-| p-value (lag 20) | 0.3872 |
+| Obs | 4,055 |
+| Ljung-Box Q (lag 5) | 0.6597 |
+| p-value (lag 5) | 0.9851 |
+| Ljung-Box Q (lag 20) | 21.0551 |
+| p-value (lag 20) | 0.3939 |
 | Lags with p < 0.05 | 0 / 20 |
 
 **ACF pattern:** All spikes fall within ±1.96/√n at every lag. No decay pattern. Consistent with immediate cutoff at lag 0.
@@ -36,11 +36,11 @@ Autocorrelation in returns means past values carry predictive information about 
 
 | Metric | Value |
 |--------|-------|
-| Obs | 4,758 |
-| Ljung-Box Q (lag 5) | 12.2538 |
-| p-value (lag 5) | 0.0315 |
-| Ljung-Box Q (lag 20) | 35.1609 |
-| p-value (lag 20) | 0.0193 |
+| Obs | 4,054 |
+| Ljung-Box Q (lag 5) | 11.8488 |
+| p-value (lag 5) | 0.0369 |
+| Ljung-Box Q (lag 20) | 32.4112 |
+| p-value (lag 20) | 0.0391 |
 | Lags with p < 0.05 | 3 / 20 |
 
 **ACF pattern:** Spikes at low lags with gradual rather than abrupt decay. No clean cutoff, ruling out a pure MA process.
@@ -53,11 +53,11 @@ Autocorrelation in returns means past values carry predictive information about 
 
 | Metric | Value |
 |--------|-------|
-| Obs | 4,759 |
-| Ljung-Box Q (lag 5) | 4.0484 |
-| p-value (lag 5) | 0.5425 |
-| Ljung-Box Q (lag 20) | 16.0335 |
-| p-value (lag 20) | 0.7145 |
+| Obs | 4,055 |
+| Ljung-Box Q (lag 5) | 9.3936 |
+| p-value (lag 5) | 0.0944 |
+| Ljung-Box Q (lag 20) | 24.3583 |
+| p-value (lag 20) | 0.2271 |
 | Lags with p < 0.05 | 0 / 20 |
 
 **ACF pattern:** All spikes within confidence bands. No detectable structure.
@@ -67,7 +67,7 @@ Autocorrelation in returns means past values carry predictive information about 
 **Implied process class:** White noise
 
 ## 5. Cross-Pair Comparison
-EUR/USD and USD/JPY are structurally identical at daily frequency: white noise, zero lags rejecting, p-values well above 0.05 across the board. GBP/USD diverges. Lag 5 and lag 20 both reject, and the Q statistic at lag 20 (35.16 vs. 21.17 and 16.03) is roughly double the other two pairs. A strategy thatassumes homogeneous return structure across all three pairs is misspecified.GBP/USD carries autocorrelation the others don't, so any ARIMA-based signal applies to GBP/USD only.
+EUR/USD is white noise at daily frequency, with zero lags rejecting and p-values well above 0.05 across the board. USD/JPY also has zero individual lags rejecting, but its lag-5 Q of 9.39 (p = 0.0944) is close enough to the 10% level that calling it clean overstates the case — it sits between EUR/USD and GBP/USD rather than alongside EUR/USD. GBP/USD diverges outright. Lag 5 and lag 20 both reject, and the Q statistic at lag 20 (32.41 vs. 21.06 and 24.36) is the largest of the three. A strategy thatassumes homogeneous return structure across all three pairs is misspecified.GBP/USD carries autocorrelation the others don't, so any ARIMA-based signal applies to GBP/USD only.
 
 ## 6. Alignment with Day 20 Stationarity Results
 Day 20 ADF tests rejected the unit root null on all three series; KPSS failed  to reject stationarity. Both results align with the ACF findings here. A stationary series has an ACF that decays to zero — white noise is just the extreme case where that happens immediately. EUR/USD and USD/JPY fit that strongly. GBP/USD is stationary too, but its ACF decays more slowly, which is exactly what the Ljung-Box rejections pick up. No contradictions between Day 20 and Day 22.

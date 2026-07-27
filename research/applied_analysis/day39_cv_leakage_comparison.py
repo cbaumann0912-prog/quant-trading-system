@@ -11,6 +11,8 @@ from sklearn.neighbors import KNeighborsRegressor
 from src.evaluation.cross_validation import purged_cross_validation
 from src.evaluation.significance import paired_sign_permutation_test
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 FILENAME = "EURUSD.csv"
 
@@ -24,7 +26,7 @@ N_NEIGHBORS = 5
 path = f"{DATA_DIR}\\{FILENAME}"
 df = pd.read_csv(path)
 df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-df = df.set_index("Datetime")
+df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
 daily_close = df["Close"].resample("D").last().dropna()
 log_returns = np.log(daily_close / daily_close.shift(1)).dropna()

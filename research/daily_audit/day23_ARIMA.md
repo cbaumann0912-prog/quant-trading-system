@@ -23,25 +23,25 @@ Day 22 Ljung-Box testing found that EUR/USD and USD/JPY showed no autocorrelatio
 ## 5. Results
 | Pair    | AIC Order | AIC Value  | LB p (lag 10) | Residuals OK |
 |---------|-----------|------------|---------------|--------------|
-| EUR/USD | (0, 0, 0) | -37,686.23 | 0.9151        | True         |
-| GBP/USD | (1, 0, 0) | -36,805.21 | 0.2341        | True         |
-| USD/JPY | (0, 0, 0) | -36,419.26 | 0.4445        | True         |
+| EUR/USD | (0, 0, 0) | -31,930.88 | 0.8653        | True         |
+| GBP/USD | (2, 0, 2) | -31,075.26 | 0.8981        | True         |
+| USD/JPY | (0, 0, 0) | -31,140.62 | 0.0803        | True         |
 
-GBP/USD AR(1) coefficient: φ = −0.0225, σ² = 2.56 × 10⁻⁵
+GBP/USD AR(1) coefficient (fitted separately): φ = −0.0247, σ² = 2.74 × 10⁻⁵
 
 ## 6. Findings
-EUR/USD and USD/JPY both returned (0,0,0), consistent with Day 22 Ljung-Box results.
+EUR/USD and USD/JPY both returned (0,0,0), consistent with Day 22 Ljung-Box results. USD/JPY's residual Ljung-Box p of 0.0803 clears the 5% bar but not the 10% one, which is the same marginal reading its raw series gave at lag 5 on Day 22.
 
-GBP/USD returned (1,0,0), not the (1,0,1) predicted. The MA term was expected because Day 22 showed rejection at lags 5 and 20 with no clean PACF cutoff. AIC rejected it — the MA component didn't improve log-likelihood enough to offset the 2k penalty. The AR term alone was sufficient to absorb what little autocorrelation exists.
+GBP/USD returned (2,0,2), richer than the (1,0,1) predicted. The MA term was expected because Day 22 showed rejection at lags 5 and 20 with no clean PACF cutoff, and AIC not only kept it but took a second AR and a second MA lag on top. Four parameters bought enough log-likelihood to clear the 2k penalty, which is what an information criterion with a weak penalty does on a series with faint, diffuse structure spread across several lags rather than concentrated at one.
 
-The fitted AR(1) coefficient is φ = −0.023. This is negative, meaning the model predicts a partial reversal of today's return tomorrow — anti-persistence, not trending behavior. Today's return predicts tomorrow's with a magnitude of 2.3 cents per dollar, in the opposite direction.
+Fitting a plain AR(1) to the same series for comparison gives φ = −0.0247. This is negative, meaning it predicts a partial reversal of today's return tomorrow — anti-persistence, not trending behavior. Today's return predicts tomorrow's with a magnitude of 2.5 cents per dollar, in the opposite direction. Note this is a separate one-parameter fit, not a coefficient of the selected (2,0,2) model.
 
-BIC would almost certainly return (0,0,0) for GBP/USD. At n ≈ 4,700, the BIC penalty per parameter is ln(4700) ≈ 8.5. AIC charges 2. The AR(1) term would need to improve log-likelihood by more than 8.5/2 = 4.25 AIC units to survive BIC scrutiny. Given φ = −0.023, it almost certainly doesn't.
+BIC would almost certainly return (0,0,0) for GBP/USD. At n ≈ 4,054, the BIC penalty per parameter is ln(4054) ≈ 8.3. AIC charges 2. Each of the four terms in the selected (2,0,2) would need to improve log-likelihood by more than 8.3/2 ≈ 4.2 AIC units to survive BIC scrutiny, and with a comparable AR(1) coefficient of only −0.0247 they almost certainly don't. The gap between the AIC and BIC answers is wider here than it was under the previously selected (1,0,0), since there are now four parameters to justify rather than one.
 
 ## 7. Alternative Explanations
-The GBP/USD (1,0,0) selection is the most likely candidate for finite-sample AIC overfitting. AIC is known to overfit order in large samples — it charges a flat penalty of 2 per parameter regardless of n, while the true complexity cost grows with sample size.
+The GBP/USD (2,0,2) selection is the most likely candidate for finite-sample AIC overfitting, and a four-parameter model on a series this weak is a stronger case for it than a one-parameter model would have been. AIC is known to overfit order in large samples — it charges a flat penalty of 2 per parameter regardless of n, while the true complexity cost grows with sample size.
 
-Three pieces of evidence point toward overfitting rather than genuine structure. First, BIC disagrees — the harsher penalty would return (0,0,0). Second, the Day 22 Ljung-Box p-values on raw returns were not strongly significant; the rejections at lags 5 and 20 were borderline. Third, φ = −0.023 is within sampling noise for a series of this length — the standard error of a phi estimate at n = 4,700 is roughly (1 − φ²)/√n ≈ 0.015, putting the estimate less than 2 standard errors from zero.
+Three pieces of evidence point toward overfitting rather than genuine structure. First, BIC disagrees — the harsher penalty would return (0,0,0). Second, the Day 22 Ljung-Box p-values on raw returns were not strongly significant; the rejections at lags 5 and 20 were borderline. Third, the comparable AR(1) coefficient of φ = −0.0247 is within sampling noise for a series of this length — the standard error of a phi estimate at n = 4,054 is roughly (1 − φ²)/√n ≈ 0.016, putting the estimate less than 2 standard errors from zero.
 
 To distinguish real predictability from noise, the minimum bar would be: BIC also selects AR order > 0, the coefficient is stable across rolling windows rather than collapsing in out-of-sample periods, and the implied signal survives a transaction cost estimate. None of those conditions are met here.
 

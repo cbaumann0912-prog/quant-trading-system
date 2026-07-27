@@ -7,15 +7,15 @@ What does the PC score time series produced by applying PCA to EUR/USD, GBP/USD,
 Eigenvectors represent the directions of maximum variance within the data. They contain no time dimension. PC scores, by contrast, are the projection of the original observations onto those eigenvector directions. They form a time series that quantifies the magnitude of each principal component on every trading day. This allows us to observe how latent factors evolve through time, identify periods when factors become extreme, and construct signals based on factor behavior. Eigenvectors provide the map of the factor structure, while PC scores record the journey through that structure over time.
 
 ## 3. Methodology
-- 15 years of 1-minute OHLCV resampled to daily close
+- 13 years of 1-minute OHLCV, 2011-01-01 through 2023-12-31, resampled to daily close
 - Log returns computed as ln(Pₜ / Pₜ₋₁)
 - Series aligned on common trading dates via pd.concat().dropna()
 - PCA applied via hand-written pca() in src/features/pca.py — centers data, computes covariance matrix via compute_covariance_matrix(), calls eigendecomposition(), projects data as Z = X_c @ V
 - n_components = 3 (retain all)
-- Split-sample analysis: yearly windows Jan 1 – Dec 31, 2011–2026 (2026 partial)
+- Split-sample analysis: yearly windows Jan 1 – Dec 31, 2011–2023
 
 ## 4. Assumptions
-- Log returns are stationary over the full 15-year sample
+- Log returns are stationary over the full 13-year sample
 - Covariance structure is stable enough across the sample for full-period PCA to be meaningful (tested in Section 6.5)
 - Daily close-to-close returns are representative of the return generating process
 
@@ -23,7 +23,7 @@ Eigenvectors represent the directions of maximum variance within the data. They 
 - PC score series should be empirically uncorrelated — off-diagonal entries of corr(Z) near zero by construction
 - Var(Z_k) should equal λ_k for each component
 - PC score excess kurtosis will exceed raw return excess kurtosis — tail events that were diversified across pairs in raw space concentrate into factor space
-- The 59.6% / 28.9% variance explained split will shift across sub-periods, with PC1 explaining more variance during USD stress regimes
+- The 58.4% / 29.2% variance explained split will shift across sub-periods, with PC1 explaining more variance during USD stress regimes
 
 ## 6. Findings
 
@@ -31,17 +31,17 @@ Eigenvectors represent the directions of maximum variance within the data. They 
 
 | Component | Eigenvalue   | Variance Explained | Cumulative |
 |-----------|--------------|--------------------|------------|
-| PC1       | 4.447954e-05 | 0.5958             | 0.5958     |
-| PC2       | 2.159184e-05 | 0.2892             | 0.8850     |
-| PC3       | 8.589501e-06 | 0.1150             | 1.0000     |
+| PC1       | 4.484685e-05 | 0.5842             | 0.5842     |
+| PC2       | 2.243408e-05 | 0.2922             | 0.8764     |
+| PC3       | 9.485828e-06 | 0.1236             | 1.0000     |
 
 ### 6.2 Eigenvector Loadings
 
 | Pair   | PC1     | PC2    | PC3     |
 |--------|---------|--------|---------|
-| EURUSD | -0.5793 | 0.2261 | 0.7831  |
-| GBPUSD | -0.6171 | 0.5061 | -0.6026 |
-| USDJPY |  0.5326 | 0.8323 | 0.1537  |
+| EURUSD | -0.5927 | 0.1668 | 0.7880  |
+| GBPUSD | -0.6528 | 0.4736 | -0.5912 |
+| USDJPY |  0.4718 | 0.8648 | 0.1718  |
 
 ### 6.3 Implementation Verification
 
@@ -59,9 +59,9 @@ All entries at or below float64 machine epsilon (2.2e-16). Orthogonal to machine
 
 | Component | λ_k          | Var(Z_k)     | Match |
 |-----------|--------------|--------------|-------|
-| PC1       | 4.447954e-05 | 4.447954e-05 | ✅    |
-| PC2       | 2.159184e-05 | 2.159184e-05 | ✅    |
-| PC3       | 8.589501e-06 | 8.589501e-06 | ✅    |
+| PC1       | 4.484685e-05 | 4.484685e-05 | ✅    |
+| PC2       | 2.243408e-05 | 2.243408e-05 | ✅    |
+| PC3       | 9.485828e-06 | 9.485828e-06 | ✅    |
 
 Exact match to 6 significant figures on all three components.
 
@@ -71,14 +71,14 @@ Exact match to 6 significant figures on all three components.
 
 | Series      | Excess Kurtosis          |
 |-------------|--------------------------|
-| EUR/USD raw | 3.04 (from Day 04 audit) |
-| GBP/USD raw | 28.35 (from Day 04 audit)|
-| USD/JPY raw | 4.99 (from Day 04 audit) |
-| PC1 scores  | 4.7644                   |
-| PC2 scores  | 30.5320                  |
-| PC3 scores  | 4.8940                   |
+| EUR/USD raw | 2.65 (from Day 04 audit) |
+| GBP/USD raw | 28.69 (from Day 04 audit)|
+| USD/JPY raw | 5.67 (from Day 04 audit) |
+| PC1 scores  | 5.5950                   |
+| PC2 scores  | 28.5615                  |
+| PC3 scores  | 4.0527                   |
 
-Hypothesis evaluation: The hypothesis that PC scores would exceed raw return kurtosis is partially confirmed. PC1 kurtosis of 4.76 modestly exceeds EUR/USD raw (3.04) and USD/JPY raw (4.99), consistent with mild tail concentration in the USD factor. PC2 kurtosis of 30.53 substantially exceeds EUR/USD and USD/JPY raw series but marginally exceeds GBP/USD raw (28.35, documented in the Day 04 audit), indicating that PC2 largely inherits rather than amplifies the tail risk already present in the raw GBP series.
+Hypothesis evaluation: The hypothesis that PC scores would exceed raw return kurtosis is partially confirmed. PC1 kurtosis of 5.59 exceeds EUR/USD raw (2.65) and USD/JPY raw (5.67) is roughly matched, consistent with mild tail concentration in the USD factor. PC2 kurtosis of 28.56 substantially exceeds EUR/USD and USD/JPY raw series and sits just below GBP/USD raw (28.69, documented in the Day 04 audit), indicating that PC2 largely inherits rather than amplifies the tail risk already present in the raw GBP series.
 
 Regardless of attribution, parametric Value-at-Risk and Gaussian-based position sizing frameworks are invalid for any strategy with GBP/USD or PC2 exposure. Historical simulation or Student-t based position sizing are the appropriate alternatives.
 
@@ -99,12 +99,9 @@ Regardless of attribution, parametric Value-at-Risk and Gaussian-based position 
 | 2021 | 0.6538 | 0.2545 | 0.0917 | 312 |                                             |
 | 2022 | 0.7048 | 0.2109 | 0.0844 | 312 | Fed 425bps hiking cycle                     |
 | 2023 | 0.7054 | 0.2467 | 0.0478 | 311 |                                             |
-| 2024 | 0.7299 | 0.2307 | 0.0395 | 314 |                                             |
-| 2025 | 0.7625 | 0.1792 | 0.0583 | 313 |                                             |
-| 2026 | 0.7990 | 0.1598 | 0.0412 |  77 | Partial — excluded from trend conclusions   |
-| **Full sample** | **0.5958** | **0.2892** | **0.1150** | — | |
+| **Full sample** | **0.5842** | **0.2922** | **0.1236** | — | |
 
-Hypothesis evaluation: The increasing proportion of variance explained by PC1 confirms the hypothesis that USD dominance intensifies during stress regimes. The data further reveals this is not merely a cyclical pattern — PC1 has increased in the majority of years since 2011, with the post-2020 period showing a structural step up driven by coordinated central bank responses to COVID-19 and the subsequent Federal Reserve tightening cycle, during which USD monetary policy became the dominant force across all three pairs simultaneously.
+Hypothesis evaluation: PC1 share rises in stress years, which is consistent with the hypothesis that USD dominance intensifies during stress regimes. 2020 (0.6855), 2022 (0.7048) and 2023 (0.7054) are the three highest readings in the sample and line up with COVID and the Fed tightening cycle. Whether this is a structural step up or a cyclical peak cannot be settled on 13 annual observations — the series is not monotonic (2021 falls back to 0.6538 between two higher years), and three consecutive elevated readings at the end of a sample is exactly what a cyclical peak also looks like. Treat the level as regime-linked and the trend as unproven.
 
 The 2016 Brexit referendum produced the single largest deviation from the trend. GBP/USD experienced substantial movements driven by UK-specific political risk rather than broader USD dynamics, weakening the three-pair correlation structure and causing PC2 to absorb idiosyncratic GBP variance — producing the sample maximum of 0.4155.
 

@@ -31,7 +31,7 @@ rate_diffs_monthly = pd.DataFrame({
 rate_diffs_monthly_lagged = rate_diffs_monthly.shift(PUBLICATION_LAG_MONTHS)
 
 for pair in PAIRS:
-    loader = DataLoader(pairs=[pair], start="2011-01-01", end="2026-05-01",
+    loader = DataLoader(pairs=[pair], start="2011-01-01", end="2023-12-31",
                          embargo_days=5, data_dir=str(DATA_DIR))
     prices = loader.load()[pair]
 

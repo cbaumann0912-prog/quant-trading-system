@@ -9,6 +9,8 @@ from src.data.stationarity import adf_test, kpss_test
 from src.signals.cointegration import ou_half_life
 from src.evaluation.bootstrap import block_bootstrap
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
@@ -41,7 +43,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     prices = df["Close"]
 
     for months, window in zip(MONTHS, GRID_WINDOWS):
@@ -75,7 +77,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()
@@ -115,7 +117,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()
@@ -195,7 +197,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()
@@ -251,7 +253,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()
@@ -333,7 +335,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()
@@ -404,7 +406,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
     ma = daily_prices.rolling(window=MA_WINDOW).mean()

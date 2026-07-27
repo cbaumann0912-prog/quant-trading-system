@@ -107,8 +107,8 @@ Momentum tends to work better in trending macro environments and tends to fail o
 - **Test A** (base momentum effect): Spearman IC between 26-day trailing return and 5-day forward return, tested via two independent methodologies to check robustness to overlapping-window handling.
   - **Initial construction contained a window-alignment bug**: a `.shift(HOLDING-1)` operation was misapplied, causing the "forward return" window to overlap almost entirely with the trailing window (differing by only ~1 day) rather than being genuinely forward-looking. This produced a spuriously large IC (~0.29–0.33, p≈0.00000, all pairs, both methods) that was flagged as implausibly high relative to published FX momentum literature (typically much weaker effects) and investigated before being trusted.
   - **After correction** (explicit cumulative-sum index construction, verified by manual inspection of window date ranges to confirm zero overlap between trailing and forward windows):
-    - Method 1 (non-overlapping weekly subsample, n≈946/pair): EUR/USD IC=-0.035 (p=0.281), GBP/USD IC=-0.047 (p=0.150), USD/JPY IC=-0.027 (p=0.410)
-    - Method 2 (overlapping daily data, block permutation with block_size=31, n≈4,728/pair): EUR/USD IC=-0.029 (p=0.331), GBP/USD IC=-0.045 (p=0.116), USD/JPY IC=-0.006 (p=0.855)
+    - Method 1 (non-overlapping weekly subsample, n=805/pair): EUR/USD IC=-0.039 (p=0.262), GBP/USD IC=-0.047 (p=0.187), USD/JPY IC=-0.017 (p=0.636)
+    - Method 2 (overlapping daily data, block permutation with block_size=31, n≈4,024/pair): EUR/USD IC=-0.029 (p=0.350), GBP/USD IC=-0.045 (p=0.149), USD/JPY IC=+0.002 (p=0.960)
   - **Both methods agree**: no significant positive IC in any pair. **Test A: FAILED.**
 
 **Multiple-testing correction:** N/A — strategy discarded before reaching cross-candidate correction stage. This candidate's null result should still be counted when computing multiple-testing correction across the full three-candidate shortlist, per project rules.

@@ -6,6 +6,8 @@ sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summe
 
 from src.stats.correlation import rolling_correlation
 
+DEV_END = "2023-12-31"
+
 EURUSD = pd.read_csv(
     r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\EURUSD.csv',
     parse_dates=['Datetime'],
@@ -22,11 +24,11 @@ USDJPY = pd.read_csv(
     date_format='%Y%m%d %H%M%S'
 )
 
-EURUSD = EURUSD.set_index('Datetime')
+EURUSD = EURUSD.set_index('Datetime').sort_index().loc[:DEV_END]
 dailyEURUSD = EURUSD['Close'].resample('D').last()
-GBPUSD = GBPUSD.set_index('Datetime')
+GBPUSD = GBPUSD.set_index('Datetime').sort_index().loc[:DEV_END]
 dailyGBPUSD = GBPUSD['Close'].resample('D').last()
-USDJPY = USDJPY.set_index('Datetime')
+USDJPY = USDJPY.set_index('Datetime').sort_index().loc[:DEV_END]
 dailyUSDJPY = USDJPY['Close'].resample('D').last()
 
 returnsEURUSD = np.log(dailyEURUSD / dailyEURUSD.shift(1))

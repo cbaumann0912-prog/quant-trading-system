@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
@@ -47,7 +49,7 @@ print("Confirms zero overlap between trailing and forward windows, corrected con
 filepath = os.path.join(DATA_DIR, "EURUSD.csv")
 df = pd.read_csv(filepath)
 df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-df = df.set_index("Datetime")
+df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 daily_prices = df["Close"].resample("D").last().dropna()
 
 check_df = compute_signal_outcome(daily_prices)
@@ -62,7 +64,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     daily_prices = df["Close"].resample("D").last().dropna()
 
     combined = compute_signal_outcome(daily_prices)
@@ -92,7 +94,7 @@ for pair in PAIRS:
     filepath = os.path.join(DATA_DIR, f"{pair}.csv")
     df = pd.read_csv(filepath)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     daily_prices = df["Close"].resample("D").last().dropna()
 
     combined = compute_signal_outcome(daily_prices)

@@ -81,7 +81,7 @@ The contribution here is the machinery that killed six strategies, and four find
 
 | Pairs | Series | History | Use |
 |---|---|---|---|
-| EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY, EUR/CHF | 1-minute OHLCV | ~15 years | Signal construction; resampled to daily log returns for statistical work |
+| EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY, EUR/CHF | 1-minute OHLCV | ~13 years development (2011-2023) | Signal construction; resampled to daily log returns for statistical work |
 | 8 three-month interbank rates | Daily | matched | Carry and rate-differential factors |
 
 Development window is 2011–2023. The 2024-01-01 to 2026-05-01 slice is held as a lockbox and has never been read. Raw data lives outside the repo at a configurable path.

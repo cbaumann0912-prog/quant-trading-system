@@ -11,7 +11,9 @@ OUTPUT_PATH = Path("research/notes/day17_ridge_lasso_feature_selection.md")
 LAMBDA_GRID = [0.001, 0.01, 0.1, 1, 10, 100, 1000]
 N_LAGS = 5
 
-df_1m = pd.read_csv(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data\EURUSD.csv", parse_dates=["Datetime"], index_col="Datetime")
+DEV_END = "2023-12-31"
+
+df_1m = pd.read_csv(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data\EURUSD.csv", parse_dates=["Datetime"], index_col="Datetime").sort_index().loc[:DEV_END]
 daily = df_1m["Close"].resample("1D").last().dropna()
 returns = daily.pct_change().dropna()
 

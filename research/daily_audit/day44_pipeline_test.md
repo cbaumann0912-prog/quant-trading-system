@@ -10,7 +10,7 @@ check, not a validation run; the prose below is intentionally short.
 `research/applied_analysis/day44_pipeline_test.py`. Ran the momentum leg
 (`src/signals/momentum.py`, `lookback=78`, one quarter per Section 4 of the
 strategy spec) through `SignalBuilder` on all 3 supported pairs, real daily
-closes 2011-01-02 to 2026-03-31 via `DataLoader`, `holding_period=26`
+closes 2011-01-02 to 2023-12-29 via `DataLoader`, `holding_period=26`
 (Section 10's shared validation horizon). No regime gating, no
 walk-forward — those are put off for a later date.
 
@@ -18,9 +18,9 @@ walk-forward — those are put off for a later date.
 
 | Pair | N obs | Pooled IC | Rolling IC (n=60) mean | % windows negative | Causal check |
 |---|---|---|---|---|---|
-| EURUSD | 4760 | 0.0164 | -0.3545 | 44/51 | pass |
-| GBPUSD | 4759 | 0.0328 | -0.3008 | 42/52 | pass |
-| USDJPY | 4760 | 0.0649 | -0.2529 | 38/51 | pass |
+| EURUSD | 4056 | 0.0149 | -0.3763 | 36/42 | pass |
+| GBPUSD | 4055 | 0.0505 | -0.2854 | 34/44 | pass |
+| USDJPY | 4056 | 0.0835 | -0.2337 | 33/45 | pass |
 
 Pipeline ran clean on all 3 pairs; `validate_no_lookahead` passed on the
 causal momentum signal.
@@ -28,7 +28,7 @@ causal momentum signal.
 Two things surfaced along the way that aren't just "OK" checkmarks:
 
 1. **`compute_rolling_ic` was silently NaN-padding degenerate windows.**
-   With `window=60` against a 78-day-lookback signal, ~34% of windows never
+   With `window=60` against a 78-day-lookback signal, ~33% of windows never
    see the signal change sign, so correlation is undefined
    (`ConstantInputWarning`). Fixed `SignalBuilder.compute_rolling_ic` to skip
    those windows instead of padding NaN; covered by

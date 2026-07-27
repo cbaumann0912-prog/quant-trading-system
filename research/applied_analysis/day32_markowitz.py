@@ -8,6 +8,8 @@ import pandas as pd
 from src.analysis.portfolio import markowitz_weights
 from src.analysis.portfolio_stats import compute_covariance_matrix
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 
 FILES = {
@@ -22,7 +24,7 @@ for pair_name, filename in FILES.items():
     path = f"{DATA_DIR}\\{filename}"
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_close = df["Close"].resample("D").last().dropna()
     log_returns = np.log(daily_close / daily_close.shift(1)).dropna()
@@ -59,6 +61,8 @@ for target in target_grid:
         })
     except np.linalg.LinAlgError:
         print(f"Skipped target_return={target:.6f}: singular system")
+    except RuntimeError as exc:
+        print(f"Skipped target_return={target:.6f}: {exc}")
 
 frontier = pd.DataFrame(results)
 

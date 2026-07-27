@@ -6,6 +6,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src.stats.regression import fit_ols
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = Path(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data")
 EURUSD_PATH = DATA_DIR / "EURUSD.csv"
 GBPUSD_PATH = DATA_DIR / "GBPUSD.csv"
@@ -13,7 +15,7 @@ GBPUSD_PATH = DATA_DIR / "GBPUSD.csv"
 def load_pair(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime").sort_index()
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     return df
 
 eur = load_pair(EURUSD_PATH)

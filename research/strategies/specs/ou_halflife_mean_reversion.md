@@ -17,7 +17,7 @@
 | Test 1 — Base existence | Does the z-score deviation series show statistically significant mean-reversion? (ADF rejects unit root, KPSS fails to reject stationarity) | **PASSED** — all 3 pairs |
 | Test 2 — Nonlinearity (reversion speed) | Is mean reversion time for large-\|z\| excursions (peak ≥ 1.5) statistically distinguishable from small-\|z\| excursions? (permutation test on the difference in mean reversion time) | **FAILED** — all 3 pairs |
 | Test 2b — Nonlinearity (forward return magnitude) | Is mean 5-day signed forward return from peak significantly larger for large-\|z\| excursions than small-\|z\| excursions? (permutation test on difference in means) | **FAILED** — all 3 pairs (2 of 3 wrong-signed) |
-| Test 2c — Nonlinearity (forward return rank) | Is there a significant positive Spearman IC between peak \|z\| magnitude and signed 5-day forward return? (permutation test on IC) | **FAILED** — all 3 pairs, closest to zero of any variant |
+| Test 2c — Nonlinearity (forward return rank) | Is there a significant positive Spearman IC between peak \|z\| magnitude and signed 5-day forward return? (permutation test on IC) | **FAILED** — all 3 pairs, all wrong-signed |
 
 Any one of these tests failing was pre-registered as fatal to the strategy as specified. All three nonlinearity operationalizations failed. Per standing research-integrity rules, this is treated as a closed, discarded result — not retuned or retried further.
 
@@ -43,7 +43,7 @@ Requires a regime where price genuinely reverts to a moving-average-defined equi
 
 **Instruments:** EUR/USD, GBP/USD, USD/JPY (all three; framework does not support USD/CHF).
 
-**Data frequency:** Daily close. Resampled from 1-minute OHLCV via `.resample('D').last()`. Justification: MA/vol-window construction and OU half-life estimates (~31–35 days) operate on a multi-week timescale, making daily resolution appropriate; intraday noise would not meaningfully improve signal quality at this holding-period scale.
+**Data frequency:** Daily close. Resampled from 1-minute OHLCV via `.resample('D').last()`. Justification: MA/vol-window construction and OU half-life estimates (~32–35 days) operate on a multi-week timescale, making daily resolution appropriate; intraday noise would not meaningfully improve signal quality at this holding-period scale.
 
 **Lookback window required:** Minimum ~100 trading days before a valid MA/vol-window reading is available (MA_WINDOW = VOL_WINDOW = 100, working values used for hypothesis testing; never advanced to optimization given the discard).
 
@@ -73,7 +73,7 @@ Requires a regime where price genuinely reverts to a moving-average-defined equi
 | Entry threshold | \|z\| ≥ 1.0 | — |
 | Large/small pool split | peak \|z\| ≥ 1.5 | Confirmed via threshold-separation script to produce a balanced split (36–38% of observations above, consistent across all three pairs) |
 | Reversion-confirmation distance (X) | 1.0 z-unit | Chosen by convention (matches entry threshold scale) after an empirical diagnostic (varying X from 0.3–1.0) showed no plateau, only a monotonic decline attributable to a distance-to-target mechanical confound, not genuine signal |
-| Censoring cap | 3× pair-specific OU half-life (~94–105 days) | Computed directly on the z-score series, replacing an earlier, materially longer (~1 year) half-life computed on a different, unrelated price-level deviation object from Day 26 |
+| Censoring cap | 3× pair-specific OU half-life (~95–106 days) | Computed directly on the z-score series, replacing an earlier, materially longer (~1 year) half-life computed on a different, unrelated price-level deviation object from Day 26 |
 | Forward horizon (Test 2b/2c) | 5 trading days | Chosen because it approximated Test 2's observed mean reversion time; **flagged as informed by already-observed data, not independently pre-registered** — logged honestly as a minor deviation from strict pre-registration discipline |
 
 ---
@@ -114,17 +114,17 @@ Requires a regime where price genuinely reverts to a moving-average-defined equi
 
 - **Test 1** (base mean-reversion existence): ADF + KPSS on z-score deviation series. **PASSED** — both tests agree across all three pairs (ADF p ≈ 0.00000, stat -6.76 to -7.51; KPSS p ≈ 0.09–0.10).
 - **Test 2** (nonlinearity — reversion time): permutation test, mean reversion time, large (peak ≥1.5) vs. small (peak <1.5) pool. **FAILED.**
-  - EUR/USD: n=74, small mean=5.81d, large mean=5.72d, diff=+0.09d, p=0.957
-  - GBP/USD: n=63, small mean=5.81d, large mean=8.92d, diff=-3.11d (wrong-signed), p=0.488
-  - USD/JPY: n=69, small mean=6.88d, large mean=8.73d, diff=-1.84d (wrong-signed), p=0.649
+  - EUR/USD: n=63, small mean=5.29d, large mean=7.68d, diff=-2.39d (wrong-signed), p=0.620
+  - GBP/USD: n=54, small mean=12.05d, large mean=7.03d, diff=+5.02d, p=0.268
+  - USD/JPY: n=58, small mean=7.05d, large mean=7.05d, diff=-0.01d, p=1.000
 - **Test 2b** (nonlinearity — forward return magnitude): permutation test, mean 5-day signed forward return from peak, large vs. small pool. **FAILED.**
-  - EUR/USD: diff=-0.44% (wrong-signed), p=0.079
-  - GBP/USD: diff=+0.11%, p=0.841
-  - USD/JPY: diff=-0.15% (wrong-signed), p=0.565
-- **Test 2c** (nonlinearity — forward return rank): Spearman IC, peak magnitude vs. signed 5-day forward return, permutation test. **FAILED.**
-  - EUR/USD: IC=-0.157, p=0.184
-  - GBP/USD: IC=-0.097, p=0.461
-  - USD/JPY: IC=0.0003, p=0.997
+  - EUR/USD: diff=-0.65% (wrong-signed), p=0.026 — significant at 5% in the direction opposite the hypothesis
+  - GBP/USD: diff=+0.22%, p=0.707
+  - USD/JPY: diff=-0.25% (wrong-signed), p=0.387
+- **Test 2c** (nonlinearity — forward return rank): Spearman IC, peak magnitude vs. signed 5-day forward return, permutation test. **FAILED.** All three ICs are negative, i.e. larger excursions rank *lower* on subsequent signed return — the opposite of the hypothesis.
+  - EUR/USD: IC=-0.237 (wrong-signed), p=0.064
+  - GBP/USD: IC=-0.067 (wrong-signed), p=0.627
+  - USD/JPY: IC=-0.030 (wrong-signed), p=0.828
 - Significance threshold used throughout: α = 0.05, permutation-based (not parametric), given confirmed fat tails/volatility clustering in this data (Day 4, Day 37 findings).
 
 **n_trials for this hypothesis family: 3** (Tests 2, 2b, 2c) — to be carried forward if any future strategy references this line of research or reuses this z-score construction.

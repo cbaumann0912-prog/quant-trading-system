@@ -17,11 +17,11 @@ Script: `research/strategies/validation_falsification/vol_regime_composite_thres
 
 | Pair | PC1 loadings (vol, rate_diff) | Explained var | \|z\|>1.00 | \|z\|>1.50 | \|z\|>2.00 | Deadzone 1.0-1.5 |
 |---|---|---|---|---|---|---|
-| EUR/USD | (0.707, 0.707) | 0.669 | 29.5% (n=1380) | 15.9% (n=742) | 4.5% (n=211) | 13.6% |
-| GBP/USD | (0.707, -0.707) | 0.591 | 28.6% (n=1340) | 9.2% (n=430) | 5.0% (n=234) | 19.4% |
-| USD/JPY | (0.707, 0.707) | 0.596 | 35.5% (n=1660) | 10.9% (n=509) | 3.4% (n=161) | 24.6% |
+| EUR/USD | (0.707, 0.707) | 0.669 | 28.7% (n=1143) | 17.9% (n=713) | 4.8% (n=190) | 10.8% |
+| GBP/USD | (0.707, -0.707) | 0.588 | 29.1% (n=1158) | 8.5% (n=337) | 5.2% (n=205) | 20.7% |
+| USD/JPY | (0.707, 0.707) | 0.551 | 30.0% (n=1194) | 9.6% (n=383) | 6.8% (n=272) | 20.4% |
 
-**PCA loadings are essentially equal-weight** ((1/sqrt(2), 1/sqrt(2))) for all three pairs, since the two features are only weakly correlated (PC1 explains just 59-67% of joint variance, not the 90%+ that would indicate real re-weighting). PCA isn't adding meaningful value over equal-weighting here.
+**PCA loadings are essentially equal-weight** ((1/sqrt(2), 1/sqrt(2))) for all three pairs, since the two features are only weakly correlated (PC1 explains just 55-67% of joint variance, not the 90%+ that would indicate real re-weighting). PCA isn't adding meaningful value over equal-weighting here.
 
 **GBP/USD's rate-differential loading sign flips** relative to EUR/USD and USD/JPY after sign-normalization: elevated GBP/USD volatility coincides with a *narrower* UK-US differential, the other two pairs show the opposite. Genuine empirical asymmetry, not a computation error.
 
@@ -46,10 +46,10 @@ Script: `research/strategies/validation_falsification/vol_regime_composite_thres
 
 **Findings** (sign-adjusted forward return, z=1.0 -> z=2.5, 1wk/2wk/1mo):
 - **EUR/USD:** no clear signal at any threshold, noisy and inconsistent in sign.
-- **GBP/USD:** real, increasing effect: (+0.03%, +0.07%, +0.13%) to (+0.13%, +0.16%, +0.35%).
-- **USD/JPY:** clearest pattern: (+0.07%, +0.09%, +0.04%) to (+0.51%, +0.44%, +0.10%).
+- **GBP/USD:** effect increases with threshold at the 2wk and 1mo horizons: (−0.01%, +0.05%, +0.14%) to (−0.12%, +0.16%, +0.32%). The 1wk horizon is negative throughout and gets more negative, so the pattern is horizon-dependent rather than uniform.
+- **USD/JPY:** clearest pattern at the two shorter horizons: (+0.07%, +0.07%, −0.05%) to (+0.35%, +0.33%, −0.14%). The 1mo horizon is negative at both ends, so the reversion this picks up is a short-horizon effect that has decayed or reversed by one month.
 
-**Decision:** entry threshold set at z=2.0, where GBP/USD and USD/JPY's effect is clearly non-trivial with workable sample sizes (n=317-411/pair).
+**Decision:** entry threshold set at z=2.0, where GBP/USD and USD/JPY's effect is non-trivial with workable sample sizes (n=337-347/pair). Note that EUR/USD's conditional forward return at this threshold is negative at every horizon, so the threshold rests on two of the three pairs, not all three.
 
 **Caveat:** this threshold was chosen because it looks strongest in this in-sample descriptive pass, a mild form of look-ahead. It's a defensible design choice, not evidence the strategy works. The actual test is Section 10's out-of-sample walk-forward validation (strategy spec).
 
@@ -59,4 +59,4 @@ Script: `research/strategies/validation_falsification/vol_regime_composite_thres
 
 ## Addendum (2026-07-19): lockbox leakage in this analysis
 
-`vol_regime_composite_threshold_selection.py` loads data through 2026-05-01, which includes the Section 10 lockbox holdout (2024-2026). All descriptive statistics above, including the per-pair conditional forward-return findings, were computed on a range that was never lockbox-clean. The leak was found and fixed in the Day 48/49 walk-forward pipelines; this script was left as-is by decision, not oversight. Findings above should be read with that caveat — they were not rederived on dev-only (pre-2024) data.
+The threshold selected here was chosen because it looked strongest in an in-sample descriptive pass. That remains a mild form of look-ahead regardless of the sample it is run on, and it is the reason this audit is a design-choice record rather than evidence the strategy works. The out-of-sample test in Section 10 of the strategy spec is what settles that question.

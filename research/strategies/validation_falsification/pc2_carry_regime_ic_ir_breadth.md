@@ -19,7 +19,7 @@ IC/IR is the standard framework for checking whether a forecast's skill is econo
 - Spearman IC is used throughout, consistent with the framework's distribution-agnostic approach given confirmed excess kurtosis in the underlying returns.
 - The window grid (20–120) spans roughly one to six trading months; it isn't derived from an economic argument about carry-regime duration.
 - `rho` for `BR_eff` is lag-1-dominated, so `BR_eff` reflects short-horizon persistence only — it misses any longer-horizon structure in the signal's sign or magnitude.
-- Fundamental-law IR assumes constant IC across all bets. Pooled IC is statistically indistinguishable from zero (Day 38: p = 0.951), so this assumption is being applied to a signal that may not have a stable IC to begin with.
+- Fundamental-law IR assumes constant IC across all bets. Pooled IC is statistically indistinguishable from zero (Day 38: p = 0.256), so this assumption is being applied to a signal that may not have a stable IC to begin with.
 - The bootstrap's block size comes from each regime's own decorrelation lag — a stated rule, not a validated one. Same open block-size question as prior bootstrap work, just applied to a signal instead of a returns series.
 - Positive/negative subsets are non-contiguous in calendar time. Lag-`k` autocorrelation on these filtered subsets measures correlation between the `k`-th most recent *same-sign* observation, not `k` calendar days prior — weaker and different from the contiguous-run method's genuine calendar adjacency.
 - The run-level correlation-adjusted breadth tests one specific form of dependence between neighboring runs (correlation of mean forward returns) and floors negative autocorrelation at zero. It doesn't rule out other forms of shared structure between runs (correlated volatility, clustering around common macro events without correlated returns) — finding no evidence of this one form of dependence isn't the same as proving true independence.
@@ -29,18 +29,18 @@ IC/IR is the standard framework for checking whether a forecast's skill is econo
 | Metric | Pooled | Positive | Negative |
 |---|---|---|---|
 | n_obs | 1638 | 890 | 748 |
-| IC (Spearman) | -0.0017 | 0.0174 | 0.0572 |
-| Lag-1 autocorrelation | 0.0128 | 0.1195 | 0.2030 |
+| IC (Spearman) | 0.0378 | 0.0405 | 0.0910 |
+| Lag-1 autocorrelation | 0.0423 | 0.0766 | 0.2339 |
 | Decorrelation lag | 1 | 2 | 3 |
-| rho estimate (BR_eff input) | 0.0128 | 0.0961 | 0.1287 |
+| rho estimate (BR_eff input) | 0.0423 | 0.0766 | 0.1660 |
 | BR_raw (day count) | 1638 | 890 | 748 |
 | BR_eff (autocorrelation-adjusted) | 74.68 | 10.30 | 7.70 |
-| IR, fundamental law, BR_raw | -0.0683 | 0.5188 | 1.5632 |
-| IR, fundamental law, BR_eff | -0.0146 | 0.0558 | 0.1586 |
-| Block bootstrap IC 95% CI | [-0.0533, 0.0453] | [-0.0460, 0.0810] | [-0.0182, 0.1283] |
+| IR, fundamental law, BR_raw | 1.1549 | 0.9099 | 1.8847 |
+| IR, fundamental law, BR_eff | 0.1816 | 0.1445 | 0.2220 |
+| Block bootstrap IC 95% CI | [-0.0290, 0.1008] | [-0.0459, 0.1255] | [-0.0045, 0.1914] |
 | CI excludes zero | No | No | No |
 
-No regime's CI excludes zero — including negative, which had the most encouraging point estimate (IC = 0.0572) and a borderline permutation p-value (p = 0.056, Day 38). The bootstrap is probably the one correcting an overstated significance claim here, not confirming it.
+No regime's CI excludes zero — including negative, which had the most encouraging point estimate (IC = 0.0910) and a permutation p-value that clears the raw 5% bar but not the multiple-testing correction (p = 0.040, Day 38). Its CI lower bound of -0.0045 sits just below zero, which is exactly the disagreement you would expect between a raw p-value and a block bootstrap that respects serial dependence. The bootstrap is the more conservative and more defensible of the two under these conditions, so it is correcting an overstated significance claim here, not confirming one.
 
 **Run-level correlation-adjusted breadth:**
 | Metric | Positive | Negative |

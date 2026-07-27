@@ -7,23 +7,25 @@ import pandas as pd
 
 from src.signals.cointegration import engle_granger_test, ou_half_life
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 BAR_DURATION_DAYS = 1
 TRANSACTION_COST_BPS = 2.0
 
 eurusd = pd.read_csv(f"{DATA_DIR}\\EURUSD.csv")
 eurusd["Datetime"] = pd.to_datetime(eurusd["Datetime"], format="%Y%m%d %H%M%S")
-eurusd = eurusd.set_index("Datetime").sort_index()
+eurusd = eurusd.set_index("Datetime").sort_index().loc[:DEV_END]
 eurusd_daily = eurusd["Close"].resample("D").last().dropna()
 
 gbpusd = pd.read_csv(f"{DATA_DIR}\\GBPUSD.csv")
 gbpusd["Datetime"] = pd.to_datetime(gbpusd["Datetime"], format="%Y%m%d %H%M%S")
-gbpusd = gbpusd.set_index("Datetime").sort_index()
+gbpusd = gbpusd.set_index("Datetime").sort_index().loc[:DEV_END]
 gbpusd_daily = gbpusd["Close"].resample("D").last().dropna()
 
 usdjpy = pd.read_csv(f"{DATA_DIR}\\USDJPY.csv")
 usdjpy["Datetime"] = pd.to_datetime(usdjpy["Datetime"], format="%Y%m%d %H%M%S")
-usdjpy = usdjpy.set_index("Datetime").sort_index()
+usdjpy = usdjpy.set_index("Datetime").sort_index().loc[:DEV_END]
 usdjpy_daily = usdjpy["Close"].resample("D").last().dropna()
 
 aligned = pd.DataFrame({

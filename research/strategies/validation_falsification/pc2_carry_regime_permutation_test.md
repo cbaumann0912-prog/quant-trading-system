@@ -4,7 +4,7 @@
 Does the raw PC2 factor score (Day 19) have statistically detectable predictive content for one-day-forward returns on its own factor-mimicking portfolio, and does the empirical permutation test agree with a conventional parametric (Spearman) correlation t-test on the same data?
 
 ## 2. Why It Matters
-The PC2 Carry Regime Signal is currently the strongest confirmed candidate in the strategy vault (Day 19: +0.832 USD/JPY loading, 28.9% variance explained). Before any signal construction work is invested in, the raw factor needs to clear a baseline significance bar. Separately, this is the first head-to-head test in this project comparing the empirical permutation method against the parametric t-test approach that Day 8's original (now-excluded) strategy relied on, which matters directly for methodology decisions in the paper.
+The PC2 Carry Regime Signal is currently the strongest confirmed candidate in the strategy vault (Day 19: +0.865 USD/JPY loading, 29.2% variance explained). Before any signal construction work is invested in, the raw factor needs to clear a baseline significance bar. Separately, this is the first head-to-head test in this project comparing the empirical permutation method against the parametric t-test approach that Day 8's original (now-excluded) strategy relied on, which matters directly for methodology decisions in the paper.
 
 ## 3. Methodology
 - Data: 1-minute OHLCV for EUR/USD, GBP/USD, USD/JPY, resampled to daily close, log returns computed as ln(Pₜ/Pₜ₋₁)
@@ -44,17 +44,17 @@ The PC2 Carry Regime Signal is currently the strongest confirmed candidate in th
 
 | Test | n | observed IC | p-value | alternative |
 |------|---|---|---|---|
-| Pooled | 1,638 | -0.0017 | 0.9510 | two-sided |
-| Positive-signal subset | 890 | 0.0174 | 0.2957 | greater |
-| Negative-signal subset | 748 | 0.0572 | 0.0559 | greater |
+| Pooled | 934 | 0.0378 | 0.2557 | two-sided |
+| Positive-signal subset | 505 | 0.0405 | 0.1928 | greater |
+| Negative-signal subset | 429 | 0.0910 | 0.0400 | greater |
 
 **Multiple testing correction (α = 0.05, m = 3):**
 
 | Test | p-value | Bonferroni reject H0 | BH reject H0 |
 |------|---------|----------------------|--------------|
-| Pooled | 0.9510 | False | False |
-| Positive subset | 0.2957 | False | False |
-| Negative subset | 0.0559 | False | False |
+| Pooled | 0.2557 | False | False |
+| Positive subset | 0.1928 | False | False |
+| Negative subset | 0.0400 | False | False |
 
 No test survives multiple testing correction.
 
@@ -62,15 +62,15 @@ No test survives multiple testing correction.
 
 | Method | p-value |
 |--------|---------|
-| Empirical permutation (two-sided) | 0.9510 |
-| Spearman correlation t-test | 0.9456 |
+| Empirical permutation (two-sided) | 0.2557 |
+| Spearman correlation t-test | 0.2486 |
 
-The two methods agree closely (Δp ≈ 0.005). This is consistent with the fact that the observed relationship is far from any significance boundary and the sample is large (n=1,638) — the conditions under which a normal-approximation-based test and an empirical permutation test are expected to converge. This does not establish that the two methods agree in general; Day 37's finding that block bootstrap and i.i.d. bootstrap CIs diverge by 30–38% on std, and diverge in direction on Sharpe, is a reminder that parametric/empirical agreement is data- and statistic-dependent, not universal.
+The two methods agree closely (Δp ≈ 0.007). This is consistent with the fact that the observed relationship is far from any significance boundary and the sample is reasonably large (n=934) — the conditions under which a normal-approximation-based test and an empirical permutation test are expected to converge. This does not establish that the two methods agree in general; Day 37's finding that block bootstrap and i.i.d. bootstrap CIs diverge by 30–38% on std, and diverge in direction on Sharpe, is a reminder that parametric/empirical agreement is data- and statistic-dependent, not universal.
 
 ## 7. Alternative Explanations
 - **PC2 may still carry information the pooled/split design doesn't capture.** The tests here are limited to a linear/monotonic relationship (Spearman) between the raw PC2 score and one-day-forward factor-mimicking returns. A regime-based approach or nonlinear relationships would not be detected by this design and remain untested.
 - **Single train/test split may understate the true relationship if PC2's predictive content is itself regime-dependent and concentrated in a sub-period of the 2021–2026 test window** (e.g., 2022 hiking cycle vs. calmer periods). This audit does not test for that.
-- **The near-significant negative-subset result (p=0.0559) could reflect a real but weak effect that this sample size is underpowered to confirm**, rather than pure noise. The split-sample design's reduced n (748 vs. 1,638 pooled) is a genuine power limitation, not just a technicality.
+- **The negative-subset result now clears the raw 5% bar (p=0.0400) but not the correction**, and neither Bonferroni nor BH rejects it as one of three tests run today. A single sub-threshold p-value among three exploratory splits is the textbook shape of a selection artifact, and the pooled test it came from is nowhere near significance at p=0.2557. It could still reflect a real but weak effect this sample is underpowered to confirm — the split design's reduced n (429 vs. 934 pooled) is a genuine power limitation — but nothing here warrants treating it as a finding.
 
 ## 8. Next Steps
 - Do not proceed with raw PC2 score as a standalone tradable signal on the basis of this result — it does not clear significance after correction

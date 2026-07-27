@@ -5,6 +5,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 import pandas as pd
 from src.signals.cointegration import johansen_test
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
 
 PAIRS = {
@@ -16,7 +18,7 @@ PAIRS = {
 def load_daily_close(path: str) -> pd.Series:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime")
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     return df["Close"].resample("D").last().dropna()
 
 

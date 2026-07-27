@@ -20,7 +20,7 @@ IMAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 START = "2011-01-01"
-END = "2026-05-01"
+END = "2023-12-31"
 LOOKBACK = 78
 HOLDING_PERIOD = 26
 ROLLING_WINDOW = 60

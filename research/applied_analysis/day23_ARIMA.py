@@ -6,6 +6,8 @@ import numpy as np
 from src.data.time_series import fit_arima, select_arima_order
 from src.data.stationarity import ljung_box_test
 
+DEV_END = "2023-12-31"
+
 
 
 DATA_DIR  = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
@@ -19,7 +21,7 @@ OUTPUT    = r"research/notes/day23_arima_forex_pairs.md"
 def load_daily_returns(path: str) -> pd.Series:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime").sort_index()
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     daily = df["Close"].resample("D").last().dropna()
     log_returns = np.log(daily / daily.shift(1)).dropna()
     return log_returns

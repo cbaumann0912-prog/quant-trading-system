@@ -1,0 +1,188 @@
+{
+  "pair": "EURUSD",
+  "signal": "mean-reversion",
+  "parameters": {
+    "train_start": "2015-01-01T00:00:00",
+    "train_end": "2022-12-31T00:00:00",
+    "n_windows": 10,
+    "train_years": 5,
+    "test_months": 3,
+    "embargo_days": 5,
+    "lookback": 26,
+    "holding_period": 26,
+    "reversion_entry_z": 2.0,
+    "expected_ic_sign": "negative"
+  },
+  "sample": {
+    "n_daily_bars": 2498,
+    "first_bar": "2015-01-01T00:00:00",
+    "last_bar": "2022-12-30T00:00:00",
+    "annualization_factor": 312.4638698630137
+  },
+  "window_results": [
+    {
+      "window_idx": 0,
+      "train_start": "2015-01-01T00:00:00",
+      "train_end": "2020-01-01T00:00:00",
+      "embargo_end": "2020-01-06T00:00:00",
+      "test_start": "2020-01-06T00:00:00",
+      "test_end": "2020-04-06T00:00:00",
+      "n_test": 78,
+      "n_scored": 52,
+      "signal_nunique": 78,
+      "ic": -0.5240331255869546,
+      "ic_status": "ok",
+      "sharpe": -1.8793170369802716
+    },
+    {
+      "window_idx": 1,
+      "train_start": "2015-04-01T00:00:00",
+      "train_end": "2020-04-01T00:00:00",
+      "embargo_end": "2020-04-06T00:00:00",
+      "test_start": "2020-04-06T00:00:00",
+      "test_end": "2020-07-06T00:00:00",
+      "n_test": 78,
+      "n_scored": 52,
+      "signal_nunique": 78,
+      "ic": -0.2131819346025783,
+      "ic_status": "ok",
+      "sharpe": -3.2584097621439256
+    },
+    {
+      "window_idx": 2,
+      "train_start": "2015-07-01T00:00:00",
+      "train_end": "2020-07-01T00:00:00",
+      "embargo_end": "2020-07-06T00:00:00",
+      "test_start": "2020-07-06T00:00:00",
+      "test_end": "2020-10-06T00:00:00",
+      "n_test": 79,
+      "n_scored": 53,
+      "signal_nunique": 79,
+      "ic": 0.3756652152878568,
+      "ic_status": "ok",
+      "sharpe": -0.23687478597406045
+    },
+    {
+      "window_idx": 3,
+      "train_start": "2015-10-01T00:00:00",
+      "train_end": "2020-10-01T00:00:00",
+      "embargo_end": "2020-10-06T00:00:00",
+      "test_start": "2020-10-06T00:00:00",
+      "test_end": "2021-01-06T00:00:00",
+      "n_test": 78,
+      "n_scored": 52,
+      "signal_nunique": 78,
+      "ic": -0.25202766157261164,
+      "ic_status": "ok",
+      "sharpe": -1.7200535086360509
+    },
+    {
+      "window_idx": 4,
+      "train_start": "2016-01-01T00:00:00",
+      "train_end": "2021-01-01T00:00:00",
+      "embargo_end": "2021-01-06T00:00:00",
+      "test_start": "2021-01-06T00:00:00",
+      "test_end": "2021-04-06T00:00:00",
+      "n_test": 77,
+      "n_scored": 51,
+      "signal_nunique": 77,
+      "ic": -0.6105882352941175,
+      "ic_status": "ok",
+      "sharpe": 1.595230111842047
+    },
+    {
+      "window_idx": 5,
+      "train_start": "2016-04-01T00:00:00",
+      "train_end": "2021-04-01T00:00:00",
+      "embargo_end": "2021-04-06T00:00:00",
+      "test_start": "2021-04-06T00:00:00",
+      "test_end": "2021-07-06T00:00:00",
+      "n_test": 78,
+      "n_scored": 52,
+      "signal_nunique": 78,
+      "ic": -0.18987449842055837,
+      "ic_status": "ok",
+      "sharpe": 1.1210388358026937
+    },
+    {
+      "window_idx": 6,
+      "train_start": "2016-07-01T00:00:00",
+      "train_end": "2021-07-01T00:00:00",
+      "embargo_end": "2021-07-06T00:00:00",
+      "test_start": "2021-07-06T00:00:00",
+      "test_end": "2021-10-06T00:00:00",
+      "n_test": 79,
+      "n_scored": 53,
+      "signal_nunique": 79,
+      "ic": -0.5716819867763263,
+      "ic_status": "ok",
+      "sharpe": 1.59002736962579
+    },
+    {
+      "window_idx": 7,
+      "train_start": "2016-10-01T00:00:00",
+      "train_end": "2021-10-01T00:00:00",
+      "embargo_end": "2021-10-06T00:00:00",
+      "test_start": "2021-10-06T00:00:00",
+      "test_end": "2022-01-06T00:00:00",
+      "n_test": 79,
+      "n_scored": 53,
+      "signal_nunique": 79,
+      "ic": -0.6370746653765521,
+      "ic_status": "ok",
+      "sharpe": 1.142733932257328
+    },
+    {
+      "window_idx": 8,
+      "train_start": "2017-01-01T00:00:00",
+      "train_end": "2022-01-01T00:00:00",
+      "embargo_end": "2022-01-06T00:00:00",
+      "test_start": "2022-01-06T00:00:00",
+      "test_end": "2022-04-06T00:00:00",
+      "n_test": 77,
+      "n_scored": 51,
+      "signal_nunique": 77,
+      "ic": -0.38398190045248864,
+      "ic_status": "ok",
+      "sharpe": -1.3807100293024646
+    },
+    {
+      "window_idx": 9,
+      "train_start": "2017-04-01T00:00:00",
+      "train_end": "2022-04-01T00:00:00",
+      "embargo_end": "2022-04-06T00:00:00",
+      "test_start": "2022-04-06T00:00:00",
+      "test_end": "2022-07-06T00:00:00",
+      "n_test": 78,
+      "n_scored": 52,
+      "signal_nunique": 78,
+      "ic": -0.2290617262870315,
+      "ic_status": "ok",
+      "sharpe": 3.598490855555674
+    }
+  ],
+  "ic_summary": {
+    "n": 10,
+    "mean": -0.3235840519081362,
+    "std": 0.3016803458149783,
+    "ir": -1.072605678152436,
+    "frac_positive": 0.1
+  },
+  "ic_status_counts": {
+    "ok": 10
+  },
+  "sharpe_summary": {
+    "n": 10,
+    "mean": 0.0572155982046759,
+    "std": 2.0982012368606613,
+    "ir": 0.0272688802196505,
+    "frac_positive": 0.5
+  },
+  "caveats": [
+    "Raw unsized signal-level diagnostics gross of transaction costs. Not a claim of tradable performance.",
+    "No multiple-testing correction applied. This run does not increment project n_trials and is not a research verdict.",
+    "Forward returns are masked over the final holding_period bars of each test window so no scored bar reads price beyond test_end.",
+    "SignalReport.build_signal_report is not invoked: its contract requires a regime-interaction p(b3) that an ungated single-signal run does not produce.",
+    "Mean-reversion IC is reported on the raw z-score, so a working reversion signal produces a negative IC."
+  ]
+}

@@ -7,7 +7,7 @@ Are any bivariate combinations of EUR/USD, GBP/USD, and USD/JPY log price levels
 Mean-reversion pair trading only works if the spread has a mean to revert to. That requires cointegration — a stable long-run equilibrium between two non-stationary price series. Without it, any apparent spread convergence is noise in a drifting process, and fading it is directional speculation dressed up as arbitrage.
 
 ## 3. Methodology
-- 15 years of 1-minute OHLCV data resampled to daily closing prices.
+- 13 years of 1-minute OHLCV data resampled to daily closing prices.
 - Log price levels computed as ln(Pt).
 - Series aligned on common trading dates via index intersection across all three pairs.
 - Individual pair stationarity tested using `check_stationarity()` from `src/data/stationarity.py`, which combines ADF and KPSS.
@@ -18,7 +18,7 @@ Mean-reversion pair trading only works if the spread has a mean to revert to. Th
 ## 4. Assumptions
 - Log price levels are I(1). Engle-Granger requires both inputs to be integrated of order one. If any series is I(2) or already I(0), the framework breaks down. Layer 1 checks this.
 - The cointegrating relationship is linear. OLS estimates a linear hedge ratio and will miss non-linear structure.
-- The hedge ratio is stable over time. One regression over 15 years assumes beta is constant. Structural breaks violate this. Walk-forward stability is put off for a later date.
+- The hedge ratio is stable over time. One regression over 13 years assumes beta is constant. Structural breaks violate this. Walk-forward stability is put off for a later date.
 - Residuals are approximately homoskedastic. ADF and KPSS are sensitive to volatility clustering. FX residuals likely exhibit GARCH effects — a known violation, addressed formally at a later date.
 - No lookahead bias. Only daily closing prices are used.
 
@@ -28,9 +28,9 @@ Mean-reversion pair trading only works if the spread has a mean to revert to. Th
 
 | Series  | ADF Stat | ADF p  | KPSS Stat | KPSS p | Verdict        |
 | ------- | -------- | ------ | --------- | ------ | -------------- |
-| EUR/USD | -2.0668  | 0.2581 | 6.0092    | 0.0100 | I(1) unit root |
-| GBP/USD | -1.7678  | 0.3966 | 7.7501    | 0.0100 | I(1) unit root |
-| USD/JPY | -0.8862  | 0.7925 | 8.1109    | 0.0100 | I(1) unit root |
+| EUR/USD | -1.7979  | 0.3815 | 5.9382    | 0.0100 | I(1) unit root |
+| GBP/USD | -1.4998  | 0.5336 | 7.7829    | 0.0100 | I(1) unit root |
+| USD/JPY | -1.0594  | 0.7310 | 6.1231    | 0.0100 | I(1) unit root |
 
 All three series came back I(1) as expected. ADF failed to reject the unit root null in all cases; KPSS rejected stationarity decisively. The KPSS statistics are far outside the lookup table range — the actual p-values are smaller than 0.01, as flagged by statsmodels InterpolationWarning. The I(1) assumption for Engle-Granger holds.
 
@@ -38,15 +38,15 @@ All three series came back I(1) as expected. ADF failed to reject the unit root 
 
 | Spread            | Beta    | ADF Stat | ADF p  | KPSS Stat | KPSS p | Raw Verdict            | BH-Corrected |
 | ----------------- | ------- | -------- | ------ | --------- | ------ | ---------------------- | ------------ |
-| EUR/USD ~ GBP/USD | 0.7282  | -2.8049  | 0.0576 | 0.5739    | 0.0250 | I(1), no cointegration | False        |
-| EUR/USD ~ USD/JPY | -0.3425 | -2.1977  | 0.2071 | 1.2416    | 0.0100 | I(1), no cointegration | False        |
-| GBP/USD ~ USD/JPY | -0.3489 | -1.8152  | 0.3729 | 2.4882    | 0.0100 | I(1), no cointegration | False        |
+| EUR/USD ~ GBP/USD | 0.7125  | -2.5658  | 0.1003 | 0.7230    | 0.0115 | I(1), no cointegration | False        |
+| EUR/USD ~ USD/JPY | -0.4532 | -2.4280  | 0.1340 | 1.0291    | 0.0100 | I(1), no cointegration | False        |
+| GBP/USD ~ USD/JPY | -0.4416 | -1.8308  | 0.3653 | 3.0776    | 0.0100 | I(1), no cointegration | False        |
 
-No pair passed. The EUR/USD ~ GBP/USD spread is the only one worth pausing on — ADF p = 0.0576, with a test statistic of -2.8049 against a critical value of approximately -2.86. That is a 0.046-unit miss. KPSS rejected stationarity at the 5% level (stat = 0.5739 vs critical value 0.463). Both tests land on non-stationary, so the verdict stands.
+No pair passed, and none came close. EUR/USD ~ GBP/USD is the strongest of the three at ADF p = 0.1003, with a test statistic of -2.5658 against a critical value of approximately -2.86 — a 0.29-unit miss, not a near-rejection. KPSS rejected stationarity at the 5% level (stat = 0.7230 vs critical value 0.463). Both tests land on non-stationary, so the verdict stands.
 
 The other two pairs are not close. EUR/USD ~ USD/JPY and GBP/USD ~ USD/JPY show no evidence of mean-reverting residuals under either test.
 
-The levels-based beta for EUR/USD ~ GBP/USD is 0.7282, not 0.5596. The Day 15 beta was estimated on log returns and measures contemporaneous daily return sensitivity. Today's beta is estimated on log price levels and measures long-run equilibrium elasticity. These are different quantities answering different questions.
+The levels-based beta for EUR/USD ~ GBP/USD is 0.7125, not 0.5596. The Day 15 beta was estimated on log returns and measures contemporaneous daily return sensitivity. Today's beta is estimated on log price levels and measures long-run equilibrium elasticity. These are different quantities answering different questions.
 
 ## 6. Alternative Explanations
 The null result does not rule out a relationship between these pairs — it rules out a static, full-sample, linear one.

@@ -1,15 +1,15 @@
 # Day 27 Audit — PerformanceAnalyzer First Run
 
 ## Methodology
-Ran PerformanceAnalyzer.run_report() on raw daily log returns (close-to-close, resampled from 1-min OHLCV) for EUR/USD, GBP/USD, USD/JPY, 2011-01-03 to 2026-03-31, trades=None (mechanics test, not a strategy verdict).
+Ran PerformanceAnalyzer.run_report() on raw daily log returns (close-to-close, resampled from 1-min OHLCV) for EUR/USD, GBP/USD, USD/JPY, 2011-01-03 to 2023-12-29, trades=None (mechanics test, not a strategy verdict).
 
 ## Findings
 
 | Pair    | Sharpe | Sortino | Max DD  | Calmar  | t-stat | Ann. Return | Ann. Vol |
 |---------|--------|---------|---------|---------|--------|-------------|----------|
-| EUR/USD | -0.112 | -0.112  | -0.381  | -0.024  | -0.439 | -0.91%      | 8.15%    |
-| GBP/USD | -0.118 | -0.112  | -0.412  | -0.025  | -0.461 | -1.05%      | 8.94%    |
-| USD/JPY | 0.472  | 0.458   | -0.210  | 0.214   | 1.844  | 4.50%       | 9.31%    |
+| EUR/USD | -0.172 | -0.169  | -0.381  | -0.037  | -0.620 | -1.42%      | 8.34%    |
+| GBP/USD | -0.166 | -0.157  | -0.412  | -0.037  | -0.598 | -1.52%      | 9.26%    |
+| USD/JPY | 0.462  | 0.454   | -0.210  | 0.207   | 1.665  | 4.34%       | 9.19%    |
 
 win_rate and profit_factor returned NaN for all three, as expected (trades=None). No crashes, no inf values.
 

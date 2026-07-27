@@ -8,6 +8,8 @@ import numpy as np
 from src.features.pca import eigendecomposition
 from src.analysis.portfolio_stats import compute_covariance_matrix
 
+DEV_END = "2023-12-31"
+
 DATA_DIR = Path(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data")
 EURUSD_PATH = DATA_DIR / "EURUSD.csv"
 GBPUSD_PATH = DATA_DIR / "GBPUSD.csv"
@@ -16,7 +18,7 @@ USDJPY_PATH = DATA_DIR / "USDJPY.csv"
 def load_pair(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-    df = df.set_index("Datetime").sort_index()
+    df = df.set_index("Datetime").sort_index().loc[:DEV_END]
     return df
 
 

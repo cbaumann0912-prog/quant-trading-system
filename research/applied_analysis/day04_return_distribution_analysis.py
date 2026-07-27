@@ -2,12 +2,14 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
+DEV_END = "2023-12-31"
+
 df = pd.read_csv(
     r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\USDJPY.csv',
     parse_dates=['Datetime'],
     date_format='%Y%m%d %H%M%S'
 )
-df = df.set_index('Datetime')
+df = df.set_index('Datetime').sort_index().loc[:DEV_END]
 daily = df['Close'].resample('D').last()
 returns = np.log(daily / daily.shift(1))
 returns = returns.dropna()

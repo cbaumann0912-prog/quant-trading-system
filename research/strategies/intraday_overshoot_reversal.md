@@ -1,7 +1,9 @@
 # Strategy Specification: Intraday Overshoot Reversal, London-NY Overlap
 
 **Date drafted:** Day 57 (2026-07-25)
-**Status:** Pre-registered. Written before any test was run.
+**Status:** CLOSED, Day 57. Section 10 verdict FAIL on three criteria: robustness 1 threshold monotonicity, robustness 3 per-trade permutation (p = 0.114), and H2 (b3 = -0.048, p = 0.669). Result in `research/notes/intraday_overshoot_reversal_h1.md`. Lockbox never opened.
+
+Written and pre-registered before any test was run; the sections below are unedited from that pre-registration.
 
 ## Provenance
 Strategy #6. Five tested previously, all null: PC2 Carry Regime, Momentum w/ ML Regime, OU Half-Life Mean Reversion, Volatility Regime Breakout/Mean-Reversion (momentum-only successor closed in `momentum_book_invalidation.md`), Month-End FX Flow (closed in `month_end_fx_flow_h1.md`). Honest `n_trials` is 6.

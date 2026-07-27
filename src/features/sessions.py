@@ -71,15 +71,6 @@ def _bucketed_1min_bars(pair: str, data_dir: str | Path) -> pd.DataFrame:
         breakpoints.append((ny_open[i], "ny", all_dates[i]))
     breakpoints.sort(key=lambda item: item[0])
 
-    # Bucketing via `DatetimeIndex.searchsorted` rather than pulling `.value`
-    # (nanoseconds-since-epoch) into a raw int64 array: pandas versions
-    # differ in the default integer resolution backing a DatetimeIndex
-    # (nanosecond vs. microsecond vs. second), so comparing `.value`-derived
-    # integers against `.values.astype("int64")`-derived ones silently
-    # breaks the moment the two sides don't agree on a unit -- every bar
-    # lands in bucket -1 and gets dropped, with no error raised.
-    # `searchsorted` compares actual Timestamps and stays correct regardless
-    # of the underlying resolution.
     boundary_index = pd.DatetimeIndex([bp[0] for bp in breakpoints])
     boundary_labels = np.array([bp[1] for bp in breakpoints])
     boundary_dates = pd.DatetimeIndex([bp[2] for bp in breakpoints])

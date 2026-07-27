@@ -43,7 +43,7 @@ def test_asian_session_is_midnight_to_london_open(tmp_path):
 
     monday = pd.Timestamp("2023-01-09")
     open_val = close[utc_index.get_loc(pd.Timestamp("2023-01-09 00:00", tz="UTC"))]
-    close_val = close[utc_index.get_loc(pd.Timestamp("2023-01-09 07:59", tz="UTC"))]  # GMT: London opens 08:00 UTC
+    close_val = close[utc_index.get_loc(pd.Timestamp("2023-01-09 07:59", tz="UTC"))]
 
     assert result.loc[monday, "asian_return"] == pytest.approx(np.log(close_val / open_val))
 

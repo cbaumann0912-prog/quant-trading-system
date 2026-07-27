@@ -132,7 +132,7 @@ def test_dummy_permutation_null_signal_high_p_value():
 
     x1 = pd.Series(rng.normal(0, 1, n), index=idx)
     dummy = pd.Series(rng.integers(0, 2, n).astype(float), index=idx)
-    y = pd.Series(0.4 * x1 + rng.normal(0, 1, n), index=idx)  # no true interaction
+    y = pd.Series(0.4 * x1 + rng.normal(0, 1, n), index=idx)
 
     result = permutation_test_interaction_coefficient(
         y, x1, dummy, n_permutations=500, seed=1
@@ -171,7 +171,7 @@ def test_dummy_permutation_preserves_base_rate():
     idx = pd.RangeIndex(n)
     x1 = pd.Series(rng.normal(0, 1, n), index=idx)
     dummy_vals = np.zeros(n)
-    dummy_vals[:120] = 1.0  # fixed base rate: 120/400 = 30%
+    dummy_vals[:120] = 1.0
     dummy = pd.Series(dummy_vals, index=idx)
     y = pd.Series(rng.normal(0, 1, n), index=idx)
 

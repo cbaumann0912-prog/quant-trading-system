@@ -1,10 +1,14 @@
+import os
 import sys
-sys.path.insert(0, r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026')
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
 import numpy as np
 from scipy import stats
-from src.evaluation.significance import bonferroni_correction, benjamini_hochberg
+from src.evaluation.significance import bonferroni_correction, benjamini_hochberg_correction
 from src.stats.hypothesis_tests import t_test_mean
 
 alpha = 0.05
@@ -18,10 +22,18 @@ PAIRS = {
     "USD/JPY": "USDJPY",
 }
 
-ARCHIVE_DIR = r"C:\Users\clayb\onedrive\desktop\career\02_quant_projects\summer2026\archive\OG_results\realistic"
+ARCHIVE_DIR = Path(
+    os.environ.get("ORIGINAL_STRATEGY_DIR", REPO_ROOT.parent / "_original_strategy")
+) / "OG_results" / "realistic"
+
+if not ARCHIVE_DIR.is_dir():
+    raise FileNotFoundError(
+        f"Original-strategy results not found at {ARCHIVE_DIR}. "
+        "Set ORIGINAL_STRATEGY_DIR to the directory containing OG_results/."
+    )
 
 for pair, folder in PAIRS.items():
-    df = pd.read_csv(f"{ARCHIVE_DIR}\\{folder}\\daily_returns.csv", parse_dates=["date"])
+    df = pd.read_csv(ARCHIVE_DIR / folder / "daily_returns.csv", parse_dates=["date"])
     df = df[df["daily_return_pct"] != 0].dropna()
     returns = df["daily_return_pct"].values
 
@@ -30,7 +42,7 @@ for pair, folder in PAIRS.items():
     p_values.append(float(result["p_value"]))
 
 bonferroni_results = bonferroni_correction(p_values, alpha)
-bh_results = benjamini_hochberg(p_values, alpha)
+bh_results = benjamini_hochberg_correction(p_values, alpha)
 
 print("Null: zero mean log return per pair (methodology demonstration)")
 print(f"alpha = {alpha}, m = {len(p_values)}")

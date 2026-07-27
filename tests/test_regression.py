@@ -295,7 +295,7 @@ def test_vif_flags_near_duplicate_columns():
     rng = np.random.default_rng(9)
     n = 500
     x0 = rng.normal(0, 1, n)
-    x1 = x0 + rng.normal(0, 1e-6, n)  # near-duplicate of x0
+    x1 = x0 + rng.normal(0, 1e-6, n)
     x2 = rng.normal(0, 1, n)
     vif = compute_vif(np.column_stack([x0, x1, x2]))
 

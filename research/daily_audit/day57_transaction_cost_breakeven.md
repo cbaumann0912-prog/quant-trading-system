@@ -83,7 +83,7 @@ The cost gate is criterion 5 of the spec's falsification list. Where the full ve
 | Multiple testing — BH across 6 strategies, p < 0.0083 | Not yet run |
 | H2 — speed interaction | FAIL, mechanism unsupported |
 
-Every H1 row reads "pending rerun" because `intraday_overshoot_reversal_h1.md` does not reproduce from a fresh rebuild: 3,616 published trades against 3,206 rebuilt, −11.3%. Commit a84039f flags the note as "pending walk-forward rerun," so the note is the stale side. The gap is not uniform across pairs, which is a changed GARCH sigma path rather than a truncation, and it is far too large to be numerical noise — a 0.03% sigma perturbation moves roughly 1 trigger day in 311.
+Every H1 row reads "pending rerun" because `intraday_overshoot_section10_validation.md` does not reproduce from a fresh rebuild: 3,616 published trades against 3,206 rebuilt, −11.3%. Commit a84039f flags the note as "pending walk-forward rerun," so the note is the stale side. The gap is not uniform across pairs, which is a changed GARCH sigma path rather than a truncation, and it is far too large to be numerical noise — a 0.03% sigma perturbation moves roughly 1 trigger day in 311.
 
 **The verdict remains incomplete.** A passing cost gate does not advance the strategy toward deployment on its own, and the lockbox stays sealed.
 
@@ -95,8 +95,8 @@ Slippage is not spread. Fading a fast move means crossing into adverse flow, and
 The per-pair ranking could be a power artifact. No individual pair reached significance in the H1 note (largest |t| = 1.40), so "EUR/USD has a negative edge" and "EUR/USD has a small positive edge measured with noise" are not distinguishable here. The diversification conclusion holds either way; the specific ordering should not be read as reliable.
 
 ## Next steps
-- Rerun the H1 pipeline and update `intraday_overshoot_reversal_h1.md`. Until then the project's only live result is unverifiable, which blocks the paper's results section more than anything else on the list.
-- Re-examine `intraday_overshoot_h1.py`'s flat `PIP_BP = 0.9`. The trade-weighted figure is 1.0058, so published net Sharpes are about 12% optimistic on the cost term. Small, but it is a known bias with a known sign.
+- Rerun the H1 pipeline and update `intraday_overshoot_section10_validation.md`. Until then the project's only live result is unverifiable, which blocks the paper's results section more than anything else on the list.
+- Re-examine `intraday_overshoot_section10_validation.py`'s flat `PIP_BP = 0.9`. The trade-weighted figure is 1.0058, so published net Sharpes are about 12% optimistic on the cost term. Small, but it is a known bias with a known sign.
 - Test cost margin under universe reduction. If the strategy is only viable at 10 pairs, that is a deployment constraint worth stating explicitly in the spec's Section 7 before sizing work begins.
 - Run the 6-way Benjamini-Hochberg correction. It is the one Section 10 criterion never attempted, and at rank 1 of 6 it needs p < 0.0083.
 - Nothing here justifies opening the lockbox. The cost gate is one of the spec's Section 10 requirements, not all of them.

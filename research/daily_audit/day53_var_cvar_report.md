@@ -4,7 +4,7 @@
 How do parametric VaR, historical VaR, Monte Carlo VaR, and CVaR compare on the momentum-only pooled book's daily pnl, and where do parametric and historical VaR diverge most?
 
 ## Scope Note
-"All strategies" overstates it. Three of the four candidates (PC2 Carry Regime, Momentum w/ ML Regime, OU Half-Life Mean Reversion) were discarded pre-validation, and the fourth (Volatility Regime Breakout/Mean-Reversion) failed Section 10 on its reversion leg (`day48_two_leg_validation.md`). Only the momentum leg reached validation, reused unchanged here as `momentum_only_pooled_book.md`. This is VaR/CVaR on that one series, not a cross-strategy comparison.
+"All strategies" overstates it. Three of the four candidates (PC2 Carry Regime, Momentum w/ ML Regime, OU Half-Life Mean Reversion) were discarded pre-validation, and the fourth (Volatility Regime Breakout/Mean-Reversion) failed Section 10 on its reversion leg (`vol_regime_two_leg_section10_validation.md`). Only the momentum leg reached validation, reused unchanged here as `momentum_only_pooled_book.md`. This is VaR/CVaR on that one series, not a cross-strategy comparison.
 
 ## Methodology 
 `day53_var_cvar_report.py` reuses the momentum pipeline unchanged (`momentum_signal`, `compute_composite_regime_score_walkforward`, `classify_regime`, `regime_gated_pnl`), pooled across all three pairs, development window only (2011-2023, lockbox excluded), same pooling convention as Day 50/52. `var_historical`, `var_parametric`, `var_monte_carlo`, and `cvar` (`src/analysis/portfolio.py`) run on that daily pnl at 95% and 99% confidence. Monte Carlo: 100,000 simulations, seed 28.

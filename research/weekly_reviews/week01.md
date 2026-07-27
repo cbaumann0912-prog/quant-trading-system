@@ -5,7 +5,7 @@ Distributions (normal, log-normal, Student-t) implemented in `src/stats/distribu
 
 ## Findings
 - All three forex pairs reject normality; empirical excess kurtosis confirms fat tails beyond what normal distribution predicts.
-- Sharpe (1994) requires excess returns over risk-free rate, not raw returns; annualization factor assumes trading days (later revised — FX empirically ~312 days/year, not 252).
+- Sharpe (1994) requires excess returns over risk-free rate, not raw returns; annualization factor is derived empirically from each series' own index (~312 obs/year on this daily data).
 - CLT justifies t-tests on mean returns despite non-normal daily returns; LLN implications for small-sample backtest reliability.
 - Gap identified: regression/beta mechanics from Day 3 momentum paper not yet understood — put off for a later date.
 

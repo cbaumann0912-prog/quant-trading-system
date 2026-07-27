@@ -1,6 +1,6 @@
 """H1 primary validation for research/strategies/month_end_fx_flow.md.
 
-First run stages 1-minute bars into a cache (slow). Later runs reuse it.
+Stages 1-minute bars from raw data on every run.
 """
 import sys
 from pathlib import Path
@@ -17,7 +17,6 @@ from src.stats.regression import compute_vif
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT.parent / "data"
-CACHE_DIR = REPO_ROOT / "research" / "applied_analysis" / "_month_end_cache"
 
 PAIRS = [
     "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD",
@@ -47,13 +46,8 @@ TERMS = ["signal", "month_end", "fix",
          "signal:month_end:fix"]
 KEY = "signal:month_end:fix"
 
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
+staged_pairs = {}
 for pair in PAIRS:
-    cache_path = CACHE_DIR / f"{pair}.csv"
-    if cache_path.exists():
-        continue
-
     print(f"staging {pair} ...", flush=True)
     raw = pd.read_csv(DATA_DIR / f"{pair}.csv", usecols=["Datetime", "Close"])
     parsed = pd.to_datetime(raw["Datetime"], format="%Y%m%d %H%M%S")
@@ -83,7 +77,7 @@ for pair in PAIRS:
     out["daily_log_return"] = np.log(daily_close / daily_close.shift(1))
     out = out.loc[(out.index >= pd.Timestamp(START)) & (out.index <= pd.Timestamp(END))]
     out.index.name = "date"
-    out.to_csv(cache_path)
+    staged_pairs[pair] = out
 
 print("\nH1 primary: month-end x fix-window interaction")
 print(f"Universe: {len(PAIRS)} pairs   Sample: {START} to {END} (lockbox sealed)")
@@ -93,7 +87,7 @@ panels = {}
 for fix_col in ("fix_return", "fix_return_narrow"):
     frames = []
     for pair in PAIRS:
-        df = pd.read_csv(CACHE_DIR / f"{pair}.csv", index_col=0, parse_dates=True)
+        df = staged_pairs[pair]
         period = df.index.to_period("M")
 
         month_to_date = df["daily_log_return"].shift(1).groupby(period).cumsum()

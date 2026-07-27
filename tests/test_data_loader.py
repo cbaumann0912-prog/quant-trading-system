@@ -79,7 +79,7 @@ def test_get_returns_simple_vs_log_differ(loader):
 
 def test_unsupported_pair_raises():
     with pytest.raises(ValueError):
-        DataLoader(pairs=["USDCHF"], start=START, end=END, data_dir=DATA_DIR)
+        DataLoader(pairs=["USDSEK"], start=START, end=END, data_dir=DATA_DIR)
 
 
 def test_empty_pairs_raises():
@@ -87,5 +87,12 @@ def test_empty_pairs_raises():
         DataLoader(pairs=[], start=START, end=END, data_dir=DATA_DIR)
 
 
-def test_supported_pairs_frozen_to_three():
-    assert SUPPORTED_PAIRS == {"EURUSD", "GBPUSD", "USDJPY"}
+def test_supported_pairs_frozen_to_universe():
+    assert SUPPORTED_PAIRS == {
+        "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD",
+        "USDCAD", "NZDUSD", "EURGBP", "EURJPY", "EURCHF",
+    }
+
+
+def test_original_three_pairs_still_supported():
+    assert {"EURUSD", "GBPUSD", "USDJPY"}.issubset(SUPPORTED_PAIRS)

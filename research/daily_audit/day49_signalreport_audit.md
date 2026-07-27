@@ -36,7 +36,7 @@ The n_trials/strategy count used throughout this report is 4, not 5 as originall
 | IC mean | -0.1037 |
 | IC std | 0.3084 |
 | IC frac. positive | 28.57% |
-| OOS Sharpe mean | -0.2688 |
+| OOS Sharpe mean | -0.1646 |
 | Primary regression p(b3) | 0.00000 |
 | BH-significant (2-leg, alpha=0.05) | True |
 | Survives project-wide p<0.0125 bar | True |
@@ -50,7 +50,7 @@ The n_trials/strategy count used throughout this report is 4, not 5 as originall
 | IC mean | -0.2355 |
 | IC std | 0.2349 |
 | IC frac. positive | 14.29% |
-| OOS Sharpe mean | -1.0262 |
+| OOS Sharpe mean | -0.8526 |
 | Primary regression p(b3) | 0.56308 |
 | BH-significant (2-leg, alpha=0.05) | False |
 | Survives project-wide p<0.0125 bar | False |

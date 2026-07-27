@@ -13,8 +13,7 @@ def price_zscore_signal(data: pd.DataFrame, lookback: int) -> pd.Series:
         Must contain a 'price' column, indexed by datetime ascending.
     lookback : int
         Rolling window for the mean/std estimate. The strategy spec uses 26
-        trading days (`trading_days_per_year // 12`, one month at 312 FX
-        trading days/year) -- deliberately shorter than the 78-day momentum
+        trading days -- deliberately shorter than the 78-day momentum
         lookback, since mean-reversion is expected to operate on a faster
         timescale than the momentum leg.
 

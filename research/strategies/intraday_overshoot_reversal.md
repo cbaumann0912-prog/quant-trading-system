@@ -6,8 +6,6 @@
 ## Provenance
 Strategy #6. Five tested previously, all null: PC2 Carry Regime, Momentum w/ ML Regime, OU Half-Life Mean Reversion, Volatility Regime Breakout/Mean-Reversion (momentum-only successor closed in `momentum_book_invalidation.md`), Month-End FX Flow (closed in `month_end_fx_flow_h1.md`). Honest `n_trials` is 6.
 
-Two findings from that work carry directly into this design and are the reason it is shaped the way it is. The 09:00-12:00 ET window produced the highest gross Sharpe of any window tested. And every session variant died on turnover, not on signal: going flat daily cost 166 legs/year against 5.9 for the daily book.
-
 ## 0. Feasibility, computed before the hypothesis
 **Cost hurdle.** EUR/USD 09:00-12:00 ET session return std is 27.6bp, annualizing to 4.39% vol. Against a 0.9bp round trip:
 
@@ -29,7 +27,6 @@ The lever available here that carry lacked is breadth. Ten pairs with imperfectl
 Achieved power is reported with every result via `compute_achieved_power`.
 
 ## 1. Hypothesis
-
 **H1.** Within the 09:00-12:00 ET window, price displacement away from the session open partially reverses before the window closes. Fading a large displacement earns a positive net-of-cost return.
 
 **H2, the contribution.** The reversal is stronger following *fast* displacement than slow displacement of the same magnitude. Fast moves are impatient liquidity demand and overshoot; slow moves of equal size are more likely informed and should not revert.
@@ -44,7 +41,6 @@ Falsification criteria, binding:
 6. Power disclosure: achieved power and realized effective breadth reported alongside every result.
 
 ## 2. Economic rationale
-
 The counterparty is a market maker with unwanted inventory. When a large directional order arrives in a three-hour window, dealers absorb it, price moves further than the information warrants, and dealers unwind into the reversion. The trader on the other side is buying immediacy and is price-insensitive about it.
 
 This mechanism does not get arbitraged away because the liquidity demander is not trying to predict anything, and the compensation is payment for bearing inventory risk. That is a structurally different situation from the momentum hypothesis this project spent Days 42-57 on, which never identified a counterparty at all.
@@ -54,7 +50,6 @@ Choosing 09:00-12:00 ET is not arbitrary within that story: it is the London-New
 **What would falsify the mechanism rather than the effect.** If reversal is equally strong for slow and fast displacement (H2 null), the story about impatient flow is wrong even if H1 passes, and the write-up must say the effect exists for reasons this spec does not explain.
 
 ## 3. Data
-
 All 10 pairs from the outset, so universe selection cannot become a post-hoc degree of freedom as it did in `day56_regime_conditional_performance.md`.
 
 1-minute bars, `data/{pair}.csv`. Timestamps carry a fixed UTC-5 file offset, converted per `src/features/sessions.py` then DST-aware converted to America/New_York, since 09:00 ET is a local-clock event.
@@ -62,7 +57,6 @@ All 10 pairs from the outset, so universe selection cannot become a post-hoc deg
 Development 2011-01-01 to 2023-12-31. Lockbox 2024-01-01 to 2026-05-01, sealed.
 
 ## 4. Signal logic
-
 All parameters fixed as of this document. None may be tuned after seeing results.
 
 1. Entry scan runs 09:00 to 12:00 ET, exit at 13:00 ET. Reference price is the 09:00 bar open.
@@ -84,25 +78,20 @@ GARCH is used to **scale the threshold, not to gate trading**. A fixed threshold
 | Development sample | 2011-01-01 to 2023-12-31 |
 
 ## 5. Entry rule
-
 Enter at the close of the first 1-minute bar whose displacement from the 09:00 open exceeds `2.0 x sigma_t`, in the direction opposite the displacement. Unit exposure per pair.
 
 ## 6. Exit rule
-
 Flat at the 13:00 ET bar close. No target, no stop, no discretion. Holding period is whatever remains after entry.
 
 This is deliberately parameter-free. A reversion target or stop would improve the return distribution but each adds a tunable degree of freedom to a pre-registered test, and the project's history is that free parameters are where results go to die.
 
 ## 7. Position sizing
-
 Deferred until H1 passes, per the pattern that left the momentum book's Section 7 open through invalidation. Validation uses unit exposure per pair, equal weighted, as a measurement convention.
 
 ## 8. Risk controls
-
 Deferred with Section 7. Named now, because this strategy's risk profile is its central weakness: liquidity provision is structurally negative skew. Many small wins, occasional large losses when the move keeps running, and a hard 13:00 exit with no stop guarantees the left tail is uncapped within the holding period. Report realized skew, excess kurtosis, and CVaR (`src/analysis/portfolio.py`) alongside Sharpe, not after.
 
 ## 9. Failure conditions
-
 - Net-of-cost Sharpe non-positive at 2.0 pips on realized trade count.
 - Effect present only in the smallest displacement bucket, which would suggest bid-ask bounce rather than genuine overshoot.
 - Realized effective breadth near 1, collapsing the power argument.
@@ -110,7 +99,6 @@ Deferred with Section 7. Named now, because this strategy's risk profile is its 
 - Trade count materially below 15/year/pair, which would leave too few observations to say anything.
 
 ## 10. Statistical validation plan
-
 Gatekeeping. H2 runs only if H1 passes.
 
 **H1 primary.** Pooled mean trade return across all pairs and trades, tested against zero. Block-bootstrap standard errors clustered by **date**, since displacement events cluster across pairs on common shocks and 10 pairs on one day are nowhere near 10 independent observations. Report pooled book Sharpe, achieved power, effective breadth, deflated Sharpe at `n_trials=6`, skew, excess kurtosis, and max drawdown.
@@ -128,7 +116,6 @@ Gatekeeping. H2 runs only if H1 passes.
 **Lockbox.** Opened once, only on a PASS, only after the development verdict is written down.
 
 ## 11. Open questions and known gaps
-
 Entry slippage is the biggest threat. Fading a fast move means crossing the spread into adverse flow, and realized slippage on a 2-sigma displacement bar will exceed the quoted spread by an unknown amount. The 2.0-pip gate is a guess at this, not a measurement, and only tick data would settle it.
 
 1-minute OHLCV closes are not tradeable prices. At a 2-sigma threshold the displacement is around 55bp against a 0.9bp spread, so bid-ask bounce should not dominate, but robustness check 1's monotonicity is the actual test of that and it should be read carefully.

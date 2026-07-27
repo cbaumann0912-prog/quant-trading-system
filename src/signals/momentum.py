@@ -16,9 +16,7 @@ def momentum_signal(data: pd.DataFrame, lookback: int) -> pd.Series:
     data : pd.DataFrame
         Must contain a 'price' column, indexed by datetime ascending.
     lookback : int
-        Bars back to compare against. The strategy spec uses 78 trading days
-        (one quarter, `trading_days_per_year // 12 * 3` at 312 FX trading
-        days/year).
+        Bars back to compare against. The strategy spec uses 78 trading days.
 
     Returns
     -------

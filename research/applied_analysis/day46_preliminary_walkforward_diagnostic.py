@@ -22,7 +22,6 @@ DEV_END = "2023-12-31"
 
 MOMENTUM_LOOKBACK = 78
 REVERSION_LOOKBACK = 26
-TRADING_DAYS_PER_YEAR = 312
 REVERSION_ENTRY_Z = 2.0
 
 TRAIN_YEARS = 5
@@ -60,7 +59,8 @@ def window_sharpe(exposure: pd.Series, daily_log_return: pd.Series) -> float:
     pnl = pnl.dropna()
     if len(pnl) < 2 or pnl.std() == 0:
         return float("nan")
-    return (pnl.mean() / pnl.std()) * np.sqrt(TRADING_DAYS_PER_YEAR)
+    ann_factor = len(pnl) / ((pnl.index.max() - pnl.index.min()).days / 365.25)
+    return (pnl.mean() / pnl.std()) * np.sqrt(ann_factor)
 
 
 def sharpe_distribution_summary(values: list[float]) -> dict:

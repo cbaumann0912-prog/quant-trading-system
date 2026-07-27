@@ -8,9 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.framework.data_loader import DataLoader
 
-TRADING_DAYS_PER_YEAR = 312
-REGIME_WINDOW = (TRADING_DAYS_PER_YEAR // 12) * 3
-PRICE_Z_WINDOW = TRADING_DAYS_PER_YEAR // 12       
+REGIME_WINDOW = 78
+PRICE_Z_WINDOW = 26
 
 DATA_DIR = Path(__file__).resolve().parents[2].parent / "data"
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]

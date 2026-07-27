@@ -11,13 +11,12 @@ from src.analysis.portfolio import cvar, var_historical
 from src.analysis.signal_report import build_signal_report
 from src.evaluation.bootstrap import block_bootstrap
 from src.features.garch import fit_garch
-from src.features.sessions import FILE_UTC_OFFSET_HOURS
+from src.signals.intraday_overshoot import build_overshoot_sessions
 from src.stats.hypothesis_tests import compute_achieved_power, t_test_mean
 from src.stats.regression import interaction_regression_centered
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT.parent / "data"
-CACHE_DIR = REPO_ROOT / "research" / "applied_analysis" / "_overshoot_cache"
 
 PAIRS = [
     "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD",
@@ -50,100 +49,17 @@ SEED = 42
 ALPHA = 0.05
 N_TRIALS = 6
 
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
+sessions = {}
 for pair in PAIRS:
-    cache_path = CACHE_DIR / f"{pair}.csv"
-    if cache_path.exists():
-        continue
-
     print(f"staging {pair} ...", flush=True)
-    raw = pd.read_csv(DATA_DIR / f"{pair}.csv", usecols=["Datetime", "Close"])
-    parsed = pd.to_datetime(raw["Datetime"], format="%Y%m%d %H%M%S")
-    ny = pd.DatetimeIndex(
-        (parsed + pd.Timedelta(hours=FILE_UTC_OFFSET_HOURS)).dt.tz_localize("UTC")
-    ).tz_convert(NY)
-    bars = pd.DataFrame({
-        "c": raw["Close"].to_numpy(),
-        "d": ny.normalize().tz_localize(None),
-        "m": ny.hour.values * 60 + ny.minute.values,
-    })
-    del raw, parsed, ny
+    sessions[pair] = build_overshoot_sessions(
+        pair=pair, data_dir=DATA_DIR, start=START, end=END,
+        ks=KS, entry_delays=ENTRY_DELAYS,
+        scan_open=SCAN_OPEN, scan_close=SCAN_CLOSE, exit_min=EXIT_MIN,
+        vol_ratio_min_obs=VOL_RATIO_MIN_OBS, garch_min_train=GARCH_MIN_TRAIN,
+    )
 
-    daily_close = bars.groupby("d")["c"].last()
-    daily_ret = np.log(daily_close / daily_close.shift(1)).dropna()
-
-    # Walk-forward GARCH: parameters refit each year on data strictly before it,
-    # then the variance recursion rolled forward on realised returns only. A
-    # single full-sample fit would leak future data into the parameters even
-    # with the path lagged, and Day 47 measured that leak shifting regime
-    # labels by 39-68% on the momentum book.
-    conditional_vol = pd.Series(np.nan, index=daily_ret.index)
-    for year in sorted(daily_ret.index.year.unique()):
-        train = daily_ret[daily_ret.index.year < year]
-        if len(train) < GARCH_MIN_TRAIN:
-            continue
-        g = fit_garch(train)
-        hist = daily_ret[daily_ret.index.year <= year]
-        eps = (hist - train.mean()).to_numpy()
-        var = np.empty(len(eps))
-        var[0] = eps.var()
-        for i in range(1, len(eps)):
-            var[i] = g["omega"] + g["alpha"] * eps[i - 1] ** 2 + g["beta"] * var[i - 1]
-        path = pd.Series(np.sqrt(var), index=hist.index)
-        conditional_vol.loc[conditional_vol.index.year == year] = path[path.index.year == year]
-    garch = {"conditional_vol": conditional_vol.dropna()}
-
-    scan = bars[(bars["m"] >= SCAN_OPEN) & (bars["m"] <= EXIT_MIN)].sort_values(["d", "m"])
-    sess_open = scan.groupby("d")["c"].first()
-    scan_close = scan[scan["m"] <= SCAN_CLOSE].groupby("d")["c"].last()
-    exit_px = scan.groupby("d")["c"].last()
-    sess_ret = np.log(scan_close / sess_open)
-
-    ratio = (sess_ret.expanding(VOL_RATIO_MIN_OBS).std()
-             / daily_ret.reindex(sess_ret.index).expanding(VOL_RATIO_MIN_OBS).std()).shift(1)
-    sigma_sess = garch["conditional_vol"].reindex(sess_ret.index).shift(1) * ratio
-
-    out = pd.DataFrame({
-        "sigma": sigma_sess.values,
-        "open": sess_open.values,
-        "exit_px": exit_px.reindex(sess_open.index).values,
-    }, index=sess_open.index)
-    out.index.name = "date"
-
-    grouped = {d: (g["m"].to_numpy(), g["c"].to_numpy())
-               for d, g in scan[scan["m"] <= SCAN_CLOSE].groupby("d")}
-    for k in KS:
-        cols = {f"t_{k}": [], f"disp_{k}": []}
-        for delay in ENTRY_DELAYS:
-            cols[f"px_{k}_d{delay}"] = []
-        for date in out.index:
-            s = out["sigma"].get(date, np.nan)
-            mm, cc = grouped.get(date, (np.array([]), np.array([])))
-            hit_i = -1
-            if np.isfinite(s) and s > 0 and len(cc):
-                hit = np.abs(np.log(cc / cc[0])) > k * s
-                if hit.any():
-                    hit_i = int(np.argmax(hit))
-            if hit_i < 0:
-                cols[f"t_{k}"].append(np.nan)
-                cols[f"disp_{k}"].append(np.nan)
-                for delay in ENTRY_DELAYS:
-                    cols[f"px_{k}_d{delay}"].append(np.nan)
-                continue
-            cols[f"t_{k}"].append(mm[hit_i] - SCAN_OPEN)
-            cols[f"disp_{k}"].append(np.log(cc[hit_i] / cc[0]))
-            for delay in ENTRY_DELAYS:
-                j = np.searchsorted(mm, mm[hit_i] + delay)
-                cols[f"px_{k}_d{delay}"].append(cc[j] if j < len(cc) else np.nan)
-        for name, vals in cols.items():
-            out[name] = vals
-
-    out = out.loc[(out.index >= START) & (out.index <= END)]
-    out.to_csv(cache_path)
-
-cache = {p: pd.read_csv(CACHE_DIR / f"{p}.csv", index_col=0, parse_dates=True) for p in PAIRS}
-all_days = pd.Index(sorted(set().union(*[set(c.index) for c in cache.values()])), name="date")
+all_days = pd.Index(sorted(set().union(*[set(c.index) for c in sessions.values()])), name="date")
 
 # One annualization convention for everything: the empirical observations-per-year
 # of the book's own index, matching PerformanceAnalyzer.compute_ann_factor so the
@@ -156,7 +72,7 @@ def trades(k, delay):
     frames = []
     for p in PAIRS:
         px = f"px_{k}_d{delay}"
-        x = cache[p].dropna(subset=[px, "exit_px", f"disp_{k}"])
+        x = sessions[p].dropna(subset=[px, "exit_px", f"disp_{k}"])
         frames.append(pd.DataFrame({
             "pair": p, "date": x.index, "tmin": x[f"t_{k}"].values,
             "ret": (-np.sign(x[f"disp_{k}"]) * np.log(x["exit_px"] / x[px])).values,
@@ -216,7 +132,7 @@ for k in KS:
           f"{analyzer(b).compute_sharpe():>+10.3f}{net_sharpe(t, b, GATE_PIPS):>+9.3f}")
 
 print("\n[3] TRIGGER TIMING -- minutes after 09:00 ET (k=2.0)")
-tt_all = pd.concat([cache[p][f"t_{K_PRIMARY}"].dropna() for p in PAIRS])
+tt_all = pd.concat([sessions[p][f"t_{K_PRIMARY}"].dropna() for p in PAIRS])
 for lo, hi in [(0, 30), (30, 31), (31, 45), (45, 60), (60, 90), (90, 120), (120, 150), (150, 181)]:
     n = int(((tt_all >= lo) & (tt_all < hi)).sum())
     lab = "09:30 exactly" if (lo, hi) == (30, 31) else f"{9 + lo // 60:02d}:{lo % 60:02d}-{9 + hi // 60:02d}:{hi % 60:02d}"
@@ -342,7 +258,7 @@ print(RULE)
 h2 = t.copy()
 h2["fast"] = (h2["tmin"] <= H2_FAST_MINUTES).astype(float)
 h2 = h2.merge(
-    pd.concat([cache[p][[f"disp_{K_PRIMARY}"]].assign(pair=p).reset_index() for p in PAIRS]),
+    pd.concat([sessions[p][[f"disp_{K_PRIMARY}"]].assign(pair=p).reset_index() for p in PAIRS]),
     on=["pair", "date"], how="left",
 )
 h2["size"] = h2[f"disp_{K_PRIMARY}"].abs()

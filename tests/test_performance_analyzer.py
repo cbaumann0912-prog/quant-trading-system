@@ -2,8 +2,6 @@ import pytest
 import pandas as pd
 import numpy as np
 from src.analysis.performance_analyzer import (
-    EQUITY_TRADING_DAYS_PER_YEAR,
-    FX_TRADING_DAYS_PER_YEAR,
     PerformanceAnalyzer,
     bps_per_pip,
     breakeven_annual_return,
@@ -539,7 +537,8 @@ def test_breakeven_increases_with_more_trades():
 
 
 def test_report_keys_present():
-    result = cost_report("EURUSD", notional=100_000.0, holding_period_days=5)
+    result = cost_report("EURUSD", notional=100_000.0, holding_period_days=5,
+                         trades_per_year=52.0)
 
     expected = {
         "pair", "spread_bps", "rollover_bps", "total_bps", "breakeven_return",
@@ -549,20 +548,11 @@ def test_report_keys_present():
     assert expected.issubset(result.keys())
 
 
-def test_breakeven_five_day_hold_known_value():
-    """1 bps round trip at a 5-day hold, continuously deployed.
-
-    260 FX sessions / 5 = 52 round trips -> 0.520%/yr. The equity convention
-    (252) gives 0.504%; both are recorded in the Day 57 math note.
-    """
-    result = breakeven_annual_return(cost_bps=1.0, holding_period_days=5)
-    assert result == pytest.approx(0.00520)
-
-    equity = breakeven_annual_return(
-        cost_bps=1.0, holding_period_days=5,
-        trades_per_year=implied_trades_per_year(5, EQUITY_TRADING_DAYS_PER_YEAR),
+def test_breakeven_scales_with_cost_and_trade_count():
+    result = breakeven_annual_return(
+        cost_bps=1.0, holding_period_days=5, trades_per_year=52.0
     )
-    assert equity == pytest.approx(0.00504)
+    assert result == pytest.approx(0.00520)
 
 
 def test_pip_size_jpy_quoted_pairs():
@@ -584,7 +574,7 @@ def test_bps_per_pip_is_scale_invariant_across_quote_conventions():
 
 def test_cost_report_default_lot_matches_price_relative_convention():
     result = cost_report(
-        "EURUSD", notional=100_000.0, holding_period_days=5,
+        "EURUSD", notional=100_000.0, holding_period_days=5, trades_per_year=52.0,
         spread_pips=1.0, quote_price=1.10,
     )
 
@@ -594,7 +584,7 @@ def test_cost_report_default_lot_matches_price_relative_convention():
 
 def test_cost_report_explicit_lot_reproduces_desk_convention():
     result = cost_report(
-        "EURUSD", notional=100_000.0, holding_period_days=5,
+        "EURUSD", notional=100_000.0, holding_period_days=5, trades_per_year=52.0,
         spread_pips=1.0, quote_price=1.10, lot_size=100_000.0,
     )
 
@@ -665,24 +655,14 @@ def test_max_viable_spread_falls_with_turnover():
 
 
 def test_breakeven_sharpe_scales_inversely_with_vol():
-    low_vol = breakeven_sharpe(1.0, 5, annualized_vol=0.02)
-    high_vol = breakeven_sharpe(1.0, 5, annualized_vol=0.08)
+    low_vol = breakeven_sharpe(1.0, 5, annualized_vol=0.02, trades_per_year=52.0)
+    high_vol = breakeven_sharpe(1.0, 5, annualized_vol=0.08, trades_per_year=52.0)
 
     assert low_vol == pytest.approx(4 * high_vol)
 
 
-def test_implied_trades_per_year_defaults_to_fx_convention():
-    """FX spot trades weekdays only -- 260/yr, not the equity 252 and not the
-    312 (6 x 52) used elsewhere in this repo. Measured on the project's own
-    2011-2023 session data: 259.44/yr, 258-260 every calendar year."""
-    assert FX_TRADING_DAYS_PER_YEAR == 260
-    assert implied_trades_per_year(5) == pytest.approx(52.0)
-    assert implied_trades_per_year(1) == pytest.approx(260.0)
-
-
-def test_implied_trades_per_year_accepts_empirical_factor():
-    """The preferred route: pass compute_ann_factor()'s empirical figure."""
-    assert implied_trades_per_year(5, 259.44) == pytest.approx(51.888)
+def test_implied_trades_per_year_uses_supplied_factor():
+    assert implied_trades_per_year(5, 312.0) == pytest.approx(62.4)
     assert implied_trades_per_year(1, 312.0) == pytest.approx(312.0)
 
 
@@ -697,14 +677,16 @@ def test_cost_functions_reject_invalid_inputs():
     with pytest.raises(ValueError):
         round_trip_cost_bps(spread_pips=1.0, pip_value=10.0, notional=0.0)
     with pytest.raises(ValueError):
-        breakeven_annual_return(cost_bps=-1.0, holding_period_days=5)
+        breakeven_annual_return(cost_bps=-1.0, holding_period_days=5,
+                                trades_per_year=52.0)
     with pytest.raises(ValueError):
-        implied_trades_per_year(0)
+        implied_trades_per_year(0, 312.0)
     with pytest.raises(ValueError):
         rollover_bps_per_day(0.01, 0.02, direction=0)
     with pytest.raises(ValueError):
         bps_per_pip("EURUSD", 0.0)
     with pytest.raises(ValueError):
-        cost_report("EURUSD", notional=0.0, holding_period_days=5)
+        cost_report("EURUSD", notional=0.0, holding_period_days=5,
+                    trades_per_year=52.0)
     with pytest.raises(ValueError):
         max_viable_spread_pips(0.02, "EURUSD", 1.10, trades_per_year=0.0)

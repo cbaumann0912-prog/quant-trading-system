@@ -19,7 +19,7 @@ Position sizing is a first-order decision. Markowitz minimizes variance directly
 - Log returns approximate daily P&L adequately
 - Weights estimated on year Y held fixed through year Y+1, no rebalancing
 - Risk-free rate = 0.0 (framework standard)
-- Annualization factor = 252
+- Annualization factor computed empirically per OOS quarter from that quarter's own index (~313-316 obs/year)
 - No transaction costs applied
 
 ## 5. Findings
@@ -33,24 +33,24 @@ Position sizing is a first-order decision. Markowitz minimizes variance directly
 ### Average OOS Metrics
 | Method | Avg Vol | Avg Sharpe | Avg Ann Return |
 |--------|---------|------------|----------------|
-| MV     | 0.0412  | 0.4635     | 0.0147         |
-| ERC    | 0.0404  | 0.4401     | 0.0127         |
+| MV     | 0.0462  | 0.5197     | 0.0185         |
+| ERC    | 0.0453  | 0.4936     | 0.0159         |
 
 ### Statistical Significance (57 matched quarters)
 | Test                    | Sharpe p-val | Vol p-val |
 |-------------------------|--------------|-----------|
 | Binomial (vs 50/50)     | 0.597        | 0.111     |
-| Paired t-test           | 0.579        | 0.056     |
-| Wilcoxon signed-rank    | 0.796        | 0.078     |
+| Paired t-test           | 0.581        | 0.056     |
+| Wilcoxon signed-rank    | 0.796        | 0.085     |
 
-Mean Sharpe diff (MV − ERC): +0.023 (std: 0.316)  
-Mean Vol diff (MV − ERC): +0.0008 (std: 0.003)
+Mean Sharpe diff (MV − ERC): +0.026 (std: 0.355)  
+Mean Vol diff (MV − ERC): +0.0009 (std: 0.003)
 
 Neither result clears p = 0.05 on any test. The vol result comes 
 closest on the paired t-test (0.056) but does not cross the threshold.
 
 ## 6. Alternative Explanations
-MV's higher average Sharpe may partly reflect its tendency to concentrate in whichever asset happened to perform well in the OOS quarter rather than any structural advantage — concentration occasionally gets lucky. The mean vol difference of 0.0008 with a standard deviation of 0.003 gives a signal-to-noise ratio well below one, meaning estimation error in the sample covariance matrix could account for most of the observed gap on its own.
+MV's higher average Sharpe may partly reflect its tendency to concentrate in whichever asset happened to perform well in the OOS quarter rather than any structural advantage — concentration occasionally gets lucky. The mean vol difference of 0.0009 with a standard deviation of 0.003 gives a signal-to-noise ratio well below one, meaning estimation error in the sample covariance matrix could account for most of the observed gap on its own.
 
 ## 7. Interpretation
 Neither method statistically outperforms the other across 57 quarters and 14 years. The scoreboard percentages look directional but three independent tests say they're not distinguishable from a coin flip. Given that, the choice between MV and ERC comes down to something other than raw performance — ERC's more even weight distribution makes it less sensitive to covariance estimation error and easier to reason about when layering a directional signal on top

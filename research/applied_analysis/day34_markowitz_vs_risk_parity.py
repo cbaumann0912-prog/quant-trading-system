@@ -16,7 +16,6 @@ FILES = {
     "USDJPY": "USDJPY.csv",
 }
 
-ANN_FACTOR = 312
 
 pairs = {}
 for pair_name, filename in FILES.items():
@@ -62,10 +61,14 @@ for est_year in estimation_years:
         mv_port  = quarter.to_numpy() @ mv["weights"]
         erc_port = quarter.to_numpy() @ erc["weights"]
 
+        ann_factor_oos = len(quarter) / (
+            (quarter.index.max() - quarter.index.min()).days / 365.25
+        )
+
         def stats(port):
-            vol    = port.std()  * np.sqrt(ANN_FACTOR)
-            sharpe = (port.mean() / port.std()) * np.sqrt(ANN_FACTOR)
-            ret    = port.mean() * ANN_FACTOR
+            vol    = port.std()  * np.sqrt(ann_factor_oos)
+            sharpe = (port.mean() / port.std()) * np.sqrt(ann_factor_oos)
+            ret    = port.mean() * ann_factor_oos
             return vol, sharpe, ret
 
         mv_vol,  mv_sharpe,  mv_ret  = stats(mv_port)

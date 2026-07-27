@@ -9,7 +9,7 @@ from src.stats.optimization import constrained_optimize
 def markowitz_sharpe(
     portfolio_return: float,
     portfolio_variance: float,
-    ann_factor: float = 312.0,
+    ann_factor: float,
     risk_free_rate: float = 0.0,
 ) -> float:
     """
@@ -21,8 +21,9 @@ def markowitz_sharpe(
         Expected portfolio return per observation period.
     portfolio_variance : float
         Portfolio variance per observation period.
-    ann_factor : float, default=312.0
-        Number of observations per year.
+    ann_factor : float
+        Number of observations per year, computed from the return index of
+        the series being annualized.
     risk_free_rate : float, default=0.0
         Annualized risk-free rate
 

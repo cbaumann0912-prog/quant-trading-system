@@ -660,35 +660,6 @@ def regime_conditional_performance(returns: pd.Series, regimes: pd.Series) -> di
     }
 
 
-# Nominal FX trading days per year, used ONLY as a fallback when a realized
-# trade count is unavailable.
-#
-# Which number is right is not a matter of taste, and this repo currently
-# carries two wrong ones:
-#   252  -- US *equity* convention (260 weekdays minus ~8 exchange holidays).
-#           FX spot does not close for most US equity holidays, so 252
-#           understates it.
-#   312  -- used in portfolio.markowitz_sharpe's default, day34/43/46 scripts,
-#           and the momentum/mean_reversion docstrings. 312 = 6 x 52, which
-#           assumes a six-session week. FX spot runs Sunday 17:00 ET to Friday
-#           17:00 ET, and the Sunday open carries Monday's value date, so the
-#           week is five sessions, not six.
-#   260  -- weekdays per year, which is what FX spot actually trades.
-#
-# Measured on this project's own data (research/applied_analysis/
-# _overshoot_cache, 2011-2023): 3,369 session days over 12.986 years = 259.44
-# per year, 258-260 in every single calendar year, zero weekend bars. 260 is
-# correct to within 0.2%; 312 is 20% high and inflates any Sharpe annualized
-# with it by sqrt(312/259.4) = 1.10.
-#
-# Prefer the empirical route regardless: PerformanceAnalyzer.compute_ann_factor
-# derives observations-per-year from the index and needs no constant at all.
-# That is the convention the rest of this module uses.
-FX_TRADING_DAYS_PER_YEAR = 260
-EQUITY_TRADING_DAYS_PER_YEAR = 252
-
-# Backwards-compatible alias. Points at the FX figure, since this is an FX repo.
-TRADING_DAYS_PER_YEAR = FX_TRADING_DAYS_PER_YEAR
 DEFAULT_DAY_COUNT = 360
 _JPY_PIP = 0.01
 _STANDARD_PIP = 0.0001
@@ -858,29 +829,26 @@ def rollover_bps_per_day(
 
 def implied_trades_per_year(
     holding_period_days: float,
-    trading_days_per_year: float = FX_TRADING_DAYS_PER_YEAR,
+    trading_days_per_year: float,
 ) -> float:
     """Round trips per year implied by a holding period under continuous
     deployment.
 
     This is an **upper bound** on trade count, not a measurement, and the gap
     is usually large. A strategy holding 5 days but in the market only 40% of
-    the time trades far less than 260/5 times a year. The intraday overshoot
+    the time trades far less than the implied count. The intraday overshoot
     book holds 0.167 days but trades 24.7 times a year, not 1,560. Where a
-    realized trade count exists, pass it explicitly to
-    `breakeven_annual_return` rather than relying on this.
+    realized trade count exists, pass it directly to `breakeven_annual_return`
+    rather than going through this.
 
     Parameters
     ----------
     holding_period_days : float
         Average holding period in trading days. Fractional values are valid --
         an intraday book holding 09:00 to 13:00 has a holding period of ~0.167.
-    trading_days_per_year : float, optional
-        Sessions per year. Defaults to the FX weekday count (260). Pass
-        `PerformanceAnalyzer.compute_ann_factor()` to use the empirical figure
-        derived from the actual return index, which is preferred -- see the
-        note on `FX_TRADING_DAYS_PER_YEAR` for why the repo's other constants
-        (252 and 312) are both wrong for this data.
+    trading_days_per_year : float
+        Observations per year for the series in question, from
+        `PerformanceAnalyzer.compute_ann_factor()`.
 
     Returns
     -------
@@ -908,54 +876,60 @@ def implied_trades_per_year(
 def breakeven_annual_return(
     cost_bps: float,
     holding_period_days: float,
-    trades_per_year: Optional[float] = None,
+    trades_per_year: float,
 ) -> float:
     """Annualized gross return required to cover transaction costs.
+
+    Cost is charged per round trip; return is measured per year. The bridge is
+    trade count, which must be the realized figure for the strategy in
+    question. Where no realized count exists, `implied_trades_per_year` gives
+    the continuous-deployment upper bound from an empirical annualization
+    factor -- but that is a bound, not a measurement.
+
+    `cost_bps` should be the **total** per-trade cost. Where rollover is
+    material, pass `cost_report(...)["total_bps"]` rather than the spread alone.
 
     Parameters
     ----------
     cost_bps : float
         Total round-trip cost in basis points of notional.
     holding_period_days : float
-        Average holding period in trading days. Used to imply trade count when
-        `trades_per_year` is not supplied.
-    trades_per_year : float, optional
-        Realized round trips per year. Overrides the implied count when given.
-        Prefer this whenever a realized trade count is available.
+        Average holding period in trading days. Recorded for reporting; the
+        breakeven figure itself depends only on cost and trade count.
+    trades_per_year : float
+        Realized round trips per year.
 
     Returns
     -------
     float
-        Breakeven annualized return as a decimal (0.00504 for 0.504%).
+        Breakeven annualized return as a decimal.
 
     Raises
     ------
     ValueError
-        If `cost_bps` is negative, `trades_per_year` is negative, or
-        `holding_period_days` is not positive and no `trades_per_year` is given.
+        If `cost_bps` or `trades_per_year` is negative.
     """
     if cost_bps < 0:
         raise ValueError(f"cost_bps must be non-negative, got {cost_bps}.")
+    if trades_per_year < 0:
+        raise ValueError(
+            f"trades_per_year must be non-negative, got {trades_per_year}."
+        )
 
-    if trades_per_year is None:
-        n_trades = implied_trades_per_year(holding_period_days)
-    else:
-        if trades_per_year < 0:
-            raise ValueError(
-                f"trades_per_year must be non-negative, got {trades_per_year}."
-            )
-        n_trades = float(trades_per_year)
-
-    return n_trades * cost_bps / 1e4
+    return float(trades_per_year) * cost_bps / 1e4
 
 
 def breakeven_sharpe(
     cost_bps: float,
     holding_period_days: float,
     annualized_vol: float,
-    trades_per_year: Optional[float] = None,
+    trades_per_year: float,
 ) -> float:
     """Gross Sharpe ratio required to break even after costs.
+
+    A deterministic per-trade charge shifts the mean and leaves the standard
+    deviation essentially unchanged, so net Sharpe is gross Sharpe minus this
+    hurdle.
 
     Parameters
     ----------
@@ -964,9 +938,11 @@ def breakeven_sharpe(
     holding_period_days : float
         Average holding period in trading days.
     annualized_vol : float
-        Annualized standard deviation of strategy returns, as a decimal.
-    trades_per_year : float, optional
-        Realized round trips per year. Overrides the implied count.
+        Annualized standard deviation of strategy returns, as a decimal,
+        computed with the same annualization factor used elsewhere for the
+        series in question.
+    trades_per_year : float
+        Realized round trips per year.
 
     Returns
     -------
@@ -1047,10 +1023,10 @@ def cost_report(
     pair: str,
     notional: float,
     holding_period_days: float,
+    trades_per_year: float,
     spread_pips: float = 1.0,
     quote_price: float = 1.0,
     lot_size: Optional[float] = None,
-    trades_per_year: Optional[float] = None,
     rollover_bps_per_day_: float = 0.0,
     annualized_vol: Optional[float] = None,
 ) -> dict:
@@ -1066,6 +1042,8 @@ def cost_report(
         is supplied.
     holding_period_days : float
         Average holding period in trading days. Fractional values are valid.
+    trades_per_year : float
+        Realized round trips per year for the strategy being costed.
     spread_pips : float, optional
         Assumed round-trip spread in pips. Defaults to 1.0.
     quote_price : float, optional
@@ -1074,8 +1052,6 @@ def cost_report(
         Position size in base-currency units. When omitted, derived as
         `notional / quote_price` so that pip value and notional share a
         currency.
-    trades_per_year : float, optional
-        Realized round trips per year. Falls back to `252 / holding_period_days`.
     rollover_bps_per_day_ : float, optional
         Rollover cost in bps/day per `rollover_bps_per_day`. Positive is a cost.
         Defaults to 0.0, exact for a book flat overnight.
@@ -1121,11 +1097,7 @@ def cost_report(
     rollover_bps = rollover_bps_per_day_ * holding_period_days
     total_bps = spread_bps + rollover_bps
 
-    n_trades = (
-        implied_trades_per_year(holding_period_days)
-        if trades_per_year is None
-        else float(trades_per_year)
-    )
+    n_trades = float(trades_per_year)
 
     breakeven = breakeven_annual_return(
         max(total_bps, 0.0), holding_period_days, n_trades

@@ -41,7 +41,7 @@ A simple rolling-threshold classifier, not a Hamilton-filter Markov-switching mo
 
 | Parameter | Value |
 |---|---|
-| `trading_days_per_year` | 312 (FX); 252 for equities |
+| `trading_days_per_year` | 312 |
 | Regime window / momentum lookback | 78 trading days |
 | Regime thresholds | turbulent > 1.5, calm < 1.0, deadzone 1.0-1.5 |
 | Mean-reversion window | 26 trading days |

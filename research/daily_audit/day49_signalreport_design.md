@@ -8,8 +8,8 @@
 | IC std | 0.3084 |
 | IC-derived IR (mean/std) | -0.3361 |
 | IC frac. positive windows | 28.57% |
-| OOS Sharpe mean (n=15 windows) | -0.2688 |
-| OOS Sharpe std | 1.3205 |
+| OOS Sharpe mean (n=15 windows) | -0.1646 |
+| OOS Sharpe std | 1.0815 |
 | Primary regression p(b3) | 0.00000 |
 | BH-significant (alpha=0.05, 2-leg family) | True |
 | Survives project-wide pre-registered bar (p<0.0125) | True |
@@ -25,8 +25,8 @@
 | IC std | 0.2349 |
 | IC-derived IR (mean/std) | -1.0025 |
 | IC frac. positive windows | 14.29% |
-| OOS Sharpe mean (n=14 windows) | -1.0262 |
-| OOS Sharpe std | 1.5376 |
+| OOS Sharpe mean (n=14 windows) | -0.8526 |
+| OOS Sharpe std | 1.3822 |
 | Primary regression p(b3) | 0.56308 |
 | BH-significant (alpha=0.05, 2-leg family) | False |
 | Survives project-wide pre-registered bar (p<0.0125) | False |

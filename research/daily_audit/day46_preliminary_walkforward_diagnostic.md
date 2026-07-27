@@ -12,16 +12,16 @@ The per-window regime refit and the real conditional interaction-regression test
 - Regime classifier, compute_composite_regime_score plus classify_regime, fit on the full development sample instead of refit per training window. That gap is known, put off for a later date, and not corrected here.
 - Both legs scored unconditionally, meaning across every day in each test window regardless of that day's regime label.
 - Momentum signal compared against the 26-day forward log return using Spearman IC. Price z-score signal compared against the same forward return, also using Spearman IC.
-- A simplified per-window Sharpe also computed for each leg, using exposure at t-1 times the next day's log return, annualized at 312 trading days per year. Momentum uses its own plus or minus 1 signal as exposure. Reversion uses a rung-1-style exposure of plus or minus 1 or 0, based on whether the absolute price z-score exceeds 2.0.
+- A simplified per-window Sharpe also computed for each leg, using exposure at t-1 times the next day's log return, annualized with the empirical observations-per-year of each window's own pnl index. Momentum uses its own plus or minus 1 signal as exposure. Reversion uses a rung-1-style exposure of plus or minus 1 or 0, based on whether the absolute price z-score exceeds 2.0.
 - Not vol-targeted per Section 7 and no transaction costs, so this Sharpe is a stand-in, not a real one.
 
 ## Findings
 
 | Pair | Momentum OOS IC (mean, n=7) | Reversion OOS IC (mean, n=7) | Momentum Sharpe (mean / std / frac positive) | Reversion Sharpe (mean / std / frac positive) |
 |---|---|---|---|---|
-| EUR/USD | -0.0858 | -0.1254 | 0.132 / 0.845 / 0.571 | 0.506 / 1.555 / 0.714 |
-| GBP/USD | -0.0854 | -0.1207 | 0.179 / 0.228 / 0.714 | -0.033 / 0.836 / 0.429 |
-| USD/JPY | -0.1033 | -0.1422 | 0.522 / 0.826 / 0.571 | 0.209 / 0.826 / 0.714 |
+| EUR/USD | -0.0858 | -0.1254 | 0.132 / 0.848 / 0.571 | 0.506 / 1.560 / 0.714 |
+| GBP/USD | -0.0854 | -0.1207 | 0.180 / 0.229 / 0.714 | -0.033 / 0.838 / 0.429 |
+| USD/JPY | -0.1033 | -0.1422 | 0.524 / 0.829 / 0.571 | 0.209 / 0.828 / 0.714 |
 
 The pipeline ran clean on all 3 pairs, with n_obs between 4055 and 4056 and a range of 2011-01-02 to 2023-12-29. All 7 windows scored per pair, with no errors.
 

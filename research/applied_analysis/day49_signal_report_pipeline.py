@@ -26,7 +26,6 @@ MOMENTUM_LOOKBACK = 78
 PRICE_Z_LOOKBACK = 26
 FORWARD_HORIZON = 26
 REVERSION_ENTRY_Z = 2.0
-TRADING_DAYS_PER_YEAR = 312
 
 REGIME_WINDOW = 78
 TURBULENT_THRESHOLD = 1.5
@@ -81,7 +80,8 @@ def window_sharpe(exposure: pd.Series, daily_log_return: pd.Series) -> float:
     pnl = pnl.dropna()
     if len(pnl) < 2 or pnl.std() == 0:
         return float("nan")
-    return (pnl.mean() / pnl.std()) * np.sqrt(TRADING_DAYS_PER_YEAR)
+    ann_factor = len(pnl) / ((pnl.index.max() - pnl.index.min()).days / 365.25)
+    return (pnl.mean() / pnl.std()) * np.sqrt(ann_factor)
 
 
 def regime_gated_pnl(exposure: pd.Series, daily_log_return: pd.Series, active_mask: pd.Series) -> pd.Series:

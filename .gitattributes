@@ -1,0 +1,15 @@
+# Normalize all text to LF in the repository. Without this, Windows checkouts
+# commit CRLF and every diff renders as a full-file rewrite, and the Docker
+# build (Linux) sees different bytes than the local working copy.
+* text=auto eol=lf
+
+# Shell scripts must be LF or they fail inside the container.
+*.sh text eol=lf
+
+# Binary artifacts -- never touch line endings, never diff.
+*.csv binary
+*.parquet binary
+*.stats binary
+*.png binary
+*.pdf binary
+*.xlsx binary

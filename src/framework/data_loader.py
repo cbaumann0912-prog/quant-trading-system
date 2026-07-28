@@ -87,10 +87,26 @@ class DataLoader:
                 raise FileNotFoundError(f"No data file for {pair} at {path}")
 
             df = pd.read_csv(path, usecols=["Datetime", "Close"])
-            df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-            df = df.set_index("Datetime").sort_index()
 
-            daily = df["Close"].resample("D").last().dropna()
+            # Parsing all ~5.6M minute timestamps costs ~70% of total runtime
+            # and then discards 99.9% of them: only the daily last close
+            # survives. "YYYYMMDD HHMMSS" is fixed-width and zero-padded, so
+            # lexicographic order on the raw strings is chronological order.
+            # Sort and group on the strings, then parse only the ~5k surviving
+            # day keys.
+            #
+            # The source files are NOT sorted (index.is_monotonic_increasing
+            # is False on EURUSD.csv), so the sort is load-bearing for
+            # correctness, not just tidiness -- "last observation per day"
+            # is meaningless without it.
+            stamps = df["Datetime"].values.astype("U15")
+            order = np.argsort(stamps, kind="stable")
+            day_keys = stamps[order].astype("U8")
+            closes = df["Close"].values[order]
+
+            daily = pd.Series(closes).groupby(day_keys).last()
+            daily.index = pd.to_datetime(daily.index, format="%Y%m%d")
+            daily.index.name = "Datetime"
             series[pair] = daily
 
         data = pd.DataFrame(series)

@@ -12,11 +12,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
 RUN useradd --create-home --uid 1000 quant \
     && mkdir -p /out \
     && chown quant:quant /out
+
+# Copy as quant, not root: the container runs as a non-root user, and a
+# root-owned /app leaves pytest unable to write .pytest_cache.
+COPY --chown=quant:quant . .
+
 USER quant
 
 ENTRYPOINT ["python", "run_research.py"]

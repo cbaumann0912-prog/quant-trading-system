@@ -208,10 +208,48 @@ Audits are dated to the research day that produced them and are not reconstructe
 ```bash
 git clone https://github.com/cbaumann0912-prog/summer2026.git
 cd summer2026
+python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python -m pytest
 ```
 
-Dependencies: `numpy`, `pandas`, `scipy`, `statsmodels`, `matplotlib`, `pytest`. Pinned in `requirements.txt`.
+Python 3.12. Dependencies: `numpy`, `pandas`, `scipy`, `statsmodels`, `scikit-learn`, `matplotlib`, `click`, `pytest`. Pinned in `requirements.txt`.
+
+### Docker
+
+The image pins the full environment, including the interpreter, so results do not depend on a local install.
+
+```bash
+docker build -t quant-research:v1.0.0 .
+```
+
+Minute-bar CSVs are ~300 MB per pair, live outside the repository, and are excluded from the image by `.dockerignore`. They must be mounted at `/data`, and a host directory must be mounted for the JSON report to survive the container exiting:
+
+```bash
+docker run --rm \
+  -v /absolute/path/to/data:/data:ro \
+  -v "$(pwd)/results:/out" \
+  quant-research:v1.0.0 \
+  --signal momentum --pair EURUSD --output /out
+```
+
+PowerShell:
+
+```powershell
+docker run --rm `
+  -v C:\absolute\path\to\data:/data:ro `
+  -v ${PWD}\results:/out `
+  quant-research:v1.0.0 `
+  --signal momentum --pair EURUSD --output /out
+```
+
+Running the suite inside the image, which is the reproducible check:
+
+```bash
+docker run --rm -v /absolute/path/to/data:/data:ro \
+  --entrypoint pytest quant-research:v1.0.0 -q
+```
+
+Nine tests in `test_data_loader`, `test_portfolio` and `test_cointegration` read the real minute bars and will fail without the mount. They are integration tests living in the unit suite; they should be marked and skipped when the data is absent, and currently are not.
 
 Analysis scripts in `research/applied_analysis/` and `research/strategies/validation_falsification/` are flat and run from the repository root. They rebuild from raw bars on every run, so they are slow and reproducible rather than fast and cached.

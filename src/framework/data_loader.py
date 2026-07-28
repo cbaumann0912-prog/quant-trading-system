@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+# Resolved relative to this file, not the caller's cwd or any one machine.
+# data_loader.py lives at <repo>/src/framework/, so parents[3] is the
+# directory containing the repo, and the raw minute CSVs sit beside it.
+# In the Docker image the repo is /app, which resolves this to /data --
+# the documented mount point. QUANT_DATA_DIR overrides for other layouts.
+DEFAULT_DATA_DIR = Path(
+    os.environ.get("QUANT_DATA_DIR", Path(__file__).resolve().parents[3] / "data")
+)
 
 SUPPORTED_PAIRS = {
     "EURUSD", "GBPUSD", "USDJPY",
@@ -43,7 +53,7 @@ class DataLoader:
         start: str,
         end: str,
         embargo_days: int = 5,
-        data_dir: str | Path = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data",
+        data_dir: str | Path = DEFAULT_DATA_DIR,
     ) -> None:
         invalid = set(pairs) - SUPPORTED_PAIRS
         if invalid:

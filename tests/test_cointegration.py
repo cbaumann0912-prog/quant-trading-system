@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
+from src.framework.data_loader import DEFAULT_DATA_DIR
 from src.signals.cointegration import engle_granger_test, cointegration_spread, johansen_test, ou_half_life
 from src.stats.regression import fit_ols
 from src.data.stationarity import adf_test
@@ -156,12 +159,12 @@ def test_johansen_rejects_nan_input():
 
 
 def test_johansen_real_data_three_pairs():
-    data_dir = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+    data_dir = Path(DEFAULT_DATA_DIR)
 
     pairs = {
-        "EURUSD": f"{data_dir}\\EURUSD.csv",
-        "GBPUSD": f"{data_dir}\\GBPUSD.csv",
-        "USDJPY": f"{data_dir}\\USDJPY.csv",
+        "EURUSD": data_dir / "EURUSD.csv",
+        "GBPUSD": data_dir / "GBPUSD.csv",
+        "USDJPY": data_dir / "USDJPY.csv",
     }
 
     series = {}

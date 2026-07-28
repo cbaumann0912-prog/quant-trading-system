@@ -1,9 +1,9 @@
 import pandas as pd
 import pytest
 
-from src.framework.data_loader import DataLoader, SUPPORTED_PAIRS
+from src.framework.data_loader import DataLoader, SUPPORTED_PAIRS, DEFAULT_DATA_DIR
 
-DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+DATA_DIR = DEFAULT_DATA_DIR
 
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 START = "2011-01-01"

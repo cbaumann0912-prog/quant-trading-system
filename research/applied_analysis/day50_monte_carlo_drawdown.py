@@ -12,7 +12,7 @@ from src.signals.regime_refit import compute_composite_regime_score_walkforward
 from src.signals.momentum import momentum_signal
 from src.stats.stochastic import simulate_gbm
 from src.analysis.performance_analyzer import PerformanceAnalyzer
-from research.strategies.validation_falsification.vol_regime_signal_report_pipeline import (
+from research.strategies.s04_vol_regime_breakout.vol_regime_signal_report_pipeline import (
     load_rate_diff,
     fit_windows,
     regime_gated_pnl,

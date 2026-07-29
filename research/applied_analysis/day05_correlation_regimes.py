@@ -1,25 +1,27 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import pandas as pd
 import numpy as np
 from scipy import stats
 import sys
-sys.path.append(r'C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026')
+sys.path.append(str(REPO_ROOT))
 
 from src.stats.correlation import rolling_correlation
 
 DEV_END = "2023-12-31"
 
 EURUSD = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\EURUSD.csv',
+    REPO_ROOT.parent / "data" / "EURUSD.csv",
     parse_dates=['Datetime'],
     date_format='%Y%m%d %H%M%S'
 )
 GBPUSD = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\GBPUSD.csv',
+    REPO_ROOT.parent / "data" / "GBPUSD.csv",
     parse_dates=['Datetime'],
     date_format='%Y%m%d %H%M%S'
 )
 USDJPY = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\USDJPY.csv',
+    REPO_ROOT.parent / "data" / "USDJPY.csv",
     parse_dates=['Datetime'],
     date_format='%Y%m%d %H%M%S'
 )

@@ -11,7 +11,8 @@ import click
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
 
 from src.analysis.performance_analyzer import information_coefficient
 from src.framework.data_loader import SUPPORTED_PAIRS, DataLoader
@@ -19,7 +20,6 @@ from src.framework.walk_forward import WalkForwardValidator
 from src.signals.momentum import momentum_signal
 from src.signals.mean_reversion import price_zscore_signal
 
-REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_DATA_DIR = REPO_ROOT.parent / "data"
 
 STRATEGY_PAIRS = tuple(sorted(SUPPORTED_PAIRS))

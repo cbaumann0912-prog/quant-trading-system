@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -10,7 +11,7 @@ from src.analysis.portfolio_stats import compute_covariance_matrix
 
 DEV_END = "2023-12-31"
 
-DATA_DIR = Path(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data")
+DATA_DIR = REPO_ROOT.parent / "data"
 EURUSD_PATH = DATA_DIR / "EURUSD.csv"
 GBPUSD_PATH = DATA_DIR / "GBPUSD.csv"
 USDJPY_PATH = DATA_DIR / "USDJPY.csv"

@@ -1,14 +1,18 @@
 import sys
 import os
+from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pandas as pd
 import numpy as np
 from scipy import stats
 
+from src.signals.momentum_ml_regime import momentum_signal_outcome, non_overlapping_subsample
+
 DEV_END = "2023-12-31"
 
-DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = REPO_ROOT.parent / "data"
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
 LOOKBACK = 26
@@ -21,26 +25,9 @@ BLOCK_SIZE = LOOKBACK + HOLDING
 rng = np.random.default_rng(SEED)
 
 
+
 def compute_signal_outcome(daily_prices):
-    log_returns = np.log(daily_prices / daily_prices.shift(1)).dropna()
-    cumsum = log_returns.cumsum()
-    n = len(cumsum)
-
-    records = []
-    for i in range(LOOKBACK, n - HOLDING):
-        trailing_return = cumsum.iloc[i] - cumsum.iloc[i - LOOKBACK]
-        forward_return = cumsum.iloc[i + HOLDING] - cumsum.iloc[i]
-        records.append({
-            "date": cumsum.index[i],
-            "trailing_return": trailing_return,
-            "forward_return": forward_return,
-            "trailing_start": cumsum.index[i - LOOKBACK],
-            "trailing_end": cumsum.index[i],
-            "forward_start": cumsum.index[i + 1],
-            "forward_end": cumsum.index[i + HOLDING],
-        })
-
-    return pd.DataFrame(records)
+    return momentum_signal_outcome(daily_prices, LOOKBACK, HOLDING)
 
 
 print("SECTION 1 — WINDOW ALIGNMENT VERIFICATION")
@@ -68,7 +55,7 @@ for pair in PAIRS:
     daily_prices = df["Close"].resample("D").last().dropna()
 
     combined = compute_signal_outcome(daily_prices)
-    subsampled = combined.iloc[::HOLDING]
+    subsampled = non_overlapping_subsample(combined, HOLDING)
 
     trailing = subsampled["trailing_return"].to_numpy()
     forward = subsampled["forward_return"].to_numpy()

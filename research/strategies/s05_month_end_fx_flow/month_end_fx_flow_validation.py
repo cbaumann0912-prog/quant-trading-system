@@ -1,7 +1,3 @@
-"""H1 primary validation for research/strategies/month_end_fx_flow.md.
-
-Stages 1-minute bars from raw data on every run.
-"""
 import sys
 from pathlib import Path
 
@@ -14,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from src.evaluation.bootstrap import block_bootstrap
 from src.features.sessions import FILE_UTC_OFFSET_HOURS
 from src.stats.regression import compute_vif
+from src.signals.month_end_flow import build_interaction_panel
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = REPO_ROOT.parent / "data"
@@ -83,29 +80,10 @@ print("\nH1 primary: month-end x fix-window interaction")
 print(f"Universe: {len(PAIRS)} pairs   Sample: {START} to {END} (lockbox sealed)")
 print("Prediction: b4 > 0. Significance AND sign both required (spec criterion 2).")
 
-panels = {}
-for fix_col in ("fix_return", "fix_return_narrow"):
-    frames = []
-    for pair in PAIRS:
-        df = staged_pairs[pair]
-        period = df.index.to_period("M")
-
-        month_to_date = df["daily_log_return"].shift(1).groupby(period).cumsum()
-        signal = -np.sign(month_to_date)
-        month_end = (df.groupby(period).cumcount(ascending=False) < MONTH_END_DAYS).astype(float)
-
-        for col, is_fix in [(fix_col, 1.0), ("control_return", 0.0)]:
-            frames.append(pd.DataFrame({
-                "date": df.index,
-                "y": df[col].to_numpy(),
-                "signal": signal.to_numpy(),
-                "month_end": month_end.to_numpy(),
-                "fix": is_fix,
-            }))
-
-    built = pd.concat(frames, ignore_index=True).dropna(subset=["y", "signal", "month_end"])
-    built = built.loc[built["signal"] != 0.0]
-    panels[fix_col] = built.sort_values("date").reset_index(drop=True)
+panels = {
+    fix_col: build_interaction_panel(staged_pairs, PAIRS, fix_col, month_end_days=MONTH_END_DAYS)
+    for fix_col in ("fix_return", "fix_return_narrow")
+}
 
 panel = panels["fix_return"]
 panel_narrow = panels["fix_return_narrow"]

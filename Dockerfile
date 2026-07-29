@@ -22,5 +22,5 @@ COPY --chown=quant:quant . .
 
 USER quant
 
-ENTRYPOINT ["python", "run_research.py"]
+ENTRYPOINT ["python", "research/run_research.py"]
 CMD ["--help"]

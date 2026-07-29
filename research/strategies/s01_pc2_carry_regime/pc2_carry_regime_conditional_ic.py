@@ -1,17 +1,19 @@
 import sys
 import os
+from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import numpy as np
 import pandas as pd
 
-from src.features.pca import pca
+from src.signals.pc2_carry import fit_pc2_loadings, pc2_scores, pc2_factor_returns
 from src.stats.regression import interaction_regression
 from src.evaluation.significance import permutation_test
 
 DEV_END = "2023-12-31"
 
-DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = REPO_ROOT.parent / "data"
 
 FILES = {
     "EURUSD": "EURUSD.csv",
@@ -28,7 +30,7 @@ REGIME_THRESHOLD_WINDOW = 156
 
 returns = {}
 for pair_name, filename in FILES.items():
-    path = f"{DATA_DIR}\\{filename}"
+    path = DATA_DIR / filename
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
@@ -40,23 +42,12 @@ returns_df = pd.DataFrame(returns)[PAIRS_ORDER].dropna()
 train_returns = returns_df[returns_df.index < SPLIT_DATE]
 test_returns = returns_df[returns_df.index >= SPLIT_DATE]
 
-components, explained_variance, projected = pca(train_returns.to_numpy(), n_components=N_COMPONENTS)
-pc2_loadings = components[:, 1]
-pc2_loadings_by_pair = dict(zip(PAIRS_ORDER, pc2_loadings))
-train_mean = train_returns.to_numpy().mean(axis=0)
-
-if pc2_loadings_by_pair["USDJPY"] < 0:
-    pc2_loadings = -pc2_loadings
-    pc2_loadings_by_pair = dict(zip(PAIRS_ORDER, pc2_loadings))
-
-centered_test_returns = test_returns.to_numpy() - train_mean
-pc2_scores_test = pd.Series(centered_test_returns @ pc2_loadings, index=test_returns.index)
-
-r_pc2_test = (
-    pc2_loadings_by_pair["EURUSD"] * test_returns["EURUSD"]
-    + pc2_loadings_by_pair["GBPUSD"] * test_returns["GBPUSD"]
-    + pc2_loadings_by_pair["USDJPY"] * test_returns["USDJPY"]
+pc2_loadings, pc2_loadings_by_pair, train_mean = fit_pc2_loadings(
+    train_returns, PAIRS_ORDER, n_components=N_COMPONENTS
 )
+pc2_scores_test = pc2_scores(test_returns, pc2_loadings, train_mean)
+
+r_pc2_test = pc2_factor_returns(test_returns, pc2_loadings_by_pair)
 
 signal = pc2_scores_test.iloc[:-1]
 forward_returns = r_pc2_test.iloc[1:]

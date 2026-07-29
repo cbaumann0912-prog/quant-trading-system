@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pandas as pd
@@ -7,11 +8,13 @@ import numpy as np
 from scipy import stats
 from src.data.stationarity import adf_test, kpss_test
 from src.signals.cointegration import ou_half_life
+from src.signals.ou_reversion import zscore_deviation, extract_excursions, split_pools, half_life_from_theta
 from src.evaluation.bootstrap import block_bootstrap
 
 DEV_END = "2023-12-31"
 
-DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DATA_DIR = REPO_ROOT.parent / "data"
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
 MA_WINDOW = 100
@@ -80,10 +83,7 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     print(f"\n{pair}  (n_obs={len(z_score)})")
     print(z_score.describe())
@@ -120,10 +120,7 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     z = z_score.values
     n = len(z)
@@ -200,10 +197,7 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     print(f"\n{pair}  (n_obs={len(z_score)})")
 
@@ -256,59 +250,14 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     ou_result = ou_half_life(z_score)
     half_life = np.log(2) / ou_result["theta"]
     censoring_cap = CAP_MULTIPLIER * half_life
 
-    z = z_score.values
-    n = len(z)
-
-    excursions = []
-    i = 0
-    while i < n:
-        if abs(z[i]) >= ENTRY_THRESHOLD:
-            sign = 1 if z[i] > 0 else -1
-            running_peak = z[i] * sign
-            peak_idx = i
-
-            j = i + 1
-            while j < n and np.sign(z[j]) == sign:
-                mag = z[j] * sign
-                if mag > running_peak:
-                    running_peak = mag
-                    peak_idx = j
-                j += 1
-            excursion_end_idx = j - 1
-
-            target = running_peak - REVERSION_X
-            reversion_time = None
-            scan_end = min(peak_idx + 1 + int(np.ceil(censoring_cap)), n)
-            for k in range(peak_idx + 1, scan_end):
-                if np.sign(z[k]) != sign:
-                    reversion_time = k - peak_idx
-                    break
-                mag_k = z[k] * sign
-                if mag_k <= target:
-                    reversion_time = k - peak_idx
-                    break
-
-            if reversion_time is not None and reversion_time <= censoring_cap:
-                excursions.append({"peak": running_peak, "reversion_time": reversion_time, "censored": False})
-            else:
-                excursions.append({"peak": running_peak, "reversion_time": censoring_cap, "censored": True})
-
-            i = excursion_end_idx + 1
-        else:
-            i += 1
-
-    excursions_df = pd.DataFrame(excursions)
-    large_pool = excursions_df[excursions_df["peak"] >= POOL_SPLIT]["reversion_time"].values
-    small_pool = excursions_df[excursions_df["peak"] < POOL_SPLIT]["reversion_time"].values
+    excursions_df = extract_excursions(z_score, censoring_cap, ENTRY_THRESHOLD, REVERSION_X)
+    small_pool, large_pool = split_pools(excursions_df, POOL_SPLIT)
 
     observed_diff = np.mean(small_pool) - np.mean(large_pool)
     pooled = np.concatenate([small_pool, large_pool])
@@ -338,10 +287,7 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     aligned_prices = daily_prices.loc[z_score.index]
     z = z_score.values
@@ -409,10 +355,7 @@ for pair in PAIRS:
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]
 
     daily_prices = df["Close"].resample("D").last().dropna()
-    ma = daily_prices.rolling(window=MA_WINDOW).mean()
-    deviation = (daily_prices - ma).dropna()
-    rolling_vol = deviation.rolling(window=VOL_WINDOW).std()
-    z_score = (deviation / rolling_vol).dropna()
+    z_score = zscore_deviation(daily_prices, MA_WINDOW, VOL_WINDOW)
 
     aligned_prices = daily_prices.loc[z_score.index]
     z = z_score.values

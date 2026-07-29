@@ -1,3 +1,5 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -13,7 +15,7 @@ from src.evaluation.significance import paired_sign_permutation_test
 
 DEV_END = "2023-12-31"
 
-DATA_DIR = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+DATA_DIR = REPO_ROOT.parent / "data"
 FILENAME = "EURUSD.csv"
 
 MOMENTUM_LOOKBACK = 20

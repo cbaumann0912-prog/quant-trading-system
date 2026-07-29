@@ -1,5 +1,7 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
-sys.path.insert(0, r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\summer2026')
+sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
 import numpy as np
@@ -8,7 +10,7 @@ import yfinance as yf
 from src.stats.hypothesis_tests import compute_effect_size_cohens_d, t_test_mean
 
 df = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\summer2026\results\OG_results\realistic\daily_balance.csv',
+    REPO_ROOT.parent / "_original_strategy" / "OG_results" / "realistic" / "daily_balance.csv",
     parse_dates=['date']
 )
 df = df.set_index('date')

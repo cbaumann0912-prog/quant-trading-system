@@ -1,3 +1,5 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -5,7 +7,7 @@ from scipy import stats
 DEV_END = "2023-12-31"
 
 df = pd.read_csv(
-    r'C:\Users\clayb\onedrive\desktop\career\02_quant_projects\data\USDJPY.csv',
+    REPO_ROOT.parent / "data" / "USDJPY.csv",
     parse_dates=['Datetime'],
     date_format='%Y%m%d %H%M%S'
 )

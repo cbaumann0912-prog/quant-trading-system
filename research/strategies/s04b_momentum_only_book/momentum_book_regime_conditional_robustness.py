@@ -12,7 +12,7 @@ from src.features.garch import fit_garch, classify_vol_regime
 from src.signals.regime_refit import compute_composite_regime_score_walkforward
 from src.signals.momentum import momentum_signal
 from src.analysis.performance_analyzer import PerformanceAnalyzer, regime_conditional_performance
-from research.strategies.validation_falsification.vol_regime_signal_report_pipeline import fit_windows, regime_gated_pnl
+from research.strategies.s04_vol_regime_breakout.vol_regime_signal_report_pipeline import fit_windows, regime_gated_pnl
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = REPO_ROOT.parent / "data"

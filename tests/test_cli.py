@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from click.testing import CliRunner
 
-from run_research import (
+from research.run_research import (
     LOCKBOX_START,
     json_safe,
     main,

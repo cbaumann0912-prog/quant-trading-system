@@ -1,19 +1,20 @@
 import sys
 from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import numpy as np
 import pandas as pd
 from src.stats.regression import ridge_fit, fit_ols
 
-DATA_PATH = Path(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data\EURUSD.csv")
+DATA_PATH = REPO_ROOT.parent / "data" / "EURUSD.csv"
 OUTPUT_PATH = Path("research/notes/day17_ridge_lasso_feature_selection.md")
 LAMBDA_GRID = [0.001, 0.01, 0.1, 1, 10, 100, 1000]
 N_LAGS = 5
 
 DEV_END = "2023-12-31"
 
-df_1m = pd.read_csv(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data\EURUSD.csv", parse_dates=["Datetime"], index_col="Datetime").sort_index().loc[:DEV_END]
+df_1m = pd.read_csv(REPO_ROOT.parent / "data" / "EURUSD.csv", parse_dates=["Datetime"], index_col="Datetime").sort_index().loc[:DEV_END]
 daily = df_1m["Close"].resample("1D").last().dropna()
 returns = daily.pct_change().dropna()
 

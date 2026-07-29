@@ -12,7 +12,7 @@ from src.signals.regime_refit import compute_composite_regime_score_walkforward
 from src.signals.momentum import momentum_signal
 from src.analysis.performance_analyzer import PerformanceAnalyzer
 from src.analysis.portfolio import kelly_fraction, fractional_kelly
-from research.strategies.validation_falsification.vol_regime_signal_report_pipeline import load_rate_diff, fit_windows, regime_gated_pnl
+from research.strategies.s04_vol_regime_breakout.vol_regime_signal_report_pipeline import load_rate_diff, fit_windows, regime_gated_pnl
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT.parent / "data"

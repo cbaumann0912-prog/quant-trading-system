@@ -1,5 +1,7 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
-sys.path.insert(0, r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026")
+sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
 import numpy as np
@@ -10,7 +12,7 @@ DEV_END = "2023-12-31"
 
 
 
-DATA_DIR  = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+DATA_DIR  = REPO_ROOT.parent / "data"
 PAIRS     = {"EUR/USD": "EURUSD.csv", "GBP/USD": "GBPUSD.csv", "USD/JPY": "USDJPY.csv"}
 MAX_P     = 3
 MAX_Q     = 3

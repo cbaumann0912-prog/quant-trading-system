@@ -256,7 +256,7 @@ def build_signal_report(
         "This report covers only the two-leg multiple-testing check and "
         "DSR. It does not replace the full Section 10 verdict (reliability "
         "gate + both robustness checks) in "
-        "research/strategies/validation_falsification/vol_regime_two_leg_section10_validation.md, and the Section "
+        "research/strategies/s04_vol_regime_breakout/vol_regime_two_leg_section10_validation.md, and the Section "
         "10 lockbox holdout (2024-2026) has still not been opened.",
     ]
 

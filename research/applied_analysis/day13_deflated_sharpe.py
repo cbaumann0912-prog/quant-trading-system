@@ -51,7 +51,7 @@ from scipy import stats
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from run_research import SIGNAL_REGISTRY
+from research.run_research import SIGNAL_REGISTRY
 from src.analysis.performance_analyzer import PerformanceAnalyzer
 from src.framework.data_loader import DataLoader
 from src.framework.walk_forward import WalkForwardValidator

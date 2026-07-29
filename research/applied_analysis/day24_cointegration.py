@@ -1,8 +1,10 @@
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
-sys.path.insert(0, r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026")
+sys.path.insert(0, str(REPO_ROOT))
 
 import os
-os.makedirs(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026\research\audit", exist_ok=True)
+(REPO_ROOT / "research" / "audit_images").mkdir(parents=True, exist_ok=True)
 
 import numpy as np
 import pandas as pd
@@ -13,7 +15,7 @@ from src.stats.regression import fit_ols
 
 DEV_END = "2023-12-31"
 
-DATA_PATH = r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\data"
+DATA_PATH = REPO_ROOT.parent / "data"
 ROLLING_WINDOW = 312
 COMBINATIONS = [
     ("EURUSD", "GBPUSD"),
@@ -104,9 +106,9 @@ for i, row in enumerate(full_sample_results):
     axes[i].set_ylabel("Spread")
 
 plt.tight_layout()
-plt.savefig(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026\research\audit\day24_spreads.png", dpi=150)
+plt.savefig(REPO_ROOT / "research" / "audit_images" / "day24_spreads.png", dpi=150)
 plt.show()
-print("\nSpread plot saved to research/audit/day24_spreads.png")
+print("\nSpread plot saved to research/audit_images/day24_spreads.png")
 
 fig2, axes2 = plt.subplots(3, 1, figsize=(12, 10), sharex=False)
 fig2.suptitle("Day 24 — Rolling Hedge Ratio Stability (312-day window)", fontsize=13)
@@ -119,8 +121,8 @@ for i, col in enumerate(rolling_df.columns):
     axes2[i].legend()
 
 plt.tight_layout()
-plt.savefig(r"C:\Users\clayb\OneDrive\Desktop\Career\02_quant_projects\summer2026\research\audit\day24_rolling_betas.png", dpi=150)
+plt.savefig(REPO_ROOT / "research" / "audit_images" / "day24_rolling_betas.png", dpi=150)
 plt.show()
-print("Rolling beta plot saved to research/audit/day24_rolling_betas.png")
+print("Rolling beta plot saved to research/audit_images/day24_rolling_betas.png")
 
-print("\nDone. Fill results into research/audit/day24_cointegration_analysis.md")
+print("\nDone. Fill results into research/daily_audit/day24_cointegration_analysis.md")

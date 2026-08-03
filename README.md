@@ -2,6 +2,8 @@
 
 *Systematic FX Research — Cornell Engineering, Summer 2026*
 
+`482 tests` · `Python 3.12` · [`MIT License`](LICENSE)
+
 ---
 
 In January 2026, during the second semester of my freshman year at Cornell, I built a systematic intraday FX strategy from scratch — a multi-timeframe BOS/FVG reversal system, backtested across 15 years of 1-minute data on EUR/USD, GBP/USD, and USD/JPY. Under realistic execution conditions it produced a Sharpe ratio of 1.60 and a max drawdown of -5.36%.
@@ -14,28 +16,28 @@ This repository is what happened when I decided that wasn't good enough.
 
 ## What This Is
 
-An all-in-one research pipeline. Feed it a pre-registered hypothesis, and it constructs the signal, runs walk-forward validation with leakage controls, applies the statistical machinery needed to say with actual rigor whether the effect survives, prices in transaction costs, and returns a verdict.
+A research framework, not a push-button pipeline. It provides the components a hypothesis needs to get a real verdict — signal construction (`SignalBuilder`), leakage-safe walk-forward validation (`WalkForwardValidator`), a statistical test suite, and a transaction-cost model — but assembling them for a given strategy is a hand-written, one-off script, not a single call that takes a hypothesis in and returns a verdict out. `research/run_research.py` runs the signal-construction and walk-forward step for the three signals registered there and reports raw IC/Sharpe; it explicitly does not apply multiple-testing correction and is not itself a verdict, by its own printed caveat. The cost gate, permutation tests, bootstrap CIs, and BH correction are wired up per strategy in `research/strategies/s0*_*/`, and the verdict itself is a line a person writes into that strategy's `spec.md` once those scripts have run.
 
-The statistical machinery in that pipeline is derived and implemented from first principles rather than imported: OLS and regularized regression, eigendecomposition and PCA, GARCH by maximum likelihood, purged cross-validation, block bootstrap, permutation testing, multiple-testing correction, deflated Sharpe, IC/IR, Markowitz and risk parity, Kelly, VaR/CVaR, GBM and OU simulation. A short list of standard test statistics is called through `statsmodels` rather than rebuilt, and is named explicitly below. The point isn't to get a verdict; it's to be able to derive, defend, or rebuild every step that produced it.
+The statistical machinery those scripts draw on is derived and implemented from first principles rather than imported: OLS and regularized regression, eigendecomposition and PCA, GARCH by maximum likelihood, purged cross-validation, block bootstrap, permutation testing, multiple-testing correction, deflated Sharpe, IC/IR, Markowitz and risk parity, Kelly, VaR/CVaR, GBM and OU simulation. A short list of standard test statistics is called through `statsmodels` rather than rebuilt, and is named explicitly below. The point isn't to get a verdict; it's to be able to derive, defend, or rebuild every step that produced it.
 
 The output for a strategy is a statistical case: validated or invalidated, with the reasoning shown.
 
-So far the pipeline has returned six verdicts. All six are invalidated. That result is the subject of the sections below, and it is the reason this repository is worth reading.
+So far six strategies have gone through this process. All six were closed as invalidated. That result is the subject of the sections below, and it is the reason this repository is worth reading.
 
 ---
 
-## Current State — July 2026
+## Current State — August 2026
 
 | | |
 |---|---|
-| Framework | 6,588 lines across 30 modules in `src/` |
-| Tests | 372 tests across 29 files, 4,838 lines |
-| Research record | 39 daily audits, 34 reproducible analysis scripts, 30 falsification documents |
+| Framework | 7,075 lines across 34 modules in `src/` |
+| Tests | 482 tests across 34 files, 5,790 lines |
+| Research record | 40 daily audits, 37 reproducible analysis scripts, 32 validation/falsification documents |
 | Universe | 10 FX pairs of 1-minute OHLCV, plus 8 three-month interbank rate series |
 | Strategies pre-registered | 6 |
 | Strategies surviving validation | 0 |
 | Lockbox (2024-01 to 2026-05) | Never opened |
-| Commits | 202 |
+| Commits | 211 |
 
 The lockbox is the part I'd point to first. It is a reserved slice of unseen data that the spec permits opening only on a PASS. Six candidates have failed without it being touched, which means the project still holds one clean shot at an out-of-sample test. Opening it to confirm a failure would spend that for nothing, and would create a live temptation to revive a dead strategy if the result came back positive by chance.
 
@@ -43,7 +45,7 @@ The lockbox is the part I'd point to first. It is a reserved slice of unseen dat
 
 ## Strategy Roster
 
-Six hypotheses, each pre-registered in writing before any test was run. Specs live in `research/strategies/specs/` and are unedited from when they were written; only the status line is amended on closure. Every test that bore on a verdict is in `research/strategies/validation_falsification/`, indexed by strategy.
+Six hypotheses, each pre-registered in writing before any test was run. Each strategy has its own folder under `research/strategies/` (`s01_pc2_carry_regime/` … `s06_intraday_overshoot/`), holding that strategy's `spec.md` — unedited from when it was written, only the status line amended on closure — alongside every script and writeup that bore on its verdict. Strategy #1 has no spec file, per the note below.
 
 | # | Strategy | Closed | Verdict |
 |---|---|---|---|
@@ -64,13 +66,13 @@ Strategy #1 has no spec file. It originated in the Day 18–19 PCA work and was 
 The contribution here is the machinery that killed six strategies, and four findings that machinery surfaced. Each is reproducible from the scripts in this repo.
 
 **A controlled leakage demonstration.** The same hypothesis passes under a full-sample GARCH fit and fails under a walk-forward one, on identical data and identical code. Moving the volatility-regime classifier refit inside each training window flips 34–56% of the regime labels. This is the cleanest before/after leakage example I have, because nothing changes except where the fit happens.
-→ `vol_regime_classifier_refit_stability.md`
+→ `research/strategies/s04_vol_regime_breakout/vol_regime_classifier_refit_stability.md`
 
 **Portfolio aggregation manufacturing significance.** Ten pairs at mean cross-correlation ρ = 0.36 give an effective breadth of 2.34, not 10. The pooled book posts Sharpe +1.043 at p < 0.00001 while no individual component is significant and the cross-pair mean IR confidence interval contains zero. The book-level p-value is an artifact of treating correlated series as independent draws.
-→ `momentum_book_invalidation.md`
+→ `research/strategies/s04b_momentum_only_book/momentum_book_invalidation.md`
 
 **Two validation criteria that looked rigorous and were not.** Day 48's rule tested whether an interaction coefficient differed from zero but never tested its sign — the strategy passed while running backwards. Day 57's R1 required ordering three cells whose confidence intervals all span zero; the deciding gap carried t = 0.05, and 4 trades out of 1,588 flip the verdict. A criterion with no power to discriminate is worse than no criterion, because it produces a PASS that reads as evidence.
-→ `intraday_overshoot_section10_validation.md`
+→ `research/strategies/s06_intraday_overshoot/intraday_overshoot_section10_validation.md`
 
 **The power ceiling is arithmetic, not opinion.** Thirteen years of daily data requires a true Sharpe near 0.55 to reach t = 2. Intraday sampling does not relax this, because the binding constraint is calendar span rather than observation count. Five of the six candidates were untestable at this sample size rather than merely wrong — a distinction that changes what you should do next. Dropping NZD/USD, which gates the common window at 2005-08, buys 8.8 years and moves the required Sharpe from 0.555 to 0.428.
 → `research/notes/data_span_power_constraint.md`
@@ -188,15 +190,21 @@ src/
     └── stochastic.py             # GBM, OU, stress testing
 
 research/
-├── daily_audit/                  # 39 audits, one per day with a research deliverable
-├── applied_analysis/             # 34 reproducible scripts backing those audits
-├── strategies/
-│   ├── specs/                    # 6 pre-registrations, unedited post-hoc
-│   └── validation_falsification/ # 30 files, every test bearing on a verdict
+├── daily_audit/                  # 40 audits, one per day with a research deliverable
+├── applied_analysis/             # 37 reproducible scripts backing those audits
+├── strategies/                   # one folder per strategy, spec + every test together
+│   ├── s01_pc2_carry_regime/
+│   ├── s02_momentum_ml_regime/
+│   ├── s03_ou_halflife_mean_reversion/
+│   ├── s04_vol_regime_breakout/
+│   ├── s04b_momentum_only_book/
+│   ├── s05_month_end_fx_flow/
+│   └── s06_intraday_overshoot/
 ├── notes/                        # block-length selection, PCA universe, power constraint
-└── audit_images/                 # figures referenced in audits
+├── audit_images/                 # figures referenced in audits
+└── run_research.py               # unified CLI entry point — see CLI Usage below
 
-tests/                            # 372 tests, one file per module
+tests/                            # 482 tests, one file per module
 ```
 
 Audits are dated to the research day that produced them and are not reconstructed after the fact. They include the runs where the data contradicted what I expected going in, which is most of them.
@@ -215,6 +223,42 @@ python -m pytest
 
 Python 3.12. Dependencies: `numpy`, `pandas`, `scipy`, `statsmodels`, `scikit-learn`, `matplotlib`, `click`, `pytest`. Pinned in `requirements.txt`.
 
+### CLI Usage
+
+`research/run_research.py` is the unified entry point. Each strategy signal is a subcommand:
+
+```bash
+python research/run_research.py --help
+```
+
+```
+Usage: run_research.py [OPTIONS] COMMAND [ARGS]...
+
+  Unified walk-forward research CLI. `python research/run_research.py --help`
+  lists every registered signal as a subcommand.
+
+Commands:
+  intraday-overshoot  Intraday overshoot fade (strategy #6).
+  mean-reversion      Rolling price z-score, faded past +/-...
+  momentum            Time-series momentum: sign(P_t / P_(t-lookback) - 1).
+```
+
+Running the momentum signal on one pair, walk-forward validated, writes a JSON report and prints a summary. This is real output from this repo:
+
+```bash
+python research/run_research.py momentum --pairs EURUSD --output results
+```
+
+```
+EURUSD / momentum
+  IC     mean=-0.3681 std=0.3954 n=6/10
+  IC unscored windows: {'constant_signal': 4}
+  Sharpe mean=0.4212 std=2.1894 n=10
+  written: results/EURUSD_momentum.json
+```
+
+`--pairs all` runs every one of the 10 supported pairs in one invocation. `--allow-lockbox` is required (and refused by default) to touch the sealed 2024–2026 window. Full options — lookback, holding period, embargo, train/test window sizing — are listed by `python research/run_research.py <signal> --help`.
+
 ### Docker
 
 The image pins the full environment, including the interpreter, so results do not depend on a local install.
@@ -230,7 +274,7 @@ docker run --rm \
   -v /absolute/path/to/data:/data:ro \
   -v "$(pwd)/results:/out" \
   quant-research:v1.0.0 \
-  --signal momentum --pair EURUSD --output /out
+  momentum --pairs EURUSD --data-dir /data --output /out
 ```
 
 PowerShell:
@@ -240,7 +284,7 @@ docker run --rm `
   -v C:\absolute\path\to\data:/data:ro `
   -v ${PWD}\results:/out `
   quant-research:v1.0.0 `
-  --signal momentum --pair EURUSD --output /out
+  momentum --pairs EURUSD --data-dir /data --output /out
 ```
 
 Running the suite inside the image, which is the reproducible check:
@@ -250,6 +294,12 @@ docker run --rm -v /absolute/path/to/data:/data:ro \
   --entrypoint pytest quant-research:v1.0.0 -q
 ```
 
-Nine tests in `test_data_loader`, `test_portfolio` and `test_cointegration` read the real minute bars and will fail without the mount. They are integration tests living in the unit suite; they should be marked and skipped when the data is absent, and currently are not.
+A subset of tests in `test_data_loader`, `test_portfolio` and `test_cointegration` (e.g. `test_johansen_real_data_three_pairs`) read the real minute bars and will fail without the mount. They are integration tests living in the unit suite; they should be marked and skipped when the data is absent, and currently are not.
 
-Analysis scripts in `research/applied_analysis/` and `research/strategies/validation_falsification/` are flat and run from the repository root. They rebuild from raw bars on every run, so they are slow and reproducible rather than fast and cached.
+Analysis scripts in `research/applied_analysis/` and in each `research/strategies/s0*_*/` folder are flat and run from the repository root. They rebuild from raw bars on every run, so they are slow and reproducible rather than fast and cached.
+
+---
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).

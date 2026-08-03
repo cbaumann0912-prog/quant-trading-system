@@ -270,6 +270,22 @@ def test_risk_parity_low_vol_gets_higher_weight():
     assert result["weights"][0] > result["weights"][1]
 
 
+def test_closed_form_matches_scipy_on_synthetic_returns(sample_returns):
+    """Fast, synthetic-data equivalent of test_scipy_matches_numpy_result:
+    exercises _markowitz_weights_closed_form without the slow real
+    fx_returns fixture."""
+    from src.analysis.portfolio import _markowitz_weights_closed_form
+
+    target = sample_returns.mean().mean()
+    scipy_result = markowitz_weights(sample_returns, target, ann_factor=252.0, allow_short=True)
+    closed_form_result = _markowitz_weights_closed_form(sample_returns, target)
+
+    np.testing.assert_allclose(
+        scipy_result["weights"], closed_form_result["weights"], atol=1e-4,
+    )
+    assert np.isclose(closed_form_result["weights"].sum(), 1.0, atol=1e-10)
+
+
 def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
     scipy_result = markowitz_weights(fx_returns, target_return_forces_short, ann_factor=252.0, allow_short=True)
     closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)

@@ -7,6 +7,7 @@ from src.evaluation.significance import (
     benjamini_hochberg_correction,
     permutation_test,
     permutation_test_interaction_coefficient,
+    paired_sign_permutation_test,
 )
 
 sample = [0.00448,0.39341,0.53882,
@@ -211,3 +212,123 @@ def test_dummy_permutation_raises_on_invalid_alternative():
 
     with pytest.raises(ValueError):
         permutation_test_interaction_coefficient(y, x1, dummy, alternative="bogus")
+
+
+def test_bonferroni_raises_on_empty_p_values():
+    with pytest.raises(ValueError):
+        bonferroni_correction([], 0.05)
+
+
+def test_bh_raises_on_empty_p_values():
+    with pytest.raises(ValueError):
+        benjamini_hochberg_correction([], 0.05)
+
+
+def test_permutation_test_raises_on_mismatched_length():
+    rng = np.random.default_rng(11)
+    signal = pd.Series(rng.normal(size=100), index=pd.RangeIndex(100))
+    forward_returns = pd.Series(rng.normal(size=90), index=pd.RangeIndex(90))
+
+    with pytest.raises(ValueError):
+        permutation_test(signal, forward_returns)
+
+
+def test_permutation_test_less_alternative_matches_manual_count():
+    rng = np.random.default_rng(17)
+    n = 200
+    idx = pd.RangeIndex(n)
+    signal = pd.Series(rng.normal(size=n), index=idx)
+    forward_returns = pd.Series(rng.normal(size=n), index=idx)
+
+    result = permutation_test(
+        signal, forward_returns, n_permutations=300, seed=9, alternative="less"
+    )
+    manual_count = int(np.sum(result["null_distribution"] <= result["observed_ic"]))
+    expected_p = (1 + manual_count) / (300 + 1)
+
+    assert result["p_value"] == pytest.approx(expected_p)
+
+
+def test_dummy_permutation_less_alternative_matches_manual_count():
+    rng = np.random.default_rng(19)
+    n = 300
+    idx = pd.RangeIndex(n)
+    x1 = pd.Series(rng.normal(0, 1, n), index=idx)
+    dummy = pd.Series(rng.integers(0, 2, n).astype(float), index=idx)
+    y = pd.Series(rng.normal(0, 1, n), index=idx)
+
+    result = permutation_test_interaction_coefficient(
+        y, x1, dummy, n_permutations=200, seed=3, alternative="less"
+    )
+    manual_count = int(np.sum(result["null_distribution"] <= result["observed_b3"]))
+    expected_p = (1 + manual_count) / (200 + 1)
+
+    assert result["p_value"] == pytest.approx(expected_p)
+
+
+def test_paired_sign_permutation_raises_on_empty_diffs():
+    with pytest.raises(ValueError):
+        paired_sign_permutation_test(np.array([]))
+
+
+def test_paired_sign_permutation_raises_on_invalid_alternative():
+    with pytest.raises(ValueError):
+        paired_sign_permutation_test(np.array([0.1, -0.2, 0.3]), alternative="bogus")
+
+
+def test_paired_sign_permutation_null_distribution_length():
+    diffs = np.array([0.01, -0.02, 0.03, 0.015, -0.005, 0.02, -0.01])
+    result = paired_sign_permutation_test(diffs, n_permutations=500, seed=1)
+
+    assert len(result["null_distribution"]) == 500
+    assert result["observed_mean_diff"] == pytest.approx(diffs.mean())
+
+
+def test_paired_sign_permutation_reproducible_with_same_seed():
+    diffs = np.array([0.02, -0.01, 0.015, 0.03, -0.02, 0.01, -0.005, 0.025])
+    result_a = paired_sign_permutation_test(diffs, n_permutations=400, seed=42)
+    result_b = paired_sign_permutation_test(diffs, n_permutations=400, seed=42)
+
+    np.testing.assert_allclose(
+        result_a["null_distribution"], result_b["null_distribution"]
+    )
+
+
+def test_paired_sign_permutation_large_positive_mean_is_significant():
+    rng = np.random.default_rng(23)
+    diffs = rng.normal(loc=1.0, scale=0.05, size=50)
+
+    result = paired_sign_permutation_test(
+        diffs, n_permutations=2000, seed=23, alternative="greater"
+    )
+
+    assert result["p_value"] < 0.01, (
+        f"Expected a small p-value for a mean far from zero, got {result['p_value']:.4f}"
+    )
+
+
+def test_paired_sign_permutation_zero_centered_is_not_significant():
+    rng = np.random.default_rng(29)
+    diffs = rng.normal(loc=0.0, scale=1.0, size=50)
+
+    result = paired_sign_permutation_test(
+        diffs, n_permutations=2000, seed=29, alternative="two-sided"
+    )
+
+    assert result["p_value"] > 0.10, (
+        f"Expected a non-significant p-value for noise centered at zero, "
+        f"got {result['p_value']:.4f}"
+    )
+
+
+def test_paired_sign_permutation_less_alternative_matches_manual_count():
+    rng = np.random.default_rng(31)
+    diffs = rng.normal(loc=-0.5, scale=0.2, size=40)
+
+    result = paired_sign_permutation_test(
+        diffs, n_permutations=800, seed=31, alternative="less"
+    )
+    manual_count = int(np.sum(result["null_distribution"] <= result["observed_mean_diff"]))
+    expected_p = (1 + manual_count) / (800 + 1)
+
+    assert result["p_value"] == pytest.approx(expected_p)

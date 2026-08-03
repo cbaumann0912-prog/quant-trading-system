@@ -91,6 +91,5 @@ def triple_barrier_labels(
             label = int(np.sign(log_ret))
 
         labels[event_time] = label
-        
-    print(vol, upper_barrier, lower_barrier) 
+
     return labels

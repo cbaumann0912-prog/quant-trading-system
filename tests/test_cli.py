@@ -8,18 +8,18 @@ from click.testing import CliRunner
 
 from research.run_research import (
     LOCKBOX_START,
+    cli,
     json_safe,
-    main,
-    spearman_ic,
     summarize,
-    truncate_forward_returns,
-    window_sharpe,
 )
+from research.run_research import _daily_spearman_ic as spearman_ic
+from research.run_research import _daily_window_sharpe as window_sharpe
+from research.run_research import _truncate_forward_returns as truncate_forward_returns
 
 PAIR = "EURUSD"
 BASE_ARGS = [
-    "--signal", "momentum",
-    "--pair", PAIR,
+    "momentum",
+    "--pairs", PAIR,
     "--train-start", "2015-01-01",
     "--train-end", "2020-12-31",
     "--windows", "2",
@@ -52,7 +52,7 @@ def synthetic_data_dir(tmp_path: Path) -> Path:
 def test_cli_runs_without_error(synthetic_data_dir, tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        cli,
         BASE_ARGS
         + ["--data-dir", str(synthetic_data_dir), "--output", str(tmp_path / "out")],
     )
@@ -63,7 +63,7 @@ def test_output_file_created(synthetic_data_dir, tmp_path):
     out_dir = tmp_path / "out"
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        cli,
         BASE_ARGS + ["--data-dir", str(synthetic_data_dir), "--output", str(out_dir)],
     )
 
@@ -80,13 +80,38 @@ def test_output_file_created(synthetic_data_dir, tmp_path):
         assert key in report
 
 
+def test_mean_reversion_subcommand_also_works(synthetic_data_dir, tmp_path):
+    out_dir = tmp_path / "out"
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "mean-reversion",
+            "--pairs", PAIR,
+            "--train-start", "2015-01-01",
+            "--train-end", "2020-12-31",
+            "--windows", "2",
+            "--train-years", "3",
+            "--test-months", "6",
+            "--data-dir", str(synthetic_data_dir),
+            "--output", str(out_dir),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    out_path = out_dir / f"{PAIR}_mean-reversion.json"
+    assert out_path.exists()
+    report = json.loads(out_path.read_text(encoding="utf-8"))
+    assert report["signal"] == "mean-reversion"
+
+
 def test_lockbox_end_date_is_rejected(synthetic_data_dir, tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        cli,
         [
-            "--signal", "momentum",
-            "--pair", PAIR,
+            "momentum",
+            "--pairs", PAIR,
             "--train-start", "2015-01-01",
             "--train-end", str(LOCKBOX_START.date()),
             "--data-dir", str(synthetic_data_dir),
@@ -100,10 +125,10 @@ def test_lockbox_end_date_is_rejected(synthetic_data_dir, tmp_path):
 def test_unsupported_pair_is_rejected(synthetic_data_dir, tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        cli,
         [
-            "--signal", "momentum",
-            "--pair", "XAUUSD",
+            "momentum",
+            "--pairs", "XAUUSD",
             "--data-dir", str(synthetic_data_dir),
             "--output", str(tmp_path / "out"),
         ],
@@ -114,10 +139,10 @@ def test_unsupported_pair_is_rejected(synthetic_data_dir, tmp_path):
 def test_impossible_window_geometry_fails_loudly(synthetic_data_dir, tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        cli,
         [
-            "--signal", "momentum",
-            "--pair", PAIR,
+            "momentum",
+            "--pairs", PAIR,
             "--train-start", "2015-01-01",
             "--train-end", "2020-12-31",
             "--windows", "99",
@@ -198,3 +223,12 @@ def test_json_safe_emits_strict_json():
     assert decoded["np_float"] == 1.5
     assert decoded["np_int"] == 3
     assert decoded["nested"] == [True, None]
+
+
+def test_intraday_overshoot_subcommand_is_registered():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"])
+    assert result.exit_code == 0
+    assert "momentum" in result.output
+    assert "mean-reversion" in result.output
+    assert "intraday-overshoot" in result.output

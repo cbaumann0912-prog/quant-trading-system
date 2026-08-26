@@ -212,7 +212,7 @@ seed mentions.
 **Affected call sites:** `day11_sharpe_confidence_intervals.py:31`,
 `day37_block_bootstrap_sharpe_ci.py:58,71`, and
 `s06_intraday_overshoot/intraday_overshoot_section10_validation.py:277` — the
-per-pair mean IR confidence interval for the primary validated strategy.
+per-pair mean IR confidence interval for strategy #6.
 
 ### Re-run: s01 conditional IC permutation tests
 

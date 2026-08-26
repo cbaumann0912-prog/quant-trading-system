@@ -1,5 +1,5 @@
 """
-Intraday overshoot signal: the framework's primary validated strategy.
+Intraday overshoot signal: strategy #6, closed as invalidated on Day 57.
 
 Builds per-session overshoot measures from raw 1-minute bars and gates them
 on a walk-forward GARCH conditional volatility estimate. The volatility

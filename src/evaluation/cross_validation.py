@@ -1,6 +1,21 @@
+"""
+Purged cross-validation for time-series data.
+
+Standard k-fold CV is invalid on overlapping financial labels: a label
+built from a forward window overlaps observations in adjacent folds, so
+the training set contains information about the test set. Purging drops
+training observations whose label windows overlap the test fold, and the
+embargo drops a further margin after it to break residual serial
+correlation. Reference: Lopez de Prado, "Advances in Financial Machine
+Learning", ch. 7.
+"""
 import numpy as np
 import pandas as pd
 from typing import Iterator, Tuple
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def purged_cross_validation(
@@ -16,7 +31,7 @@ def purged_cross_validation(
     ----------
     t1 : pd.Series
         Index is the observation start time; values are the corresponding
-        label end time.Must be sorted ascending by start time, with positional 
+        label end time.Must be sorted ascending by start time, with positional
         order matching chronological order.
     n_splits : int
         Number of contiguous folds to partition observations into.

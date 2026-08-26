@@ -1,5 +1,12 @@
+"""
+Cross-sectional and time-series momentum signal construction.
+"""
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def momentum_signal(data: pd.DataFrame, lookback: int) -> pd.Series:
@@ -9,7 +16,7 @@ def momentum_signal(data: pd.DataFrame, lookback: int) -> pd.Series:
     Matches the turbulent-regime rule in
     `research/strategies/volatility_regime_breakout_mean_revert.md` (Section 4,
     Moskowitz, Ooi & Pedersen 2012 convention), re-evaluated every bar with no
-    confirmation lag. 
+    confirmation lag.
 
     Parameters
     ----------

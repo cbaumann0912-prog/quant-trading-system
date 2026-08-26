@@ -1,9 +1,22 @@
+"""
+PC2-based carry factor construction.
+
+Fits principal component loadings on an FX panel and treats the second
+component as a carry proxy. The identification is an interpretation, not a
+result: PC2 is defined only up to sign and rotation, and its economic
+label must be justified by its loadings on high- versus low-yielding
+currencies in each refit, not assumed to be stable across periods.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
 from src.features.pca import pca
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_N_COMPONENTS = 3
 SIGN_REFERENCE_PAIR = "USDJPY"

@@ -1,10 +1,25 @@
+"""
+ARIMA fitting and order selection.
+
+`select_arima_order` searches over (p, d, q) by information criterion. Note
+that the selected order is itself an estimate chosen on the data, so any
+subsequent inference that treats it as fixed and known understates
+uncertainty. Order selection performed on the full sample and then
+evaluated on the same sample is a leakage path.
+"""
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 
-def fit_arima(series: pd.Series,
-order: tuple[int, int, int],
-trend: str = "n",
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
+
+def fit_arima(
+    series: pd.Series,
+    order: tuple[int, int, int],
+    trend: str = "n",
 ) -> dict:
     """
     Fit an ARIMA(p, d, q) model to a univariate time series.
@@ -100,20 +115,35 @@ def select_arima_order(
     best_order: tuple[int, int, int] | None = None
     best_score: float = float("inf")
     failed: list[tuple[int, int]] = []
+    total_candidates = (max_p + 1) * (max_q + 1)
+
+    logger.info(
+        "ARIMA order search over %d candidates (p<=%d, q<=%d, d=%d) by %s.",
+        total_candidates, max_p, max_q, d, criterion.upper(),
+    )
 
     for p in range(0, max_p + 1):
         for q in range(0, max_q + 1):
-            try: 
+            try:
                 result = fit_arima(series, order=(p, d, q))
                 score = result[criterion]
                 if score < best_score:
                     best_order = (p, d, q)
                     best_score = score
-            except Exception:
-                failed.append((p,q))
+            except Exception as exc:
+                logger.debug("ARIMA(%d, %d, %d) failed: %s", p, d, q, exc)
+                failed.append((p, q))
 
     if failed:
-        print(f"Warning: {len(failed)} combinations failed to converge: {failed}")
+        logger.warning(
+            "ARIMA order search: %d of %d (p, q) combinations failed to converge: %s. "
+            "Selected order was chosen from the surviving subset only.",
+            len(failed), total_candidates, failed,
+        )
     if best_order is None:
-        raise RuntimeError
+        logger.error("ARIMA order search: no candidate converged.")
+        raise RuntimeError(
+            "No ARIMA order converged over the requested search grid. "
+            "Widen the grid, lengthen the sample, or difference the series first."
+        )
     return best_order

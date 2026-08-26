@@ -1,3 +1,13 @@
+"""
+Intraday overshoot signal: the framework's primary validated strategy.
+
+Builds per-session overshoot measures from raw 1-minute bars and gates them
+on a walk-forward GARCH conditional volatility estimate. The volatility
+estimate is refit strictly on data available at each decision point --
+see :func:`walk_forward_conditional_vol` -- because an in-sample GARCH fit
+would leak the very volatility clustering the signal conditions on.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,6 +17,9 @@ import pandas as pd
 
 from src.features.garch import fit_garch
 from src.features.sessions import FILE_UTC_OFFSET_HOURS
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 NY_ZONE = "America/New_York"
 
@@ -35,9 +48,23 @@ def load_ny_minute_bars(pair: str, data_dir: str | Path) -> pd.DataFrame:
     """
     path = Path(data_dir) / f"{pair}.csv"
     if not path.exists():
+        logger.error("Missing 1-minute data file for %s at %s.", pair, path)
         raise FileNotFoundError(f"No 1-minute data file for {pair} at {path}")
 
-    raw = pd.read_csv(path, usecols=["Datetime", "Close"])
+    logger.info("Reading 1-minute bars for %s from %s.", pair, path)
+    try:
+        raw = pd.read_csv(path, usecols=["Datetime", "Close"])
+    except ValueError as exc:
+        logger.error("Schema mismatch reading %s: %s", path, exc)
+        raise ValueError(
+            f"{path} does not contain the required columns "
+            f"['Datetime', 'Close']: {exc}"
+        ) from exc
+    except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
+        logger.error("Failed to read %s: %s", path, exc)
+        raise OSError(f"Could not read 1-minute bars for {pair} at {path}: {exc}") from exc
+
+    logger.debug("%s: %d raw 1-minute bars read.", pair, len(raw))
     parsed = pd.to_datetime(raw["Datetime"], format="%Y%m%d %H%M%S")
     ny = pd.DatetimeIndex(
         (parsed + pd.Timedelta(hours=FILE_UTC_OFFSET_HOURS)).dt.tz_localize("UTC")

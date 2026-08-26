@@ -25,10 +25,6 @@ def test_month_to_date_excludes_the_current_day():
 
 
 def test_month_to_date_carries_the_prior_month_final_return_into_day_one():
-    # The shift precedes the groupby, so the first row of a month accumulates
-    # the previous month's last return rather than starting at zero. Faithful
-    # to the original strategy 5 construction; documented rather than fixed,
-    # because changing it would move the recorded H1 figures.
     index = pd.to_datetime(["2020-01-30", "2020-01-31", "2020-02-01", "2020-02-02"])
     r = pd.Series([0.01, 0.02, 0.03, 0.04], index=index)
     mtd = month_to_date_return(r)

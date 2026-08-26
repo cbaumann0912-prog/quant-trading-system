@@ -1,3 +1,12 @@
+"""
+Factory for regime-gated wrappers around a base signal.
+
+Gating multiplies a base signal by a regime condition. This adds at least
+one threshold parameter, so a gated signal that outperforms its ungated
+parent has been given extra fitting freedom and must clear a
+correspondingly higher bar before the improvement is credited to the
+regime hypothesis rather than to the added flexibility.
+"""
 from typing import Callable
 
 import numpy as np
@@ -5,6 +14,10 @@ import pandas as pd
 
 from src.signals.mean_reversion import _ladder_step, price_zscore_signal
 from src.signals.momentum import momentum_signal
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def make_regime_gated_signal_fn(
@@ -45,6 +58,38 @@ def make_regime_gated_signal_fn(
     """
 
     def signal_fn(data: pd.DataFrame, lookback: int) -> pd.Series:
+        """
+        Regime-gated exposure: momentum in turbulent regimes, a mean-reversion
+        ladder in calm ones, hold-through otherwise.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Price panel supplied by `SignalBuilder`.
+        lookback : int
+            Momentum leg lookback, passed through by `SignalBuilder`. The
+            reversion leg uses `reversion_lookback` from the enclosing
+            closure instead.
+
+        Returns
+        -------
+        pd.Series
+            Exposure per bar, NaN where no position is held.
+
+        Notes
+        -----
+        Bars whose regime label is missing are treated as deadzone: an
+        existing position is held but no new entry is triggered. Treating a
+        missing label as "no regime" rather than defaulting to one of the two
+        legs keeps an absent classification from silently becoming a trading
+        decision.
+
+        The loop is sequential rather than vectorized because ladder state
+        (rung count, direction, entry index) depends on its own history, and
+        the time stop is measured from the rung-1 entry. Rewriting this as a
+        vectorized expression is the most likely way to introduce lookahead
+        into this module.
+        """
         momentum = momentum_signal(data, lookback)
         z = price_zscore_signal(data, reversion_lookback)
         aligned_regime = regime.reindex(data.index)

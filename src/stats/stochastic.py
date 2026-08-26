@@ -1,7 +1,24 @@
+"""
+Simulation of stochastic processes: GBM and Ornstein-Uhlenbeck.
+
+Used to generate data with known parameters, which is the only reliable way
+to validate an estimator: a half-life estimator can be checked against a
+process whose true half-life is set by construction. `ou_stress_test`
+sweeps the parameter space to map where estimation degrades -- typically
+when the observation window is short relative to the true half-life, where
+mean reversion becomes statistically indistinguishable from a random
+walk.
+"""
 import numpy as np
 import pandas as pd
 
 from src.analysis.performance_analyzer import PerformanceAnalyzer
+
+from src.utils.random_state import get_rng
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def simulate_gbm(
@@ -11,7 +28,7 @@ def simulate_gbm(
     T: float,
     n_steps: int,
     n_paths: int,
-    seed: int = 28,
+    seed: int | None = None,
 ) -> np.ndarray:
     """
     Simulate geometric Brownian motion price paths using the exact
@@ -19,7 +36,7 @@ def simulate_gbm(
 
     Returns an array of shape (n_paths, n_steps + 1), column 0 is S0.
     """
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     dt = T / n_steps
     z = rng.standard_normal((n_paths, n_steps))
     log_increments = (mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z
@@ -39,7 +56,7 @@ def simulate_ou(
     n_steps: int,
     n_paths: int,
     dt: float = 1.0,
-    seed: int = 28,
+    seed: int | None = None,
 ) -> np.ndarray:
     """
     Simulate Ornstein-Uhlenbeck paths via Euler-Maruyama discretization of
@@ -63,7 +80,7 @@ def simulate_ou(
     dt : float, optional
         Time step size. Defaults to 1.0 (one bar per step).
     seed : int, optional
-        Random seed for reproducibility. Defaults to 28.
+        Random seed. None resolves to utils.random_state.DEFAULT_SEED.
 
     Returns
     -------
@@ -79,7 +96,7 @@ def simulate_ou(
     if sigma < 0:
         raise ValueError(f"sigma must be >= 0, got {sigma}")
 
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     paths = np.empty((n_paths, n_steps + 1))
     paths[:, 0] = X0
 
@@ -144,7 +161,7 @@ def _fit_ou_params(x: np.ndarray, dt: float) -> tuple[float, float, float]:
 def ou_stress_test(
     strategy_returns: pd.Series,
     n_simulations: int = 500,
-    seed: int = 28,
+    seed: int | None = None,
 ) -> dict:
     """
     Monte Carlo stress test of a strategy's realized Sharpe ratio against
@@ -157,7 +174,8 @@ def ou_stress_test(
     n_simulations : int, optional
         Number of Monte Carlo replicates. Defaults to 500.
     seed : int, optional
-        Random seed forwarded to `simulate_ou` for reproducibility.
+        Random seed forwarded to `simulate_ou`. None resolves to
+        utils.random_state.DEFAULT_SEED.
         Defaults to 28.
 
     Returns
@@ -170,7 +188,7 @@ def ou_stress_test(
     Raises
     ------
     ValueError
-        If strategy_returns has fewer than 3 observations or if the fitted 
+        If strategy_returns has fewer than 3 observations or if the fitted
         process is not mean-reverting.
     """
     if len(strategy_returns) < 3:

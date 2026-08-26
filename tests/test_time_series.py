@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -72,7 +74,7 @@ def test_select_arima_order_raises_on_invalid_criterion():
         select_arima_order(series, max_p=1, max_q=1, criterion="bogus")
 
 
-def test_select_arima_order_skips_failed_combinations(capsys):
+def test_select_arima_order_skips_failed_combinations(caplog):
     series = _white_noise()
     real_fit_arima = fit_arima
 
@@ -83,10 +85,10 @@ def test_select_arima_order_skips_failed_combinations(capsys):
         return real_fit_arima(s, order=order)
 
     with patch("src.data.time_series.fit_arima", side_effect=flaky_fit):
-        result = select_arima_order(series, max_p=1, max_q=1)
+        with caplog.at_level(logging.WARNING, logger="src.data.time_series"):
+            result = select_arima_order(series, max_p=1, max_q=1)
 
-    captured = capsys.readouterr()
-    assert "failed to converge" in captured.out
+    assert "failed to converge" in caplog.text
     assert result != (1, 0, 1)
 
 

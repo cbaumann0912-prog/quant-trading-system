@@ -1,8 +1,23 @@
+"""
+Analytic densities and return-path simulation.
+
+Provides normal, lognormal, and Student-t densities plus a tail-mass
+comparison. The comparison is the point of the module: the normal
+assumption underlying most closed-form risk formulas assigns negligible
+probability to moves that FX markets deliver regularly, and quantifying
+that gap is a prerequisite for trusting any parametric VaR figure.
+"""
 import math
 import numpy as np
 from scipy.special import gamma
 from scipy.integrate import quad
 from typing import Callable
+
+from src.utils.random_state import get_rng
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def normal_pdf(x: np.ndarray, mu: float, sigma: float) -> np.ndarray:
@@ -71,13 +86,13 @@ def lognormal_pdf(X: np.ndarray, mu: float, sigma: float) -> np.ndarray:
     ValueError
         If any element of X is <= 0.
     """
-    x=np.asarray(X,dtype=float)
-    if np.any(X<=0):
+    x = np.asarray(X, dtype=float)
+    if np.any(X <= 0):
         raise ValueError("lognormal_pdf is only defined for x>0")
     return (1/(X*sigma*np.sqrt(2*np.pi)))*np.exp(-0.5*((np.log(x)-mu)/sigma)**2)
 
 
-def simulate_log_returns(mu: float, sigma: float, n: int, seed: int = 28) -> np.ndarray:
+def simulate_log_returns(mu: float, sigma: float, n: int, seed: int | None = None) -> np.ndarray:
     """
     Simulate a series of normally distributed log returns.
 
@@ -90,18 +105,18 @@ def simulate_log_returns(mu: float, sigma: float, n: int, seed: int = 28) -> np.
     n
         Number of return observations to generate.
     seed
-        Random seed for reproducibility.
+        Random seed. None resolves to utils.random_state.DEFAULT_SEED.
 
     Returns
     -------
     np.ndarray
         Array of simulated log returns, shape (n,).
     """
-    rng=np.random.default_rng(seed)
+    rng = get_rng(seed)
     return rng.normal(loc=mu, scale=sigma, size=n)
 
 
-def simulate_price_path(S0: float, mu: float, sigma: float, n: int, seed: int = 42) -> np.ndarray:
+def simulate_price_path(S0: float, mu: float, sigma: float, n: int, seed: int | None = None) -> np.ndarray:
     """
     Simulate a geometric Brownian motion price path.
 
@@ -116,7 +131,7 @@ def simulate_price_path(S0: float, mu: float, sigma: float, n: int, seed: int = 
     n
         Total number of price points (including S0).
     seed
-        Random seed for reproducibility.
+        Random seed. None resolves to utils.random_state.DEFAULT_SEED.
 
     Returns
     -------
@@ -174,5 +189,5 @@ def tail_mass_comparison(dist1: Callable, dist2: Callable, threshold: float) -> 
     """
     result1 = quad(dist1, threshold, np.inf)[0]
     result2 = quad(dist2, threshold, np.inf)[0]
-    result ={"dist1_tail_mass":result1,"dist2_tail_mass":result2,"difference": result2 - result1}
+    result = {"dist1_tail_mass": result1, "dist2_tail_mass": result2, "difference": result2 - result1}
     return result

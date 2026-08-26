@@ -1,5 +1,16 @@
+"""
+Elementary portfolio algebra: covariance, portfolio variance and return.
+
+Kept separate from `portfolio.py` so the optimizers there depend on small,
+independently tested primitives rather than inlining the quadratic form.
+"""
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def compute_covariance_matrix(returns: pd.DataFrame) -> np.ndarray:
     """
@@ -20,6 +31,7 @@ def compute_covariance_matrix(returns: pd.DataFrame) -> np.ndarray:
     n = X.shape[0]
     return (X.T @ X) / (n - 1)
 
+
 def compute_portfolio_variance(weights: np.ndarray, cov_matrix: np.ndarray) -> float:
     """
     Compute portfolio variance given weights and a covariance matrix.
@@ -36,7 +48,8 @@ def compute_portfolio_variance(weights: np.ndarray, cov_matrix: np.ndarray) -> f
     float
         Portfolio variance w^T Σ w.
     """
-    return np.dot(weights,np.dot(cov_matrix,weights))
+    return np.dot(weights, np.dot(cov_matrix, weights))
+
 
 def compute_portfolio_return(weights: np.ndarray, mean_returns: np.ndarray) -> float:
     """

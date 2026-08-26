@@ -1,9 +1,30 @@
+"""
+Multiple-testing corrections and permutation tests.
+
+Bonferroni controls the family-wise error rate; Benjamini-Hochberg controls
+the false discovery rate. The choice is a research decision, not a
+formality: FWER is the honest correction when a single claimed discovery is
+the deliverable, FDR when a set of candidates will be carried forward and
+filtered later.
+
+Permutation tests are preferred here over parametric alternatives because
+they require no distributional assumption on the test statistic -- only
+exchangeability under the null, which is a far weaker and more defensible
+assumption for return data with fat tails and volatility clustering.
+"""
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from typing import Literal
 
 from src.stats.regression import interaction_regression_centered
+
+from src.utils.random_state import get_rng
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
     """Apply Bonferroni correction across m hypothesis tests.
@@ -25,7 +46,7 @@ def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
     ValueError
         If p_values is empty.
     """
-    if len(p_values) == 0: 
+    if len(p_values) == 0:
         raise ValueError("the list p_values must not be empty")
 
     result = []
@@ -35,7 +56,6 @@ def bonferroni_correction(p_values: list[float], alpha: float) -> list[bool]:
         else:
             result.append(False)
     return result
-
 
 
 def benjamini_hochberg_correction(p_values: list[float], alpha: float) -> list[bool]:
@@ -58,7 +78,7 @@ def benjamini_hochberg_correction(p_values: list[float], alpha: float) -> list[b
     ValueError
         If p_values is empty.
     """
-    if len(p_values) == 0: 
+    if len(p_values) == 0:
         raise ValueError("the list p_values must not be empty")
 
     m = len(p_values)
@@ -70,10 +90,10 @@ def benjamini_hochberg_correction(p_values: list[float], alpha: float) -> list[b
         if p <= ((i * alpha) / m):
             R_max = i
 
-    rej_indices = sorted_indices[:R_max] 
-    rejected = np.zeros(m,dtype=bool)
+    rej_indices = sorted_indices[:R_max]
+    rejected = np.zeros(m, dtype=bool)
     rejected[rej_indices] = True
-    
+
     return rejected.tolist()
 
 
@@ -81,7 +101,7 @@ def permutation_test(
     signal: pd.Series,
     forward_returns: pd.Series,
     n_permutations: int = 1000,
-    seed: int = 42,
+    seed: int | None = None,
     alternative: Literal["two-sided", "greater", "less"] = "two-sided",
 ) -> dict:
     """
@@ -95,15 +115,15 @@ def permutation_test(
         Forward-looking return series, indexed identically to signal.
     n_permutations : int, default 1000
         Number of permutations used to build the null distribution.
-    seed : int, default 42
+    seed : int | None, default None
         Seed for the random number generator, for reproducibility.
     alternative : {"two-sided", "greater", "less"}, default "two-sided"
         - "greater": tests whether observed_ic is significantly greater
           than the null.
         - "less": tests whether observed_ic is significantly less than the
-          null. 
+          null.
         - "two-sided": no pre-committed direction; tests |observed_ic|
-          against |null|. 
+          against |null|.
     Returns
     -------
     dict
@@ -137,7 +157,7 @@ def permutation_test(
             f"got {alternative!r}"
         )
 
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
 
     signal_vals = signal.to_numpy()
     fr_vals = forward_returns.to_numpy()
@@ -168,7 +188,7 @@ def permutation_test(
 def paired_sign_permutation_test(
     diffs: np.ndarray,
     n_permutations: int = 10000,
-    seed: int = 28,
+    seed: int | None = None,
     alternative: Literal["two-sided", "greater", "less"] = "two-sided",
 ) -> dict:
     """
@@ -181,7 +201,7 @@ def paired_sign_permutation_test(
         One difference per matched pair.
     n_permutations : int, default 10000
         Number of random sign-flip permutations to draw.
-    seed : int, default 28
+    seed : int | None, default None
         Seed for the random number generator, for reproducibility.
     alternative : {"two-sided", "greater", "less"}, default "two-sided"
         Same convention as permutation_test: pre-committed direction,
@@ -218,7 +238,7 @@ def paired_sign_permutation_test(
             f"got {alternative!r}"
         )
 
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     diffs = np.asarray(diffs, dtype=float)
     n = len(diffs)
 
@@ -250,7 +270,7 @@ def permutation_test_interaction_coefficient(
     x1: pd.Series,
     dummy: pd.Series,
     n_permutations: int = 1000,
-    seed: int = 42,
+    seed: int | None = None,
     alternative: Literal["two-sided", "greater", "less"] = "two-sided",
 ) -> dict:
     """
@@ -269,7 +289,7 @@ def permutation_test_interaction_coefficient(
     n_permutations : int, default 1000
         Number of permutations used to build the null distribution, per
         Section 10 (1000 permutations, pre-registered).
-    seed : int, default 42
+    seed : int | None, default None
         Seed for the random number generator, for reproducibility.
     alternative : {"two-sided", "greater", "less"}, default "two-sided"
         Same convention as `permutation_test`. Two-sided is appropriate
@@ -317,7 +337,7 @@ def permutation_test_interaction_coefficient(
     x1_vals = x1_aligned[valid].reset_index(drop=True)
     dummy_vals = dummy_aligned[valid].reset_index(drop=True).to_numpy()
 
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     null_distribution = np.empty(n_permutations, dtype=float)
     for i in range(n_permutations):
         permuted_dummy = pd.Series(rng.permutation(dummy_vals))

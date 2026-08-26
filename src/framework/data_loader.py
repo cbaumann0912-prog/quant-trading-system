@@ -1,24 +1,39 @@
+"""
+Loading and leakage-safe splitting of the raw FX price data.
+
+This module is the framework's only boundary with the on-disk minute bars
+and with FRED's public CSV endpoint. Every read is guarded and logged here
+rather than in the research modules, so that a failure surfaces as a
+diagnosable error naming the pair and path instead of a bare pandas
+traceback three call frames deep.
+
+The embargo logic in :meth:`DataLoader.train_test_split` is the leakage
+control the rest of the framework depends on; see the class docstring for
+the precise definition of an embargo "day".
+"""
+
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 import numpy as np
 import pandas as pd
 
-# Resolved relative to this file, not the caller's cwd or any one machine.
-# data_loader.py lives at <repo>/src/framework/, so parents[3] is the
-# directory containing the repo, and the raw minute CSVs sit beside it.
-# In the Docker image the repo is /app, which resolves this to /data --
-# the documented mount point. QUANT_DATA_DIR overrides for other layouts.
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 DEFAULT_DATA_DIR = Path(
     os.environ.get("QUANT_DATA_DIR", Path(__file__).resolve().parents[3] / "data")
 )
 
 SUPPORTED_PAIRS = {
     "EURUSD", "GBPUSD", "USDJPY",
-    "USDCHF", "AUDUSD", "USDCAD", 
-    "NZDUSD", "EURGBP", "EURJPY", 
+    "USDCHF", "AUDUSD", "USDCAD",
+    "NZDUSD", "EURGBP", "EURJPY",
     "EURCHF",
 }
 
@@ -88,27 +103,37 @@ class DataLoader:
             columns : one per pair, values = daily close price
         """
         if self._data is not None:
+            logger.debug("load() cache hit: %d rows already resolved.", len(self._data))
             return self._data
+
+        logger.info(
+            "Loading %d pair(s) %s from %s over [%s, %s].",
+            len(self.pairs), self.pairs, self.data_dir,
+            self.start.date(), self.end.date(),
+        )
+        load_started = time.perf_counter()
 
         series = {}
         for pair in self.pairs:
             path = self.data_dir / f"{pair}.csv"
             if not path.exists():
+                logger.error("Missing data file for %s at %s.", pair, path)
                 raise FileNotFoundError(f"No data file for {pair} at {path}")
 
-            df = pd.read_csv(path, usecols=["Datetime", "Close"])
+            try:
+                df = pd.read_csv(path, usecols=["Datetime", "Close"])
+            except ValueError as exc:
+                logger.error("Schema mismatch reading %s: %s", path, exc)
+                raise ValueError(
+                    f"{path} does not contain the required columns "
+                    f"['Datetime', 'Close']. Got a schema error: {exc}"
+                ) from exc
+            except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
+                logger.error("Failed to read %s: %s", path, exc)
+                raise OSError(f"Could not read price data for {pair} at {path}: {exc}") from exc
 
-            # Parsing all ~5.6M minute timestamps costs ~70% of total runtime
-            # and then discards 99.9% of them: only the daily last close
-            # survives. "YYYYMMDD HHMMSS" is fixed-width and zero-padded, so
-            # lexicographic order on the raw strings is chronological order.
-            # Sort and group on the strings, then parse only the ~5k surviving
-            # day keys.
-            #
-            # The source files are NOT sorted (index.is_monotonic_increasing
-            # is False on EURUSD.csv), so the sort is load-bearing for
-            # correctness, not just tidiness -- "last observation per day"
-            # is meaningless without it.
+            logger.debug("%s: read %d raw minute rows from %s.", pair, len(df), path.name)
+
             stamps = df["Datetime"].values.astype("U15")
             order = np.argsort(stamps, kind="stable")
             day_keys = stamps[order].astype("U8")
@@ -118,20 +143,44 @@ class DataLoader:
             daily.index = pd.to_datetime(daily.index, format="%Y%m%d")
             daily.index.name = "Datetime"
             series[pair] = daily
+            logger.debug(
+                "%s: resampled to %d daily closes spanning [%s, %s].",
+                pair, len(daily), daily.index.min().date(), daily.index.max().date(),
+            )
 
         data = pd.DataFrame(series)
+        pre_filter_n = len(data)
         data = data.loc[(data.index >= self.start) & (data.index <= self.end)]
         data = data.sort_index()
 
         if data.index.duplicated().any():
+            logger.error("Duplicate timestamps present after resampling.")
             raise ValueError(
                 "Duplicate timestamps after resampling -- investigate source data."
             )
         if data.empty:
+            logger.error(
+                "Date filter emptied the panel: %d rows before filtering, 0 after.",
+                pre_filter_n,
+            )
             raise ValueError(
                 f"No data in range [{self.start.date()}, {self.end.date()}] "
                 f"for pairs {self.pairs}."
             )
+
+        n_missing = int(data.isna().sum().sum())
+        if n_missing:
+            logger.warning(
+                "Aligned panel contains %d missing values across %d pairs; "
+                "downstream statistics will see NaNs unless handled.",
+                n_missing, data.shape[1],
+            )
+
+        logger.info(
+            "Loaded panel: %d rows x %d pairs, [%s, %s], in %.2fs (%d rows dropped by date filter).",
+            data.shape[0], data.shape[1], data.index.min().date(), data.index.max().date(),
+            time.perf_counter() - load_started, pre_filter_n - len(data),
+        )
 
         self._data = data
         return self._data
@@ -243,6 +292,10 @@ _RATE_SERIES = {
 }
 _FRED_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
 
+_FRED_MAX_ATTEMPTS = 3
+_FRED_BACKOFF_SECONDS = 2.0
+_FRED_USER_AGENT = "quant-research-framework/1.0"
+
 
 def fetch_rate_differentials(data_dir: str | Path) -> None:
     """
@@ -250,9 +303,79 @@ def fetch_rate_differentials(data_dir: str | Path) -> None:
     ({region}_3m_interbank.csv) in `data_dir` from FRED's public CSV
     endpoint (no API key required). Monthly, not seasonally adjusted.
     """
+    out_dir = Path(data_dir)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.error("Cannot create output directory %s: %s", out_dir, exc)
+        raise
+
+    failures: list[str] = []
     for region, series_id in _RATE_SERIES.items():
-        df = pd.read_csv(_FRED_CSV_URL.format(series_id=series_id))
+        url = _FRED_CSV_URL.format(series_id=series_id)
+        df = None
+
+        for attempt in range(1, _FRED_MAX_ATTEMPTS + 1):
+            try:
+                df = pd.read_csv(url, storage_options={"User-Agent": _FRED_USER_AGENT})
+                break
+            except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                logger.warning(
+                    "FRED fetch failed for %s (%s), attempt %d/%d: %s",
+                    region, series_id, attempt, _FRED_MAX_ATTEMPTS, exc,
+                )
+                if attempt == _FRED_MAX_ATTEMPTS:
+                    failures.append(region)
+                else:
+                    time.sleep(_FRED_BACKOFF_SECONDS * attempt)
+            except (pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
+                logger.error(
+                    "FRED returned unparseable content for %s (%s): %s",
+                    region, series_id, exc,
+                )
+                failures.append(region)
+                break
+
+        if df is None:
+            continue
+
+        if df.shape[1] != 2:
+            logger.error(
+                "Unexpected FRED schema for %s: expected 2 columns, got %d (%s). "
+                "Leaving the existing local file untouched.",
+                region, df.shape[1], list(df.columns),
+            )
+            failures.append(region)
+            continue
+
         df.columns = ["date", "value"]
         df["date"] = pd.to_datetime(df["date"])
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
-        df.to_csv(Path(data_dir) / f"{region}_3m_interbank.csv", index=False)
+
+        n_missing = int(df["value"].isna().sum())
+        if n_missing:
+            logger.warning(
+                "%s: %d of %d observations are missing after numeric coercion.",
+                region, n_missing, len(df),
+            )
+
+        target = out_dir / f"{region}_3m_interbank.csv"
+        try:
+            df.to_csv(target, index=False)
+        except OSError as exc:
+            logger.error("Could not write %s: %s", target, exc)
+            failures.append(region)
+            continue
+
+        logger.info(
+            "Refreshed %s: %d observations through %s -> %s.",
+            region, len(df), df["date"].max().date(), target.name,
+        )
+
+    if failures:
+        raise RuntimeError(
+            f"Rate differential refresh failed for {sorted(failures)}. "
+            f"Local files for these regions were left unchanged; the data "
+            f"directory is now in a mixed-vintage state. Re-run before "
+            f"computing any carry signal."
+        )

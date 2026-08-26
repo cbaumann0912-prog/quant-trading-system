@@ -1,9 +1,21 @@
+"""
+Walk-forward refitting of the composite regime score.
+
+The leakage-safe counterpart to `src.features.regime_classifier`: regime
+score parameters are re-estimated using only data available at each
+decision point, so classification at time t never depends on the
+distribution of the full sample.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
 from src.features.pca import pca
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def compute_composite_regime_score_walkforward(

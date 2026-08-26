@@ -1,8 +1,22 @@
+"""
+Factor decompositions of return panels: CAPM and PCA-based.
+
+CAPM here is the single-index expected-return identity, not a test of the
+model. `pca_factor_decomposition` is descriptive: principal components of
+an FX return panel have no guaranteed economic meaning, and the usual
+reading of PC1 as "dollar level" and PC2 as "carry" is an interpretation
+imposed after the fact, not a result the decomposition establishes.
+"""
 import numpy as np
 import pandas as pd
 from scipy import stats
 
 from src.features.pca import eigendecomposition
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def capm_expected_return(
     asset_returns: pd.Series,

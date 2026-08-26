@@ -1,7 +1,20 @@
+"""
+Momentum outcome labelling and non-overlapping subsampling.
+
+`non_overlapping_subsample` exists to address a specific inference problem:
+momentum labels built from overlapping forward windows are serially
+dependent, so the effective sample size is far smaller than the row count.
+Tests run on the overlapping panel report standard errors that are too
+small and p-values that are too optimistic.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_LOOKBACK = 26
 DEFAULT_HOLDING = 5

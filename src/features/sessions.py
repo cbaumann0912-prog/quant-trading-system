@@ -1,3 +1,13 @@
+"""
+Partition of raw 1-minute FX bars into Asian, London, and New York sessions.
+
+Session boundaries are derived from local exchange opens converted to UTC,
+so daylight-saving transitions shift the London and New York boundaries as
+they do in reality rather than being pinned to a fixed UTC hour. The raw
+files carry a fixed UTC offset (:data:`FILE_UTC_OFFSET_HOURS`), applied
+before any localization.
+"""
+
 from __future__ import annotations
 
 from datetime import time
@@ -6,6 +16,10 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 FILE_UTC_OFFSET_HOURS = 5
 FIRST_HOUR_MINUTES = 60
@@ -48,9 +62,23 @@ def _bucketed_1min_bars(pair: str, data_dir: str | Path) -> pd.DataFrame:
     """
     path = Path(data_dir) / f"{pair}.csv"
     if not path.exists():
+        logger.error("Missing 1-minute data file for %s at %s.", pair, path)
         raise FileNotFoundError(f"No 1-minute data file for {pair} at {path}")
 
-    raw = pd.read_csv(path, usecols=["Datetime", "Close"])
+    logger.info("Reading 1-minute bars for %s from %s.", pair, path)
+    try:
+        raw = pd.read_csv(path, usecols=["Datetime", "Close"])
+    except ValueError as exc:
+        logger.error("Schema mismatch reading %s: %s", path, exc)
+        raise ValueError(
+            f"{path} does not contain the required columns "
+            f"['Datetime', 'Close']: {exc}"
+        ) from exc
+    except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
+        logger.error("Failed to read %s: %s", path, exc)
+        raise OSError(f"Could not read 1-minute bars for {pair} at {path}: {exc}") from exc
+
+    logger.debug("%s: %d raw 1-minute bars read.", pair, len(raw))
     raw["Datetime"] = pd.to_datetime(raw["Datetime"], format="%Y%m%d %H%M%S")
     raw = raw.set_index("Datetime").sort_index()
 

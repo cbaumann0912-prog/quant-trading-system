@@ -1,8 +1,21 @@
+"""
+GARCH(1,1) volatility estimation and regime classification.
+
+The conditional volatility this produces is the gating input for the
+intraday overshoot signal. Fitting is done by maximum likelihood, which is
+sensitive to starting values and can fail to converge on short or
+low-variance samples; callers must treat a returned fit as provisional and
+check it rather than assuming convergence.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 _SCALE = 100.0
 
@@ -29,7 +42,7 @@ def _neg_log_likelihood(params: np.ndarray, eps: np.ndarray) -> float:
     log_lik = -0.5 * np.sum(np.log(2 * np.pi) + np.log(sigma2) + eps ** 2 / sigma2)
     if not np.isfinite(log_lik):
         return 1e10
-    
+
     return -log_lik
 
 
@@ -203,7 +216,7 @@ def classify_vol_regime(conditional_vol: pd.Series, n_regimes: int = 2) -> pd.Se
         )
 
     raw_labels = _kmeans_1d(x, k=n_regimes)
-    
+
     centroid_by_cluster = {c: x[raw_labels == c].mean() for c in np.unique(raw_labels)}
     rank_by_cluster = {
         c: rank for rank, c in enumerate(sorted(centroid_by_cluster, key=centroid_by_cluster.get))

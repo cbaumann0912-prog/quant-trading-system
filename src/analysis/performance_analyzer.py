@@ -1,12 +1,29 @@
+"""
+Performance measurement and the transaction-cost break-even arithmetic.
+
+Two distinct jobs live here. `PerformanceAnalyzer` computes the standard
+return, risk, and drawdown statistics. The `pip_*` / `breakeven_*` / cost
+helpers answer the prior question: given a strategy's turnover and the
+prevailing spread, what gross return must it earn before it clears costs?
+
+That ordering is deliberate. A Sharpe ratio computed before the cost
+hurdle is known is not evidence of an edge, and most published intraday FX
+results fail precisely at this step rather than at statistical
+significance.
+"""
 from __future__ import annotations
 
 import pandas as pd
 import numpy as np
 from scipy import stats
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Sequence, Union
 from scipy.stats import chi2, jarque_bera
 from statsmodels.stats.diagnostic import acorr_ljungbox
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -553,7 +570,7 @@ def information_coefficient(
 
 
 def information_ratio(
-    ic_values,
+    ic_values: Union[Sequence[float], np.ndarray, pd.Series],
     method: str = "fundamental_law",
     breadth: Optional[int] = None,
 ) -> float:
@@ -663,6 +680,7 @@ def regime_conditional_performance(returns: pd.Series, regimes: pd.Series) -> di
 DEFAULT_DAY_COUNT = 360
 _JPY_PIP = 0.01
 _STANDARD_PIP = 0.0001
+
 
 def pip_size(pair: str) -> float:
     """Price increment of one pip for an FX pair.

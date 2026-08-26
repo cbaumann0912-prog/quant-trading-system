@@ -1,7 +1,24 @@
+"""
+t-tests, effect sizes, and power analysis.
+
+Power analysis is included deliberately. A t-test that fails to reject on a
+short sample is routinely misread as evidence of no effect; the required
+sample size and achieved power make explicit what magnitude of effect the
+test could actually have detected. An underpowered non-result is not a
+finding.
+
+Cohen's d is reported alongside p-values because statistical significance
+and economic magnitude are independent questions, and a strategy is traded
+on the second.
+"""
 import numpy as np
 import pandas as pd
 import math
 from scipy import stats
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def t_test_mean(
@@ -23,7 +40,7 @@ def t_test_mean(
     Returns
     -------
     dict with keys:
-        t_stat          : float 
+        t_stat          : float
         p_value         : float
         reject_null     : bool
         confidence_interval : tuple[float, float]
@@ -54,7 +71,7 @@ def t_test_mean(
     t_crit = stats.t.ppf(1 - alpha/2, df)
     CI = (x_bar - t_crit * se, x_bar + t_crit * se)
 
-    return {"t_stat": W, "p_value": p_value, "reject_null": reject_null, "confidence_interval": CI }
+    return {"t_stat": W, "p_value": p_value, "reject_null": reject_null, "confidence_interval": CI}
 
 
 def p_value_interpretation(p: float, alpha: float) -> str:
@@ -73,20 +90,20 @@ def p_value_interpretation(p: float, alpha: float) -> str:
     str
         Human-readable interpretation of the test result.
     """
-    
+
     if p < alpha:
         return (
-        f"Given the significance level {alpha} and that the null hypothesis is true, "
-        f"there is a {p} probability that the observed value or more extreme to occur." 
-        f"The observed value is statistically significant and we reject the null"
+            f"Given the significance level {alpha} and that the null hypothesis is true, "
+            f"there is a {p} probability that the observed value or more extreme to occur."
+            f"The observed value is statistically significant and we reject the null"
         )
     else:
         return (
-        f"Given the significance level {alpha} and that the null hypothesis is true, "
-        f"there is a {p} probability that the observed value or more extreme to occur. We fail to "
-        f"reject the null" 
+            f"Given the significance level {alpha} and that the null hypothesis is true, "
+            f"there is a {p} probability that the observed value or more extreme to occur. We fail to "
+            f"reject the null"
         )
-   
+
 
 def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
     """
@@ -104,7 +121,7 @@ def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
     float
         Standardized mean difference (positive when group1 > group2).
     """
-    
+
     mean1 = group1.mean()
     mean2 = group2.mean()
 
@@ -118,7 +135,8 @@ def compute_effect_size_cohens_d(group1: pd.Series, group2: pd.Series) -> float:
     d = (mean1 - mean2) / s_pooled
 
     return d
-    
+
+
 def compute_required_sample_size(effect_size: float, alpha: float, power: float) -> int:
     """
     Compute the minimum sample size needed to achieve a given power level.
@@ -139,10 +157,11 @@ def compute_required_sample_size(effect_size: float, alpha: float, power: float)
 
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
     z_beta = stats.norm.ppf(power)
-    
+
     n = ((z_half_alpha + z_beta) / effect_size)**2
 
     return math.ceil(n)
+
 
 def compute_achieved_power(n: int, effect_size: float, alpha: float) -> float:
     """
@@ -165,5 +184,5 @@ def compute_achieved_power(n: int, effect_size: float, alpha: float) -> float:
     z_half_alpha = stats.norm.ppf(1-(alpha/2))
 
     power = stats.norm.cdf(((effect_size * math.sqrt(n)) - z_half_alpha))
-    
+
     return power

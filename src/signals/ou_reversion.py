@@ -1,7 +1,19 @@
+"""
+Ornstein-Uhlenbeck excursion analysis on a spread.
+
+Extracts individual excursions from the long-run mean and splits them into
+pools for out-of-sample comparison. Excursion-level analysis, unlike
+bar-level analysis, gives approximately independent observations, which is
+what makes the resulting standard errors trustworthy.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_MA_WINDOW = 100
 DEFAULT_VOL_WINDOW = 100

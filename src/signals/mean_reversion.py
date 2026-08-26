@@ -1,5 +1,17 @@
+"""
+Z-score and laddered mean-reversion signals.
+
+Both condition on a rolling standardization of price. The rolling window is
+the critical parameter: it defines the horizon at which "deviation" is
+measured, and a window chosen after seeing performance is a fitted
+parameter, not a modeling assumption.
+"""
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def price_zscore_signal(data: pd.DataFrame, lookback: int) -> pd.Series:
@@ -87,7 +99,7 @@ def mean_reversion_ladder_signal(
     """
     Full stateful 3-rung mean-reversion ladder (ungated -- always active,
     regardless of regime).
-    
+
     Parameters
     ----------
     data : pd.DataFrame

@@ -38,7 +38,6 @@ def test_returns_are_log_differences_over_the_stated_windows():
     prices = _prices(np.exp(np.arange(30) * 0.01) * 100.0)
     out = momentum_signal_outcome(prices, lookback=4, holding=2)
 
-    # constant 1% log drift per step
     assert np.allclose(out["trailing_return"].to_numpy(), 0.04)
     assert np.allclose(out["forward_return"].to_numpy(), 0.02)
 

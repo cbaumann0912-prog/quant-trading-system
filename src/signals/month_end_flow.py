@@ -1,7 +1,19 @@
+"""
+Month-end rebalancing flow signal and its interaction panel.
+
+Economic rationale: institutional mandates that rebalance FX hedges at
+month end produce a mechanical, calendar-predictable order flow. This is a
+flow story, not a risk-premium story, so the effect should be expected to
+decay as it becomes more widely traded -- and the decay is testable.
+"""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_MONTH_END_DAYS = 2
 

@@ -1,3 +1,17 @@
+"""
+OLS, ridge, lasso, interaction models, and regression diagnostics.
+
+Diagnostics are not optional here. OLS standard errors assume homoskedastic,
+serially uncorrelated errors; financial regressions routinely violate both,
+which inflates t-statistics and produces significant-looking coefficients
+that do not survive a correction. `residual_diagnostics` and `compute_vif`
+exist to make those violations visible before a coefficient is interpreted.
+
+`interaction_regression_centered` centers inputs before forming the product
+term: without centering, the main effects in an interaction model are
+conditional on the other regressor equalling zero, which is usually outside
+the data range and makes them uninterpretable.
+"""
 import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
@@ -5,6 +19,10 @@ from typing import Dict, List, Optional
 import scipy.stats
 import scipy.optimize
 from statsmodels.stats.diagnostic import acorr_ljungbox
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def fit_ols(X: NDArray[np.float64], y: NDArray[np.float64], add_intercept: bool = True,) -> dict:
@@ -45,14 +63,14 @@ def fit_ols(X: NDArray[np.float64], y: NDArray[np.float64], add_intercept: bool 
     std_errors = np.sqrt(np.diag(var_beta))
 
     return {
-    'coefficients': beta,
-    'residuals':    residuals,
-    'r_squared':    R_squared,
-    'std_errors':   std_errors,
-}
+        'coefficients': beta,
+        'residuals':    residuals,
+        'r_squared':    R_squared,
+        'std_errors':   std_errors,
+        }
 
 
-def r_squared(y: NDArray[np.float64],y_hat: NDArray[np.float64]) -> float:
+def r_squared(y: NDArray[np.float64], y_hat: NDArray[np.float64]) -> float:
     """
     Compute the coefficient of determination R².
 
@@ -125,21 +143,21 @@ def residual_diagnostics(y: NDArray[np.float64], y_hat: NDArray[np.float64], lag
     residuals = y - y_hat
 
     mean = np.mean(residuals)
-    variance = np.var(residuals,ddof=1)
+    variance = np.var(residuals, ddof=1)
     excess_kurtosis = scipy.stats.kurtosis(residuals)
     lb_result = acorr_ljungbox(residuals, lags=[lags])
     lb_stat = float(lb_result['lb_stat'].iloc[0])
     lb_pvalue = float(lb_result['lb_pvalue'].iloc[0])
-    lag1_autocorr = np.corrcoef(residuals[:-1], residuals[1:])[0,1]
+    lag1_autocorr = np.corrcoef(residuals[:-1], residuals[1:])[0, 1]
 
     return {
-    'mean': mean,
-    'variance': variance,
-    'excess_kurtosis': excess_kurtosis,
-    'lb_stat': lb_stat,
-    'lb_pvalue': lb_pvalue,
-    'lag1_autocorr': lag1_autocorr,
-}
+        'mean': mean,
+        'variance': variance,
+        'excess_kurtosis': excess_kurtosis,
+        'lb_stat': lb_stat,
+        'lb_pvalue': lb_pvalue,
+        'lag1_autocorr': lag1_autocorr,
+        }
 
 
 def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
@@ -173,10 +191,10 @@ def ridge_fit(X: np.ndarray, y: np.ndarray, lambda_: float) -> dict:
     intercept = y_mean - X_mean @ beta
 
     return {
-    'coefficients': beta,
-    'intercept': intercept,
-    'lambda_': lambda_
-}
+        'coefficients': beta,
+        'intercept': intercept,
+        'lambda_': lambda_
+        }
 
 
 def lasso_objective(beta: np.ndarray, X_c: np.ndarray, y_c: np.ndarray, lambda_: float) -> float:
@@ -260,7 +278,7 @@ def interaction_regression(
     full matrix formulation so standard errors reflect the joint
     covariance structure of all four estimated coefficients rather than
     treating each term as if it were estimated in isolation.
-    
+
     Parameters
     ----------
     y : pd.Series

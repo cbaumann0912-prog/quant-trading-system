@@ -1,3 +1,13 @@
+"""
+SignalBuilder: assembly of lagged signals and aligned forward returns.
+
+The alignment contract enforced here is the framework's main defence
+against lookahead bias. A signal observed at time t may only be paired with
+returns realized strictly after t, and exposure must be lagged relative to
+the return it earns. Most backtest overstatement traces to a violation of
+exactly this rule, so the lag is applied centrally rather than left to
+each individual signal module.
+"""
 from __future__ import annotations
 
 from typing import Callable, Optional
@@ -6,6 +16,10 @@ import numpy as np
 import pandas as pd
 
 from src.analysis.performance_analyzer import information_coefficient
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class SignalBuilder:
@@ -78,6 +92,31 @@ class SignalBuilder:
         self._forward_returns: Optional[pd.Series] = None
 
     def compute(self, data: pd.DataFrame) -> pd.Series:
+        """
+        Evaluates the wrapped signal function and enforces its output contract.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Price panel to evaluate on. Passed explicitly rather than taken
+            from `self.data` so that `validate_no_lookahead` can re-run the
+            signal on a truncated panel.
+
+        Returns
+        -------
+        pd.Series
+            The raw signal, indexed by a subset of `data.index`.
+
+        Raises
+        ------
+        TypeError
+            If `signal_fn` returns something other than a Series.
+        ValueError
+            If the returned index is not contained in `data.index`. An index
+            containing timestamps absent from the input is the signature of a
+            signal that has fabricated or reindexed observations, which would
+            silently misalign against forward returns downstream.
+        """
         signal = self.signal_fn(data, self.lookback)
 
         if not isinstance(signal, pd.Series):
@@ -90,6 +129,30 @@ class SignalBuilder:
         return signal
 
     def compute_forward_returns(self) -> pd.Series:
+        """
+        Returns the forward return realized over `holding_period` steps.
+
+        Returns
+        -------
+        pd.Series
+            Indexed like `self.data`. The value at time t is the return from
+            t to t + holding_period, so the final `holding_period` entries
+            are NaN by construction -- their realizations have not occurred.
+
+        Notes
+        -----
+        This is the alignment contract the whole framework rests on. The
+        return at t is deliberately *forward* looking while the signal at t
+        is *backward* looking, which is what makes pairing them a valid
+        out-of-sample test rather than a contemporaneous correlation.
+
+        The trailing NaNs must not be dropped and backfilled by callers: doing
+        so pulls realized returns backwards in time and produces exactly the
+        lookahead bias this construction exists to prevent.
+
+        Cached after first call, which is safe only because `self.data` is
+        treated as immutable for the lifetime of the builder.
+        """
         if self._forward_returns is not None:
             return self._forward_returns
 
@@ -105,6 +168,33 @@ class SignalBuilder:
         return forward_returns
 
     def compute_ic(self, forward_returns: pd.Series) -> float:
+        """
+        Full-sample information coefficient between signal and forward returns.
+
+        Parameters
+        ----------
+        forward_returns : pd.Series
+            Typically the output of `compute_forward_returns`.
+
+        Returns
+        -------
+        float
+            Rank correlation (Spearman by default), or NaN if fewer than two
+            aligned non-null observations survive.
+
+        Notes
+        -----
+        Spearman is the default because it is invariant to monotone
+        transformation and far less sensitive to the outliers that dominate
+        FX return tails, where a single large move can drive a Pearson IC on
+        its own.
+
+        This is an in-sample descriptive statistic. Overlapping forward
+        windows make consecutive observations dependent, so the naive
+        standard error implied by the sample size is too small and this IC
+        must not be converted to a p-value without accounting for that
+        overlap.
+        """
         signal = self.compute(self.data)
 
         aligned = pd.concat(
@@ -121,6 +211,43 @@ class SignalBuilder:
         )
 
     def compute_rolling_ic(self, forward_returns: pd.Series, window: int) -> pd.Series:
+        """
+        Information coefficient computed on consecutive non-overlapping blocks.
+
+        Parameters
+        ----------
+        forward_returns : pd.Series
+            Forward returns aligned to the signal.
+        window : int
+            Block length in observations. Must be >= 2.
+
+        Returns
+        -------
+        pd.Series
+            One IC per block, indexed by the timestamp that opens the block.
+            Blocks are skipped when either side is constant, since rank
+            correlation is undefined there.
+
+        Raises
+        ------
+        ValueError
+            If `window < 2`.
+
+        Notes
+        -----
+        Blocks step by `window`, not by 1, so they do not overlap. This is
+        the deliberate difference from a conventional rolling statistic: the
+        resulting ICs are approximately independent, which is what makes
+        their dispersion a usable estimate of IC stability and their mean
+        divided by their standard deviation interpretable as an information
+        ratio. A stride-1 rolling IC would produce a smooth, highly
+        autocorrelated series whose apparent stability is an artifact of the
+        overlap.
+
+        The cost is resolution: with n observations only n // window blocks
+        exist, so short samples yield few points and a correspondingly noisy
+        dispersion estimate.
+        """
         if window < 2:
             raise ValueError("window must be >= 2")
 
@@ -137,7 +264,7 @@ class SignalBuilder:
         ic_index = []
 
         for start in range(0, n - window + 1, window):
-            chunk = aligned.iloc[start : start + window]
+            chunk = aligned.iloc[start: start + window]
             if len(chunk) < 2:
                 continue
             if chunk["signal"].nunique() < 2 or chunk["forward_returns"].nunique() < 2:
@@ -153,6 +280,36 @@ class SignalBuilder:
         return pd.Series(ic_values, index=ic_index)
 
     def validate_no_lookahead(self, cutoff: pd.Timestamp) -> bool:
+        """
+        Checks that the signal at times <= `cutoff` does not change when data
+        after `cutoff` is withheld.
+
+        Parameters
+        ----------
+        cutoff : pd.Timestamp
+            Boundary at which the panel is truncated.
+
+        Returns
+        -------
+        bool
+            True if the signal computed on the truncated panel matches the
+            corresponding slice of the signal computed on the full panel,
+            treating NaN-in-both as agreement.
+
+        Notes
+        -----
+        This is a falsification test, and its logic is worth stating
+        precisely: if a signal value at time t <= cutoff changes depending on
+        whether future data was present, the signal used the future. That is
+        direct evidence of lookahead.
+
+        The converse does not hold. Passing at one cutoff does not prove the
+        signal is leakage-free -- a leak that only manifests at other cutoffs,
+        or one that enters through a parameter fitted on the full sample
+        before the builder was ever constructed, will pass this check.
+        Treat a pass as failure to detect leakage, not as a certificate of
+        its absence, and run it at several cutoffs.
+        """
         truncated_data = self.data.loc[:cutoff]
 
         full_signal = self.compute(self.data)

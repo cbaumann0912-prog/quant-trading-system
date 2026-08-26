@@ -1,9 +1,27 @@
+"""
+Cointegration testing and spread construction.
+
+Engle-Granger is a two-step residual test with a known weakness -- it is
+sensitive to which series is placed on the left-hand side, so the test is
+not symmetric in the pair. Johansen is a system test that avoids this and
+handles more than two series. Both null "no cointegration", so failure to
+reject is not evidence of independence.
+
+`ou_half_life` converts an estimated mean-reversion speed into a horizon.
+The estimate assumes the OU specification is correct; on a spread that is
+not actually mean-reverting it will still return a finite number.
+"""
 import numpy as np
 import pandas as pd
 
 from src.stats.regression import fit_ols
 from src.data.stationarity import adf_test
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def engle_granger_test(y: pd.Series, x: pd.Series) -> dict:
     """Engle-Granger two-step cointegration test for two I(1) price series.
@@ -28,8 +46,8 @@ def engle_granger_test(y: pd.Series, x: pd.Series) -> dict:
     A = np.column_stack([np.ones(len(x)), x.values])
     A = x.values.reshape(-1, 1)
     b = y.values
-    
-    ols = fit_ols(A,b)
+
+    ols = fit_ols(A, b)
     coefficients = ols['coefficients']
     alpha = coefficients[0]
     hedge_ratio = coefficients[1]
@@ -49,7 +67,7 @@ def engle_granger_test(y: pd.Series, x: pd.Series) -> dict:
         'adf_stat': adf_stat,
         'adf_p': adf_p,
         'is_cointegrated': is_cointegrated
-} 
+        }
 
 
 def cointegration_spread(
@@ -89,7 +107,7 @@ def johansen_test(
 ) -> dict:
     """
     Johansen cointegration test for multiple time series.
-    
+
     Parameters
     ----------
     data : pd.DataFrame
@@ -187,7 +205,6 @@ def ou_half_life(spread: pd.Series, dt: float = 1.0) -> dict:
     ols = fit_ols(A, b)
     coefficients = ols["coefficients"]
     alpha, beta = coefficients[0], coefficients[1]
-
 
     if beta >= 0:
         theta = 0.0

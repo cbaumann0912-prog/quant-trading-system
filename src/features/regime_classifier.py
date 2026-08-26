@@ -1,7 +1,19 @@
-import numpy as np
+"""
+Composite volatility/trend regime scoring and discrete classification.
+
+The composite score is a construct, not an observable. Any threshold that
+turns it into a discrete regime label is a researcher degree of freedom,
+and the threshold must be chosen on training data only -- see
+`src.signals.regime_refit` for the walk-forward version that respects
+that constraint.
+"""
 import pandas as pd
 
 from src.features.pca import pca
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def compute_composite_regime_score(vol: pd.Series, rate_diff: pd.Series) -> pd.Series:

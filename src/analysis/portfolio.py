@@ -1,3 +1,17 @@
+"""
+Portfolio construction and risk measures.
+
+Covers mean-variance optimization, risk parity, Kelly sizing, and the VaR
+family (historical, parametric, Monte Carlo, plus CVaR).
+
+Every optimizer here consumes a covariance matrix estimated from a finite
+sample. Mean-variance weights are notoriously unstable in that estimate --
+small perturbations in estimated means produce large swings in optimal
+weights -- so results should be treated as one draw from a sampling
+distribution, not as a point answer. Kelly sizing inherits the same
+fragility through its dependence on estimated drift, which is why
+`fractional_kelly` exists.
+"""
 import numpy as np
 import pandas as pd
 
@@ -5,6 +19,13 @@ from src.analysis.portfolio_stats import compute_covariance_matrix, compute_port
 from scipy.optimize import minimize
 from scipy.stats import norm
 from src.stats.optimization import constrained_optimize
+
+from src.utils.random_state import get_rng
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def markowitz_sharpe(
     portfolio_return: float,
@@ -82,8 +103,16 @@ def markowitz_weights(
     n = returns.shape[1]
 
     SCALE = 1e6
-    objective = lambda w: (w @ sigma @ w) * SCALE
-    jac = lambda w: 2 * sigma @ w * SCALE
+
+    def objective(w: np.ndarray) -> float:
+        """Portfolio variance, rescaled for solver conditioning."""
+        return (w @ sigma @ w) * SCALE
+
+    def jac(w: np.ndarray) -> np.ndarray:
+        """Analytic gradient of `objective`. Supplied so SLSQP does not
+        fall back to finite differences, which cost n extra objective
+        evaluations per iteration and introduce truncation error."""
+        return 2 * sigma @ w * SCALE
 
     constraints = [
         {"type": "eq", "fun": lambda w: np.sum(w) - 1},
@@ -318,17 +347,17 @@ def efficient_frontier(
         "sharpes": sharpes,
         "weights": weights,
     }
- 
- 
+
+
 def minimum_variance_portfolio(returns: pd.DataFrame) -> dict:
     """
     Find the global minimum-variance portfolio directly via closed form
- 
+
     Parameters
     ----------
     returns : pd.DataFrame
         Asset return series, columns = assets.
- 
+
     Returns
     -------
     dict with keys:
@@ -342,14 +371,14 @@ def minimum_variance_portfolio(returns: pd.DataFrame) -> dict:
 
     weights = sigma_inv @ ones
     weights /= ones @ sigma_inv @ ones
-    
-    portfolio_return = compute_portfolio_return(weights, returns.mean().to_numpy())        
-    portfolio_variance = compute_portfolio_variance(weights, sigma) 
+
+    portfolio_return = compute_portfolio_return(weights, returns.mean().to_numpy())
+    portfolio_variance = compute_portfolio_variance(weights, sigma)
 
     return {
-    "weights": weights,
-    "return": portfolio_return,
-    "variance": portfolio_variance
+        "weights": weights,
+        "return": portfolio_return,
+        "variance": portfolio_variance
     }
 
 
@@ -533,7 +562,7 @@ def var_monte_carlo(
     returns: pd.Series,
     confidence: float,
     n_simulations: int = 100_000,
-    seed: int = None,
+    seed: int | None = None,
 ) -> float:
     """
     Compute Monte Carlo Value-at-Risk.
@@ -571,7 +600,7 @@ def var_monte_carlo(
 
     mu = returns.mean()
     sigma = returns.std(ddof=1)
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     simulated_returns = rng.normal(mu, sigma, n_simulations)
 
     percentile = (1.0 - confidence) * 100.0

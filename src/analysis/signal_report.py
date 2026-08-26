@@ -1,3 +1,11 @@
+"""
+Per-leg and aggregate signal diagnostics.
+
+Assembles the information-coefficient, hit-rate, and turnover statistics
+used to judge whether a candidate signal is worth carrying into a full
+walk-forward evaluation. Reports describe a sample; they do not establish
+that an edge exists out of sample.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,9 +17,14 @@ import pandas as pd
 from src.analysis.performance_analyzer import PerformanceAnalyzer
 from src.evaluation.significance import benjamini_hochberg_correction
 
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 DEFAULT_PROJECT_WIDE_N_TRIALS = 4
 
 PROJECT_WIDE_PREREGISTERED_BAR_P = 0.0125
+
 
 @dataclass
 class LegSignalStats:
@@ -41,6 +54,31 @@ class LegSignalStats:
 
 @dataclass
 class SignalReport:
+    """
+    Aggregate verdict for a multi-leg strategy, plus the caveats that qualify it.
+
+    Attributes
+    ----------
+    strategy_name : str
+        Identifier used as the report heading.
+    legs : dict
+        Maps leg name to its `LegSignalStats`.
+    bh_alpha : float
+        FDR level used for the Benjamini-Hochberg correction across legs.
+    bh_rejected : dict
+        Maps leg name to whether its null was rejected after correction.
+    project_wide_bar_p : float
+        The significance bar implied by the total number of hypotheses tested
+        across the whole project, not just within this strategy. Tracked
+        separately from `bh_alpha` because correcting only within a strategy
+        ignores every other strategy already tested on the same data, and
+        that omission is the main route by which a research programme
+        accumulates false discoveries.
+    caveats : list
+        Known limitations that must travel with the numbers. Carried in the
+        report object itself so a result cannot be quoted without them.
+    """
+
     strategy_name: str
     legs: dict
 
@@ -52,9 +90,32 @@ class SignalReport:
 
     @property
     def strategy_significant(self) -> bool:
+        """
+        True only if every leg survives the Benjamini-Hochberg correction.
+
+        Requiring all legs rather than any is deliberate: a strategy whose
+        long leg works and whose short leg does not has not been shown to
+        work, and reporting it as significant on the strength of its better
+        half is selection on the outcome.
+
+        Statistical significance is a necessary condition, not a sufficient
+        one. A strategy can clear this bar and still be untradeable once the
+        transaction-cost hurdle in `analysis.performance_analyzer` is
+        applied.
+        """
         return all(self.bh_rejected.values())
 
     def to_markdown(self) -> str:
+        """
+        Renders the report as a Markdown document.
+
+        Returns
+        -------
+        str
+            Per-leg metric tables, the corrected significance verdict, and
+            the caveat list. Caveats are always emitted, including when the
+            verdict is positive.
+        """
         lines: list[str] = []
         lines.append(f"# SignalReport -- {self.strategy_name}")
 

@@ -17,7 +17,6 @@ def _series(values, start="2020-01-01"):
 def test_zscore_drops_the_warmup_of_both_windows():
     prices = _series(np.linspace(100.0, 130.0, 300))
     z = zscore_deviation(prices, ma_window=20, vol_window=10)
-    # each rolling window costs its own length minus one
     assert len(z) == 300 - (20 - 1) - (10 - 1)
 
 
@@ -38,7 +37,6 @@ def test_half_life_inverts_theta():
 
 
 def test_excursion_records_peak_and_reversion_time():
-    # rises to a peak of 3.0 at index 3, then retraces past 3.0 - 1.0 at index 5
     z = _series([0.0, 1.2, 2.0, 3.0, 2.5, 1.5, 0.4])
     ex = extract_excursions(z, censoring_cap=10.0, entry_threshold=1.0, reversion_x=1.0)
 

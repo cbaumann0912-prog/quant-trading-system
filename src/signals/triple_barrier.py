@@ -1,5 +1,21 @@
+"""
+Triple-barrier labelling.
+
+Labels each observation by which of three barriers is hit first: profit
+target, stop loss, or a vertical time limit. Preferable to fixed-horizon
+labelling because it encodes the path an actual position would take and
+respects the risk limits under which it would be held. Reference: Lopez de
+Prado, "Advances in Financial Machine Learning", ch. 3.
+
+The resulting labels overlap in time, so downstream inference must account
+for the dependence they induce.
+"""
 import pandas as pd
 import numpy as np
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def triple_barrier_labels(

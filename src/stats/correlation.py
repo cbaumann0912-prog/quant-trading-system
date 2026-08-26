@@ -1,5 +1,18 @@
+"""
+Correlation matrices, rolling correlation, and regime-shift detection.
+
+Pearson correlation measures linear association only, and is not robust to
+the outliers that dominate FX return tails. A rolling correlation that
+moves may reflect a genuine change in dependence or merely a single large
+observation entering and leaving the window; the two are not
+distinguishable from the correlation series alone.
+"""
 import pandas as pd
 import numpy as np
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def compute_correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
@@ -27,9 +40,9 @@ def compute_correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("returns must not be empty")
     if returns.shape[1] < 2:
         raise ValueError("there must be at least 2 columns in returns")
-    
+
     return returns.corr()
-    
+
 
 def rolling_correlation(
     s1: pd.Series,
@@ -154,6 +167,6 @@ def detect_correlation_regime_shifts(
 
             if c_pos > threshold or c_neg > threshold:
                 flags.loc[t] = True
-                break 
+                break
 
     return flags

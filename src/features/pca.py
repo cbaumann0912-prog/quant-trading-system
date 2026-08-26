@@ -1,5 +1,21 @@
+"""
+Principal component analysis and the SVD primitives beneath it.
+
+`matrix_inverse_via_svd` is used instead of a direct inverse because
+covariance matrices estimated from correlated FX pairs are frequently
+ill-conditioned, and a naive inverse amplifies estimation noise in the
+smallest eigenvalue directions without any warning that it has done so.
+
+PCA on returns is not scale-invariant. Running it on a panel with
+heterogeneous volatilities silently weights the loudest series most; a
+standardization decision must be made explicitly.
+"""
 import numpy as np
 from src.analysis.portfolio_stats import compute_covariance_matrix
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def matrix_inverse_via_svd(M: np.ndarray, threshold: float = 1e-10) -> np.ndarray:
@@ -27,13 +43,13 @@ def matrix_inverse_via_svd(M: np.ndarray, threshold: float = 1e-10) -> np.ndarra
 
     if M.ndim != 2 or M.shape[0] != M.shape[1]:
         raise ValueError(f"M must be a 2D square matrix, got shape {M.shape}")
-  
-    U, s, Vt  = np.linalg.svd(M)
+
+    U, s, Vt = np.linalg.svd(M)
     s_inv = np.zeros(len(s))
     for i, val in enumerate(s):
-        if val < threshold:  
+        if val < threshold:
             s_inv[i] = 0.0
-        else:  
+        else:
             s_inv[i] = 1/val
     A_inv = Vt.T @ np.diag(s_inv) @ U.T
     return A_inv
@@ -70,13 +86,13 @@ def eigendecomposition(M: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     idx = np.argsort(-np.abs(lambdas))
 
     lambdas = lambdas[idx]
-    v = v[:,idx]
-    
+    v = v[:, idx]
+
     if np.allclose(M, M.T):
         lambdas = lambdas.real
         v = v.real
 
-    return lambdas , v
+    return lambdas, v
 
 
 def pca(X: np.ndarray, n_components: int | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -106,7 +122,7 @@ def pca(X: np.ndarray, n_components: int | None = None) -> tuple[np.ndarray, np.
 
     cov_matrix = compute_covariance_matrix(X)
 
-    lambdas , v = eigendecomposition(cov_matrix)
+    lambdas, v = eigendecomposition(cov_matrix)
 
     Z = X_c @ v
 
@@ -118,4 +134,4 @@ def pca(X: np.ndarray, n_components: int | None = None) -> tuple[np.ndarray, np.
 
     explained_variance = lambdas / total_variance
 
-    return v , explained_variance , Z
+    return v, explained_variance, Z

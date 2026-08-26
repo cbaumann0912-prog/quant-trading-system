@@ -1,3 +1,13 @@
+"""
+Stationarity diagnostics: ADF, KPSS, ACF/PACF plots, and Ljung-Box.
+
+ADF and KPSS are deliberately both provided because they test opposite
+nulls -- ADF nulls a unit root, KPSS nulls stationarity -- and agreement
+between them is far stronger evidence than either alone. A series where
+ADF fails to reject and KPSS also fails to reject is uninformative, not
+stationary, and the two tests must be read together to see that.
+"""
+
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +16,11 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller, kpss
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.stats.diagnostic import acorr_ljungbox
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> dict:
     """Run Augmented Dickey-Fuller test on a time series.
@@ -32,9 +47,9 @@ def adf_test(series: pd.Series, max_lag: int = None, regression: str = 'c') -> d
 
     result = adfuller(
         series,
-        maxlag = max_lag,
-        autolag = "AIC", 
-        regression = regression
+        maxlag=max_lag,
+        autolag="AIC",
+        regression=regression
     )
 
     return {
@@ -73,8 +88,8 @@ def kpss_test(series: pd.Series, regression: str = "c") -> dict:
 
     result = kpss(
         series,
-        regression = regression,
-        nlags = "auto",
+        regression=regression,
+        nlags="auto",
     )
 
     return {
@@ -106,8 +121,8 @@ def check_stationarity(series: pd.Series, regression: str = "c") -> dict:
         is_stationary   : bool  — True only when both tests agree on stationarity
         recommendation  : str   — human-readable verdict string
     """
-    adf_result = adf_test(series, regression = regression)
-    kpss_result = kpss_test(series, regression = regression)
+    adf_result = adf_test(series, regression=regression)
+    kpss_result = kpss_test(series, regression=regression)
 
     adf_rejects = adf_result["reject_null"]
     kpss_rejects = kpss_result["reject_null"]
@@ -157,17 +172,63 @@ def plot_acf_pacf(
     alpha: float = 0.05,
     save_path: Path | None = None,
 ) -> None:
+    """
+    Plots ACF and PACF side by side, either saving to disk or displaying.
+
+    Parameters
+    ----------
+    series : pd.Series | np.ndarray
+        Series to diagnose. Should already be differenced/transformed to the
+        representation whose autocorrelation is of interest.
+    lags : int, default 40
+        Number of lags shown on both panels.
+    title : str, default ""
+        Prefix for the two subplot titles.
+    alpha : float, default 0.05
+        Width of the plotted confidence bands.
+    save_path : Path | None, default None
+        If given, the figure is written here (parent directories created)
+        instead of shown interactively.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    OSError
+        If `save_path` cannot be written.
+
+    Notes
+    -----
+    ACF and PACF are read together: an AR(p) process cuts off in the PACF at
+    lag p while its ACF decays, and an MA(q) does the reverse. Reading either
+    alone is what produces misidentified orders.
+
+    The plotted bands assume white noise under the null and are not valid for
+    a series with conditional heteroskedasticity, which describes most
+    financial return data. Spikes that appear significant against these bands
+    should be confirmed with `ljung_box_test` before being acted on.
+    """
     fig, axes = plt.subplots(1, 2, figsize=(14, 4))
     plot_acf(series, lags=lags, alpha=alpha, ax=axes[0])
     axes[0].set_title(f"{title} ACF")
     plot_pacf(series, lags=lags, alpha=alpha, ax=axes[1])
     axes[1].set_title(f"{title} PACF")
     plt.tight_layout()
-    if save_path:
-        plt.savefig(save_path, dpi=150)
-    else:
-        plt.show()
-    plt.close("all")
+    try:
+        if save_path:
+            path = Path(save_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(path, dpi=150)
+            logger.info("Wrote ACF/PACF figure to %s.", path)
+        else:
+            plt.show()
+    except OSError as exc:
+        logger.error("Could not write ACF/PACF figure to %s: %s", save_path, exc)
+        raise OSError(f"Could not write figure to {save_path}: {exc}") from exc
+    finally:
+        plt.close("all")
 
 
 def ljung_box_test(series: np.ndarray, lags: int = 20,) -> pd.DataFrame:

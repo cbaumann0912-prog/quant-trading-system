@@ -1,8 +1,25 @@
+"""
+Walk-forward validation: rolling train/test windows with an embargo.
+
+The core out-of-sample protocol for the framework. Each window fits on a
+strictly prior training period and evaluates on the period after it, with
+an embargo gap between the two so that serially correlated observations
+straddling the boundary cannot leak.
+
+Walk-forward controls lookahead within a single specification. It does not
+correct for selection across specifications: running many signals through
+it and reporting the best one reintroduces multiple-testing bias that
+walk-forward alone cannot detect.
+"""
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List
 
 import pandas as pd
+
+from src.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class WalkForwardValidator:

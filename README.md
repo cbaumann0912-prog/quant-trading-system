@@ -65,11 +65,11 @@ Strategy #1 has no spec file. It originated in the Day 18–19 PCA work and was 
 
 The contribution here is the machinery that killed six strategies, and four findings that machinery surfaced. Each is reproducible from the scripts in this repo.
 
-**A controlled leakage demonstration.** The same hypothesis passes under a full-sample GARCH fit and fails under a walk-forward one, on identical data and identical code. Moving the volatility-regime classifier refit inside each training window flips 34–56% of the regime labels. This is the cleanest before/after leakage example I have, because nothing changes except where the fit happens.
-→ `research/strategies/s04_vol_regime_breakout/vol_regime_classifier_refit_stability.md`
+**A controlled leakage demonstration.** The same hypothesis passes under a full-sample GARCH fit and fails under a walk-forward one, on identical data and identical code. Moving the volatility-regime classifier refit inside each training window flips 44–79% of the regime labels on the three pairs it was first measured on, and 39–68% once the same check is run across all ten. This is the cleanest before/after leakage example I have, because nothing changes except where the fit happens.
+→ `research/strategies/s04_vol_regime_breakout/vol_regime_classifier_refit_stability.md` (3 pairs), `research/strategies/s04b_momentum_only_book/momentum_book_invalidation.md` (10 pairs)
 
-**Portfolio aggregation manufacturing significance.** Ten pairs at mean cross-correlation ρ = 0.36 give an effective breadth of 2.34, not 10. The pooled book posts Sharpe +1.043 at p < 0.00001 while no individual component is significant and the cross-pair mean IR confidence interval contains zero. The book-level p-value is an artifact of treating correlated series as independent draws.
-→ `research/strategies/s04b_momentum_only_book/momentum_book_invalidation.md`
+**Portfolio aggregation manufacturing significance.** Ten pairs at mean cross-correlation ρ = 0.364 give an effective breadth of 2.34, not 10. Strategy #6's pooled book posts Sharpe +1.043 at p < 0.00001 while no individual component is significant — largest |t| is 1.69 — and the cross-pair mean IR confidence interval contains zero. Had the trades been independent the book Sharpe would have been +0.432, so nearly the whole book result is the correlation adjustment rather than directional edge. The book-level p-value is an artifact of treating correlated series as independent draws.
+→ `research/strategies/s06_intraday_overshoot/intraday_overshoot_section10_validation.md`
 
 **Two validation criteria that looked rigorous and were not.** Day 48's rule tested whether an interaction coefficient differed from zero but never tested its sign — the strategy passed while running backwards. Day 57's R1 required ordering three cells whose confidence intervals all span zero; the deciding gap carried t = 0.05, and 4 trades out of 1,588 flip the verdict. A criterion with no power to discriminate is worse than no criterion, because it produces a PASS that reads as evidence.
 → `research/strategies/s06_intraday_overshoot/intraday_overshoot_section10_validation.md`

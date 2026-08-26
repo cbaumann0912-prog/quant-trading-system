@@ -382,15 +382,55 @@ def minimum_variance_portfolio(returns: pd.DataFrame) -> dict:
     }
 
 
-def _risk_parity_objective(w, sigma):
-    vol = np.sqrt(w @ sigma @ w)
-    rc = w * (sigma @ w) / vol
-    return np.sum((rc[:, None] - rc[None, :]) ** 2)
+ERC_SHARE_TOLERANCE = 1e-4
+
+
+def _risk_contribution_shares(w, sigma):
+    """
+    Fraction of portfolio variance contributed by each asset. Sums to one.
+
+    Dividing by variance rather than volatility makes the result dimensionless,
+    so it can be compared against a fixed tolerance regardless of whether the
+    input returns are decimals, percents or basis points.
+    """
+    return w * (sigma @ w) / (w @ sigma @ w)
+
+
+def _erc_log_barrier_objective(y, sigma):
+    """
+    Strictly convex potential whose stationary point is the ERC portfolio.
+
+    Setting the gradient to zero gives ``sigma @ y == 1 / y``, i.e.
+    ``y_i * (sigma @ y)_i == 1`` for every asset -- equal risk contributions by
+    definition. The quadratic term is convex because ``sigma`` is positive
+    semi-definite and ``-sum(log(y))`` is strictly convex on ``y > 0``, so the
+    minimiser is unique and no starting point can strand the solver in a
+    secondary basin. Weights are recovered by normalising ``y`` to sum to one,
+    which leaves the risk shares unchanged.
+    """
+    return 0.5 * (y @ sigma @ y) - np.sum(np.log(y))
+
+
+def _erc_log_barrier_gradient(y, sigma):
+    """Analytic gradient of :func:`_erc_log_barrier_objective`."""
+    return sigma @ y - 1.0 / y
 
 
 def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
     """
     Compute equal risk contribution (ERC) portfolio weights via numerical optimization.
+
+    Solved in the convex log-barrier form of Maillard, Roncalli and Teiletche
+    rather than by minimising the squared dispersion of risk contributions
+    directly. The dispersion objective is non-convex, admits local minima on
+    the boundary where an asset carries zero weight, and its magnitude scales
+    with the variance of the input returns, which makes any fixed optimizer
+    tolerance mean a different thing for every dataset. Weights are long-only
+    by construction; ERC is well posed and unique only over the long-only
+    simplex.
+
+    The returned solution is verified against the equal-risk condition itself
+    rather than trusted on the optimizer's own success flag.
 
     Parameters
     ----------
@@ -403,7 +443,7 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
     -------
     dict with keys:
         weights : np.ndarray, shape (n,)
-            ERC portfolio weights, sums to 1.
+            ERC portfolio weights, strictly positive, sums to 1.
         risk_contributions : np.ndarray, shape (n,)
             Per-asset risk contributions, sums to portfolio_vol.
         portfolio_vol : float
@@ -412,22 +452,46 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
     sigma = compute_covariance_matrix(returns)
     n = sigma.shape[0]
 
-    SCALE = 1e8
+    variances = np.diag(sigma)
+    if np.any(variances <= 0):
+        zero_variance = [returns.columns[i] for i in np.flatnonzero(variances <= 0)]
+        raise ValueError(
+            f"Assets {zero_variance} have non-positive sample variance; ERC "
+            f"weights are undefined for a series with no risk."
+        )
+
+    vol_unit = np.sqrt(np.mean(variances))
+    scaled_sigma = sigma / vol_unit ** 2
 
     result = minimize(
-        lambda w, s: _risk_parity_objective(w, s) * SCALE,
-        x0=np.ones(n) / n,
-        args=(sigma,),
-        method="SLSQP",
-        bounds=[(-1.0, 1.0)] * n,
-        constraints={"type": "eq", "fun": lambda w: np.sum(w) - 1},
-        options={"ftol": 1e-9, "maxiter": 2000},
+        _erc_log_barrier_objective,
+        x0=1.0 / np.sqrt(np.diag(scaled_sigma)),
+        args=(scaled_sigma,),
+        jac=_erc_log_barrier_gradient,
+        method="L-BFGS-B",
+        bounds=[(1e-12, None)] * n,
+        options={"maxiter": 10000, "ftol": 1e-16, "gtol": 1e-12},
     )
 
-    if not result.success:
-        raise RuntimeError(f"Optimization failed: {result.message}")
+    weights = result.x / result.x.sum()
+    shares = _risk_contribution_shares(weights, sigma)
+    share_spread = float(shares.max() - shares.min())
 
-    weights = result.x
+    if share_spread > ERC_SHARE_TOLERANCE:
+        raise RuntimeError(
+            f"Risk parity did not reach an equal-risk solution: contribution "
+            f"shares span {share_spread:.3e}, above the "
+            f"{ERC_SHARE_TOLERANCE:.0e} tolerance. Optimizer reported "
+            f"'{result.message}'."
+        )
+
+    if not result.success:
+        logger.debug(
+            "L-BFGS-B reported '%s' but the solution satisfies the equal-risk "
+            "condition to %.3e; accepting it on the residual rather than the "
+            "success flag.", result.message, share_spread,
+        )
+
     portfolio_vol = np.sqrt(weights @ sigma @ weights) * np.sqrt(ann_factor)
     risk_contributions = weights * (sigma @ weights) / portfolio_vol
 

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from scipy.linalg import hadamard
 from scipy.stats import norm
 
 from src.analysis.portfolio import (
@@ -21,6 +22,7 @@ from src.analysis.portfolio import (
     var_monte_carlo,
     cvar,
 )
+from src.analysis.portfolio_stats import compute_covariance_matrix
 
 np.random.seed(28)
 
@@ -268,6 +270,83 @@ def test_risk_parity_low_vol_gets_higher_weight():
     })
     result = risk_parity_weights(RETURNS_VOL, ann_factor=252.0)
     assert result["weights"][0] > result["weights"][1]
+
+
+def _risk_shares(returns, weights):
+    sigma = compute_covariance_matrix(returns)
+    variance = weights @ sigma @ weights
+    return weights * (sigma @ weights) / variance
+
+
+def _gaussian_panel(vols, seed=28, n_obs=1000, unit_multiplier=1.0):
+    rng = np.random.default_rng(seed)
+    draws = rng.normal(size=(n_obs, len(vols))) * np.array(vols) * unit_multiplier
+    return pd.DataFrame(draws, columns=[f"a{i}" for i in range(len(vols))])
+
+
+def _orthogonal_panel(vols, n_obs=256):
+    basis = hadamard(n_obs)[:, 1:len(vols) + 1].astype(float)
+    return pd.DataFrame(basis * np.array(vols), columns=[f"a{i}" for i in range(len(vols))])
+
+
+def test_risk_parity_separates_extreme_vol_ratio():
+    panel = _gaussian_panel([0.005, 0.300])
+    result = risk_parity_weights(panel, ann_factor=252.0)
+    weights = result["weights"]
+
+    assert weights[0] > 0.9
+    assert weights[1] < 0.1
+    shares = _risk_shares(panel, weights)
+    assert shares.max() - shares.min() < 1e-4
+
+
+def test_risk_parity_near_equal_vols_gives_near_equal_weights():
+    panel = _gaussian_panel([0.0100, 0.0101])
+    weights = risk_parity_weights(panel, ann_factor=252.0)["weights"]
+
+    assert abs(weights[0] - 0.5) < 0.02
+    assert abs(weights[1] - 0.5) < 0.02
+
+
+def test_risk_parity_three_assets_order_by_inverse_vol():
+    panel = _gaussian_panel([0.005, 0.015, 0.030])
+    weights = risk_parity_weights(panel, ann_factor=252.0)["weights"]
+
+    assert weights[0] > weights[1] > weights[2]
+    assert np.isclose(weights.sum(), 1.0, atol=1e-8)
+
+
+def test_risk_parity_ten_assets_equalises_risk_shares():
+    vols = [0.003, 0.005, 0.007, 0.009, 0.012, 0.015, 0.020, 0.025, 0.030, 0.050]
+    panel = _gaussian_panel(vols)
+    weights = risk_parity_weights(panel, ann_factor=252.0)["weights"]
+
+    assert not np.allclose(weights, np.ones(10) / 10, atol=1e-3)
+    shares = _risk_shares(panel, weights)
+    assert shares.max() - shares.min() < 1e-4
+
+
+def test_risk_parity_is_invariant_to_return_units():
+    vols = [0.003, 0.005, 0.007, 0.009, 0.012, 0.015, 0.020, 0.025, 0.030, 0.050]
+    base = risk_parity_weights(_gaussian_panel(vols), ann_factor=252.0)["weights"]
+    scaled_up = risk_parity_weights(
+        _gaussian_panel(vols, unit_multiplier=1e3), ann_factor=252.0
+    )["weights"]
+    scaled_down = risk_parity_weights(
+        _gaussian_panel(vols, unit_multiplier=1e-3), ann_factor=252.0
+    )["weights"]
+
+    np.testing.assert_allclose(base, scaled_up, atol=1e-6)
+    np.testing.assert_allclose(base, scaled_down, atol=1e-6)
+
+
+def test_risk_parity_matches_inverse_vol_when_uncorrelated():
+    vols = np.array([0.004, 0.008, 0.012, 0.020])
+    panel = _orthogonal_panel(vols)
+    weights = risk_parity_weights(panel, ann_factor=252.0)["weights"]
+
+    expected = (1.0 / vols) / np.sum(1.0 / vols)
+    np.testing.assert_allclose(weights, expected, atol=1e-6)
 
 
 def test_closed_form_matches_scipy_on_synthetic_returns(sample_returns):

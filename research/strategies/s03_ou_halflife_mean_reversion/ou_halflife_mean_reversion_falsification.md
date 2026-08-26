@@ -21,7 +21,7 @@ Three operationalizations of the same nonlinearity claim:
 - **Test 2b** — mean 5-day forward *return*, same pools
 - **Test 2c** — Spearman IC between |z| at entry and subsequent return
 
-*Provenance: Sections 2–7 were re-run to produce the figures below, with daily closes read from a cache built by the script's own load-and-resample chain, because 21 repeated 300 MB CSV reads exceeded the available run window. All analysis code is unmodified. Section 1 was not re-run — see the defect note below.*
+*Provenance, updated Day 72: the script was re-executed end to end with the daily closes rebuilt from the raw 1-minute bars, after confirming that the resampling path used returns a bit-identical daily series to the script's own `to_datetime` + `resample("D").last()` chain — identical index, maximum absolute difference 0.0. Every figure in Tests 1, 2, 2b and 2c below reproduced exactly, including the unreliable bootstrap interval. All analysis code is unmodified.*
 
 ## Findings
 
@@ -83,7 +83,17 @@ Section 1 searched for an MA-window plateau in half-life and reported none, conc
 
 Reading the code, the search could not have found a plateau. `GRID_WINDOWS` is built as `months × 26` — 78 to 624 **trading days** — but is applied to `prices = df["Close"]` taken directly from the minute-indexed frame with no resampling. Every other section resamples to daily first. So the grid actually swept rolling windows of 78 to 624 **minutes**, roughly 1.3 to 10.4 hours, and the mechanical scaling it found is the signature of a misapplied window rather than a property of FX.
 
-Section 1 was not re-run here — it is the only part needing minute bars, its output was already disregarded, and it bore on parameter selection rather than on any pre-registered test. The verdict does not depend on it. It is recorded because a parameter-selection routine silently operating at the wrong frequency is exactly the class of error the project exists to surface.
+Section 1 is recorded because a parameter-selection routine silently operating at the wrong frequency is exactly the class of error the project exists to surface. The verdict does not depend on it.
+
+**Day 72 addendum — the search was repeated at daily frequency, and the conclusion holds.** Running the same grid against daily closes rather than minute bars gives the search it was meant to perform. There is still no plateau:
+
+| MA window (days) | 78 | 156 | 234 | 312 | 390 | 468 | 546 | 624 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| EUR/USD half-life | 30.1 | 65.4 | 110.3 | 152.7 | 207.4 | 227.2 | 262.6 | 285.1 |
+| GBP/USD half-life | 27.5 | 55.8 | 84.2 | 112.9 | 139.4 | 160.5 | 172.0 | 178.3 |
+| USD/JPY half-life | 41.1 | 87.9 | 126.9 | 159.3 | 200.1 | 235.9 | 264.7 | 305.8 |
+
+The half-life to window ratio stays inside 0.29 to 0.56 across an eightfold range of windows on all three pairs. Half-life scales with the window at daily frequency exactly as it did at minute frequency, so `MA_WINDOW = 100` remains a working value chosen without empirical support rather than a selected optimum. The frequency defect was real and it did not change the conclusion drawn from the defective run — which is the good case, and not one that could have been asserted without checking.
 
 ## Alternative Explanations
 - **Wrong pooling threshold.** |z| = 1.5 splits the excursions 17/45. A different cut would change the pools, and none was tested. That the cut is arbitrary is itself part of why the test is weak.
@@ -95,10 +105,10 @@ The third is not benign. It could produce Test 2's result mechanically, independ
 ## What Was Not Done
 - **No deflated Sharpe.** No return-generating signal was built; the tests operate on the z-score and excursion structure directly.
 - **No walk-forward or out-of-sample evaluation.** Discarded at the in-sample stage before any parameter was fit.
-- **The MA/vol window grid search was never repeated at daily frequency**, which is what Section 1 was meant to do.
+- ~~The MA/vol window grid search was never repeated at daily frequency.~~ Repeated on Day 72; see the addendum to the Section 1 defect note. No plateau at daily frequency either.
 - **Sign not flipped and re-tested.** The consistent negative lean invites trading the reverse. That would use the same data to generate and confirm a hypothesis.
 
 ## Next Steps
 - Closed. No retuning of the threshold, horizon, or window.
 - The Section 1 frequency defect and the block-bootstrap CI failure both belong in the paper's methodology section. The second is directly relevant to the block-length question outstanding for strategy 6 — a 20-day block on a series with a 35-day half-life is shorter than the dependence it is meant to preserve, and the resulting CI was visibly wrong rather than subtly wrong, which is the lucky case.
-- Signal construction here is partly inline, using `src.signals.cointegration.ou_half_life` but building the z-score and excursion logic in the script. Recorded as a reproducibility gap rather than retrofitted.
+- The reproducibility gap this document originally recorded is closed. The z-score and excursion logic was inline when the strategy was discarded; it was later extracted to `src/signals/ou_reversion.py` with 10 tests, and the script now imports `zscore_deviation`, `extract_excursions`, `split_pools` and `half_life_from_theta` from there. The Day 72 re-run confirms the extraction did not move any number in this document.

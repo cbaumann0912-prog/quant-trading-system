@@ -101,6 +101,42 @@ A run with 2011 trades therefore had sigma a walk-forward fit cannot supply. Tha
 
 The rebuild is the trustworthy side of this. `open` and `exit_px` reproduce the old cache bit for bit, and a 0.03% sigma perturbation moves about one trigger day in 311, so an 11.3% trade-count difference is a methodology change rather than numerical drift.
 
+## Addendum, Day 72 — the same run on a different platform moves R1
+
+Day 71 left the full section 10 re-run outstanding and raised `N_BOOTSTRAP` from 3,000 to 10,000 as a pending change. Both are now done: `N_BOOTSTRAP` is 10,000, the `bootstrap_confidence_interval` call at line 277 now receives `seed=SEED` like every other randomness consumer in the script, and the whole validation was re-executed against the raw minute bars for all ten pairs, 2011–2023. The lockbox was not touched.
+
+**Every figure above is retained.** The re-run was performed on Linux under Python 3.10.12; this project's declared environment is Python 3.12.10 on Windows, with the same pinned library versions (`numpy` 1.26.4, `scipy` 1.13.0, `pandas` 2.2.2, `statsmodels` 0.14.2) but different platform wheels and a different BLAS. The numbers below are recorded as a reproducibility measurement, not as a replacement result set. The published figures stand until they are regenerated in the declared environment.
+
+Four pairs reproduce exactly, trade count and mean basis points alike: EUR/JPY 259 / +3.498, EUR/GBP 318 / +1.738, AUD/USD 402 / +2.029, EUR/CHF 296 / +0.171. USD/CAD matches on count at 309 but not on mean, so its trade set differs without changing size. The remaining five move by one to four trades: NZD/USD 333 → 330, GBP/USD 372 → 373, USD/CHF 278 → 277, EUR/USD 296 → 292, USD/JPY 343 → 346. Net effect on the book, −4 trades.
+
+| Statistic | published | Linux re-run, N = 10,000 |
+|---|---|---|
+| trades, k = 2.0, +5 min | 3,206 | 3,202 |
+| k ladder trades | 6,708 / 3,206 / 1,584 | 6,697 / 3,202 / 1,588 |
+| k ladder mean bp | +0.149 / +0.852 / +0.795 | +0.134 / +0.825 / +0.874 |
+| **R1 threshold monotone** | **FAIL** | **PASS** |
+| book Sharpe | +1.043 | +1.0376 |
+| Sharpe bootstrap CI | [+0.493, +1.584] | [+0.4962, +1.5699] |
+| cross-pair correlation | +0.364 | +0.3652 |
+| effective breadth | 2.34 | 2.33 |
+| per-trade permutation p | 0.114 | 0.1299 |
+| per-day permutation p | 0.0010 | 0.0010 |
+| per-pair mean IR CI | [−0.0002, +0.0543] | [−0.0011, +0.0546] |
+| achieved power | 0.639 | 0.6339 |
+| active days | 1,278 | 1,277 |
+| H2 b3 | −0.048, p 0.669 | −0.0484, p 0.6670 |
+| **Section 10 verdict** | **FAIL** | **FAIL** |
+
+The mechanism is the GARCH fit. `walk_forward_conditional_vol` fits by maximum likelihood through `scipy.optimize`, and a different platform build reaches a marginally different optimum, so a handful of days land on the other side of the k·sigma trigger. This document already bounds that sensitivity: a 0.03% sigma perturbation moves about one trigger day in 311.
+
+**The bootstrap changes are not what moved the interval.** Holding the trade set fixed, the per-pair mean IR interval is [−0.0014, +0.0555] at N = 3,000 with seed 42, [−0.0011, +0.0546] at N = 10,000 with seed 42, and [−0.0010, +0.0543] at N = 10,000 unseeded. That ±0.001 spread matches the seed-sensitivity bound Day 71 measured. The gap between the published interval and the re-run one is the four-trade difference in the underlying sample, not the resampling.
+
+**What this does to R1.** It is the third independent demonstration that the criterion cannot discriminate, and the most direct one. The section above establishes that the deciding gap carries t = 0.05 and that roughly four trades out of 1,588 flip the ordering. Recompiling the same code against a different BLAS moved four trades and flipped it. A pre-registered criterion whose verdict depends on which platform's LAPACK computed a volatility estimate is not measuring the market. R1 should be read as uninformative in both directions, exactly as this document already concluded — the Day 72 run changes which way the coin landed, not what the coin was.
+
+The strategy verdict is unaffected. Section 10 fails on any single criterion, and R3 per-trade and H2 fail in both runs.
+
+**Outstanding.** The published figures should be regenerated once in the declared Windows / Python 3.12 environment at `N_BOOTSTRAP = 10,000`, and the IR confidence interval updated from that run wherever it is cited. That run has not been performed.
+
 ## Next
 - Strategy closed. Six of six candidates have now failed.
 - Lockbox unopened, held for strategy #7.

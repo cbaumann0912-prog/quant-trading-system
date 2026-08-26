@@ -51,7 +51,7 @@ GARCH_MIN_TRAIN = 500
 COST_PIPS = [1, 2, 3]
 GATE_PIPS = 2
 BREAK_DATE = pd.Timestamp("2017-06-30")
-N_BOOTSTRAP = 3000
+N_BOOTSTRAP = 10000
 BLOCK_DAYS = 21
 N_PERMUTATIONS = 1000
 H2_FAST_MINUTES = 30
@@ -275,7 +275,8 @@ print(f"{'book SR if iid':<28}{iid:>+12.4f}")
 ir_pairs = [t.loc[t["pair"] == p, "ret"].mean() / t.loc[t["pair"] == p, "ret"].std(ddof=1)
             for p in PAIRS]
 ir_lo, ir_hi = bootstrap_confidence_interval(
-    np.array(ir_pairs), np.mean, n_bootstrap=N_BOOTSTRAP, confidence=1 - ALPHA
+    np.array(ir_pairs), np.mean, n_bootstrap=N_BOOTSTRAP, confidence=1 - ALPHA,
+    seed=SEED,
 )
 print(f"{'per-pair IR':<28}{information_ratio(ir_pairs, method='empirical'):>+12.4f}")
 print(f"{'per-pair mean IR CI low':<28}{ir_lo:>+12.4f}")

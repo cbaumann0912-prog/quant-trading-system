@@ -2,7 +2,7 @@
 
 *Systematic FX Research — Cornell Engineering, Summer 2026*
 
-`482 tests` · `Python 3.12` · [`MIT License`](LICENSE)
+`488 tests` · `Python 3.12` · [`MIT License`](LICENSE)
 
 ---
 
@@ -30,14 +30,14 @@ So far six strategies have gone through this process. All six were closed as inv
 
 | | |
 |---|---|
-| Framework | 7,075 lines across 34 modules in `src/` |
-| Tests | 482 tests across 34 files, 5,790 lines |
-| Research record | 40 daily audits, 37 reproducible analysis scripts, 32 validation/falsification documents |
+| Framework | 8,475 lines across 36 modules in `src/` |
+| Tests | 488 tests across 34 files, 5,864 lines |
+| Research record | 42 daily audits, 38 reproducible analysis scripts, 32 validation/falsification documents |
 | Universe | 10 FX pairs of 1-minute OHLCV, plus 8 three-month interbank rate series |
 | Strategies pre-registered | 6 |
 | Strategies surviving validation | 0 |
-| Lockbox (2024-01 to 2026-05) | Never opened |
-| Commits | 211 |
+| Lockbox (2024-01 to 2026-05) | Never opened for evaluation — four real-data tests parse the full file, see Data |
+| Commits | 221 |
 
 The lockbox is the part I'd point to first. It is a reserved slice of unseen data that the spec permits opening only on a PASS. Six candidates have failed without it being touched, which means the project still holds one clean shot at an out-of-sample test. Opening it to confirm a failure would spend that for nothing, and would create a live temptation to revive a dead strategy if the result came back positive by chance.
 
@@ -86,7 +86,9 @@ The contribution here is the machinery that killed six strategies, and four find
 | EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY, EUR/CHF | 1-minute OHLCV | ~13 years development (2011-2023) | Signal construction; resampled to daily log returns for statistical work |
 | 8 three-month interbank rates | Daily | matched | Carry and rate-differential factors |
 
-Development window is 2011–2023. The 2024-01-01 to 2026-05-01 slice is held as a lockbox and has never been read. Raw data lives outside the repo at a configurable path.
+Development window is 2011–2023. The 2024-01-01 to 2026-05-01 slice is held as a lockbox: no research script reads it, no strategy was evaluated or selected on it, and no parameter was fit to it. Raw data lives outside the repo at a configurable path.
+
+One qualification, because the stronger claim would not survive a reader running the suite. Four tests parse the raw CSVs with no end date and therefore load the lockbox rows into memory: `test_johansen_real_data_three_pairs`, and the three tests fed by the `fx_returns` fixture in `test_portfolio.py` (`test_scipy_matches_numpy_result`, `test_long_only_no_negative_weights`, `test_long_only_diverges_from_unconstrained`). All four are numerical-equivalence checks — Johansen against the hand-derived eigenvalue problem, `scipy` Markowitz against the closed-form KKT solution — and none of them produces a strategy result, a verdict, or a fitted parameter. The holdout is unspent for inference. It is not unread, and `grep -rn "DEV_END" tests/` returns nothing.
 
 Annualization is computed empirically everywhere from each series' own DatetimeIndex, never hardcoded to 252. The daily series measures 312.30 observations per year because the vendor buckets the Sunday FX open as its own date; the intraday session book measures 259.44. Both are correct for their own series, and the discrepancy is the kind of thing that quietly corrupts a Sharpe ratio if you assume a constant.
 

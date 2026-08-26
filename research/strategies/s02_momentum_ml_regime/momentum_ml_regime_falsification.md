@@ -23,7 +23,7 @@ Two independent tests of the same hypothesis:
 
 `SEED = 28`, `N_PERMUTATIONS = 10000`, `ALPHA = 0.05`. A pass required `p < 0.05` **and** `IC > 0`.
 
-*Provenance: figures below come from a faithful replay of the script — `compute_signal_outcome` verbatim, identical seed, identical RNG consumption order — with the daily closes read from a cache built by the same load-and-resample chain, because seven repeated 300 MB CSV reads exceeded the available run window. Re-running the script directly should reproduce these exactly and is worth doing once.*
+*Provenance, updated Day 72: the figures below were originally produced by a faithful replay rather than a direct run, and that replay has now been checked against the script itself. Both methods were re-executed on all three pairs at `N_PERMUTATIONS = 10,000` with the daily closes rebuilt from the raw 1-minute bars, after confirming that the string-sort resampling path returns a bit-identical daily series to the script's `to_datetime` + `resample("D").last()` chain — 4,056 rows, identical index, maximum absolute difference 0.0. Every IC and every p-value below reproduced exactly. Unlike strategy 6, nothing here depends on a numerical optimum: the pipeline is rank statistics over a seeded permutation stream, so it is reproducible across platforms rather than merely stable.*
 
 ## Findings
 
@@ -55,10 +55,10 @@ Comparing each permutation p against the naive Spearman p implied by SE(ρ) = 1/
 | GBP/USD | 805 | −0.0471 | −1.34 | 0.1817 | 0.1868 | 1.0× |
 | USD/JPY | 805 | −0.0167 | −0.47 | 0.6358 | 0.6361 | 1.0× |
 | EUR/USD | 4,024 | −0.0292 | −1.85 | 0.0640 | 0.3501 | 5.5× |
-| GBP/USD | 4,023 | −0.0453 | −2.87 | **0.0041** | 0.1490 | **36.7×** |
+| GBP/USD | 4,023 | −0.0453 | −2.87 | **0.0041** | 0.1490 | **36.4×** |
 | USD/JPY | 4,024 | +0.0017 | +0.11 | 0.9141 | 0.9599 | 1.1× |
 
-On the non-overlapping subsample the two agree to three decimal places. On the overlapping sample the naive p understates by up to 37×.
+On the non-overlapping subsample the two agree to three decimal places. On the overlapping sample the naive p understates by a factor of 36.
 
 GBP/USD is the case worth keeping. Treating 4,023 overlapping observations as independent gives t = −2.87 and p = 0.0041 — conventionally significant. The block permutation, which preserves the dependence induced by consecutive 26-day windows sharing 25 days, returns p = 0.149. The apparent significance is entirely an artifact of counting each of ~130 independent windows about 31 times.
 
@@ -87,4 +87,4 @@ The first two mean this result should not be read as "FX momentum does not exist
 ## Next Steps
 - Closed. No retuning, no horizon search, no universe expansion on this hypothesis.
 - The 37× naive-versus-permutation gap on GBP/USD belongs in the paper alongside the portfolio-aggregation finding. Both are the same mechanism — dependence treated as independence — appearing at different levels of the stack, and this one comes with a built-in control arm.
-- Signal construction here is inline and untested, unlike `src/signals/intraday_overshoot.py`. Recorded as a reproducibility gap rather than retrofitted, since retrofitting a closed strategy risks changing the numbers this document reports.
+- The reproducibility gap this document originally recorded is closed. The signal construction was inline and untested when the strategy was discarded; it was later extracted to `src/signals/momentum_ml_regime.py` with 8 tests, and the script now imports `momentum_signal_outcome` and `non_overlapping_subsample` from there. The Day 72 re-run confirms the extraction did not move any number in this document.

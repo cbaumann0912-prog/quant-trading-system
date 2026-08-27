@@ -1,7 +1,7 @@
 # Strategy Specification: Intraday Overshoot Reversal, London-NY Overlap
 
 **Date drafted:** Day 57 (2026-07-25)
-**Status:** CLOSED, Day 57. Section 10 verdict FAIL on three criteria: robustness 1 threshold monotonicity, robustness 3 per-trade permutation (p = 0.114), and H2 (b3 = -0.048, p = 0.669). Result in `research/strategies/validation_falsification/intraday_overshoot_section10_validation.md`. Lockbox never opened.
+**Status:** CLOSED, Day 57. Section 10 verdict FAIL. Figures regenerated Day 72: the strategy fails on robustness 3 per-trade permutation (p = 0.1349) and H2 (b3 = -0.0465, p = 0.679). Robustness 1 threshold monotonicity, recorded as a third failure on the Day 57 run, passes on regeneration and is uninformative in either direction. Result in `research/strategies/s06_intraday_overshoot/intraday_overshoot_section10_validation.md`. Lockbox never opened.
 
 Written and pre-registered before any test was run; the sections below are unedited from that pre-registration.
 

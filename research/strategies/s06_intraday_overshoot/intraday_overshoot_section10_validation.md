@@ -127,6 +127,16 @@ Day 71 left the full section 10 re-run outstanding and flagged `N_BOOTSTRAP = 3,
 | EUR/CHF | 296 | 296 | 296 |
 | **total** | **3,206** | **3,202** | **3,211** |
 
+The R1 ladder on the Linux rebuild, for the record, since the published ladder above is the Windows one:
+
+| k | trades | mean bp | hit rate | gross SR | net SR |
+|---:|---:|---:|---:|---:|---:|
+| 1.5 | 6,697 | +0.134 | 50.2% | +0.991 | +0.541 |
+| 2.0 | 3,202 | +0.825 | 51.4% | +1.038 | +0.808 |
+| 2.5 | 1,588 | +0.874 | 52.0% | +0.761 | +0.631 |
+
+Monotone increasing, same sign across k, so R1 passes on this build as it does on the Windows one. The two ladders differ by nine trades at k = 1.5, nine at k = 2.0 and none at k = 2.5, and by 0.001, 0.007 and 0.000 basis points respectively.
+
 The two rebuilds agree on eight of ten pairs. Four — EUR/USD, GBP/USD, USD/JPY, NZD/USD — moved off the Day 57 figures **identically on both platforms**, which rules out the platform as their cause. Only USD/CHF and EUR/GBP genuinely differ between the two builds, and that residual is the GARCH maximum-likelihood optimum landing differently against a different linear-algebra backend, at the scale this document already bounds: a 0.03% sigma perturbation moves about one trigger day in 311.
 
 **What was ruled out for the other four.** The validation script is byte-identical to commit `d356b08` apart from the two edits named above; `ef2e8fa` moved it between directories with zero content change. `src/signals/intraday_overshoot.py`, `src/features/garch.py` and `src/features/sessions.py` have changed only under `c89739f`, and only in module docstrings, logging calls and I/O exception guards — the sole non-docstring lines in `garch.py` are two whitespace deletions. `requirements.txt` has changed only its line endings; the pinned versions are unchanged. The raw CSVs predate this document. And the overshoot chain consumes no randomness whatsoever: no seed, no generator, no `random`, no k-means anywhere between the minute bars and the trade list.

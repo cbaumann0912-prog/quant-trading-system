@@ -153,19 +153,31 @@ for delay in ENTRY_DELAYS:
 
 
 print("\n[2] ROBUSTNESS 1 -- ENTRY THRESHOLD")
-print(f"{'k':>6}{'trades':>8}{'mean bp':>10}{'hit rate':>10}{'gross SR':>10}{'net SR':>9}")
+print(f"{'k':>6}{'trades':>8}{'mean bp':>10}{'SE bp':>9}{'t':>8}"
+      f"{'CI low bp':>11}{'CI high bp':>12}{'hit rate':>10}{'gross SR':>10}{'net SR':>9}")
 mono = []
+mono_se = []
 for k in KS:
     t_k = trades(k, PRIMARY_DELAY)
     b_k, _ = book(t_k)
     mono.append(t_k["ret"].mean())
-    print(f"{k:>6}{len(t_k):>8}{t_k['ret'].mean() * 1e4:>+10.3f}"
+    tt_k = t_test_mean(t_k["ret"], null_mean=0.0, confidence=1 - ALPHA)
+    se_k = t_k["ret"].std(ddof=1) / np.sqrt(len(t_k))
+    mono_se.append(se_k)
+    ci_low, ci_high = tt_k["confidence_interval"]
+    print(f"{k:>6}{len(t_k):>8}{t_k['ret'].mean() * 1e4:>+10.3f}{se_k * 1e4:>9.3f}"
+          f"{tt_k['t_stat']:>+8.2f}{ci_low * 1e4:>+11.3f}{ci_high * 1e4:>+12.3f}"
           f"{(t_k['ret'] > 0).mean():>10.1%}{analyzer(b_k).compute_sharpe():>+10.3f}"
           f"{net_sharpe(t_k, b_k, GATE_PIPS):>+9.3f}")
 mono_ok = mono[0] < mono[1] < mono[2]
 sign_ok = all(np.sign(m) == np.sign(mono[1]) for m in mono)
+deciding_gap = mono[2] - mono[1]
+deciding_gap_se = np.sqrt(mono_se[1] ** 2 + mono_se[2] ** 2)
 print(f"{'monotone increasing':>34}{str(mono_ok):>10}")
 print(f"{'same sign across k':>34}{str(sign_ok):>10}")
+print(f"{'deciding gap bp':>34}{deciding_gap * 1e4:>+10.3f}")
+print(f"{'deciding gap SE bp':>34}{deciding_gap_se * 1e4:>10.3f}")
+print(f"{'deciding gap t':>34}{deciding_gap / deciding_gap_se:>+10.2f}")
 
 
 print("\n[3] TRIGGER TIMING")

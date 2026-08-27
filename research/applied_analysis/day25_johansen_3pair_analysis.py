@@ -12,9 +12,9 @@ DEV_END = "2023-12-31"
 DATA_DIR = REPO_ROOT.parent / "data"
 
 PAIRS = {
-    "EURUSD": f"{DATA_DIR}\\EURUSD.csv",
-    "GBPUSD": f"{DATA_DIR}\\GBPUSD.csv",
-    "USDJPY": f"{DATA_DIR}\\USDJPY.csv",
+    "EURUSD": DATA_DIR / "EURUSD.csv",
+    "GBPUSD": DATA_DIR / "GBPUSD.csv",
+    "USDJPY": DATA_DIR / "USDJPY.csv",
 }
 
 def load_daily_close(path: str) -> pd.Series:

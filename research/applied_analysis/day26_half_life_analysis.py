@@ -15,17 +15,17 @@ DATA_DIR = REPO_ROOT.parent / "data"
 BAR_DURATION_DAYS = 1
 TRANSACTION_COST_BPS = 2.0
 
-eurusd = pd.read_csv(f"{DATA_DIR}\\EURUSD.csv")
+eurusd = pd.read_csv(DATA_DIR / "EURUSD.csv")
 eurusd["Datetime"] = pd.to_datetime(eurusd["Datetime"], format="%Y%m%d %H%M%S")
 eurusd = eurusd.set_index("Datetime").sort_index().loc[:DEV_END]
 eurusd_daily = eurusd["Close"].resample("D").last().dropna()
 
-gbpusd = pd.read_csv(f"{DATA_DIR}\\GBPUSD.csv")
+gbpusd = pd.read_csv(DATA_DIR / "GBPUSD.csv")
 gbpusd["Datetime"] = pd.to_datetime(gbpusd["Datetime"], format="%Y%m%d %H%M%S")
 gbpusd = gbpusd.set_index("Datetime").sort_index().loc[:DEV_END]
 gbpusd_daily = gbpusd["Close"].resample("D").last().dropna()
 
-usdjpy = pd.read_csv(f"{DATA_DIR}\\USDJPY.csv")
+usdjpy = pd.read_csv(DATA_DIR / "USDJPY.csv")
 usdjpy["Datetime"] = pd.to_datetime(usdjpy["Datetime"], format="%Y%m%d %H%M%S")
 usdjpy = usdjpy.set_index("Datetime").sort_index().loc[:DEV_END]
 usdjpy_daily = usdjpy["Close"].resample("D").last().dropna()

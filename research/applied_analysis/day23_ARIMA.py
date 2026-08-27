@@ -32,7 +32,7 @@ rows = []
 test = None
 
 for pair, filename in PAIRS.items():
-    path = f"{DATA_DIR}\\{filename}"
+    path = DATA_DIR / filename
     returns = load_daily_returns(path)
 
     order = select_arima_order(returns, max_p=MAX_P, max_q=MAX_Q, d=0, criterion="aic")
@@ -61,6 +61,6 @@ for r in rows:
     print(f"{r['pair']:<10} {str(r['order']):<12} {r['aic']:>10.2f} "
           f"{r['lb_pval']:>12.4f} {str(r['pass']):>14}")
     
-gbp_returns = load_daily_returns(f"{DATA_DIR}\\GBPUSD.csv")
+gbp_returns = load_daily_returns(DATA_DIR / "GBPUSD.csv")
 fit = fit_arima(gbp_returns, order=(1, 0, 0))
 print(fit["params"])

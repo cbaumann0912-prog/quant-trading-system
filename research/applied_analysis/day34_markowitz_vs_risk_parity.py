@@ -23,7 +23,7 @@ FILES = {
 
 pairs = {}
 for pair_name, filename in FILES.items():
-    path = f"{DATA_DIR}\\{filename}"
+    path = DATA_DIR / filename
     df = pd.read_csv(path)
     df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
     df = df.set_index("Datetime").sort_index().loc[:DEV_END]

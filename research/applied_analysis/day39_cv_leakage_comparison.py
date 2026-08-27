@@ -25,7 +25,7 @@ EMBARGO_PCT = 0.01
 RANDOM_STATE = 42
 N_NEIGHBORS = 5
 
-path = f"{DATA_DIR}\\{FILENAME}"
+path = DATA_DIR / FILENAME
 df = pd.read_csv(path)
 df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
 df = df.set_index("Datetime").sort_index().loc[:DEV_END]

@@ -124,22 +124,22 @@ Since 2020, no year has shown PC1 below 0.65 — the full-sample average of 0.59
 
 | Threshold | Total events | Per year | Long (+) | Short (-) |
 |-----------|-------------|----------|----------|-----------|
-| \|z\| > 1.5 | 469       | 31.3     | 219      | 250       |
-| \|z\| > 2.0 | 219       | 14.6     | 104      | 115       |
-| \|z\| > 2.5 | 103       | 6.9      | 51       | 52       |
-| \|z\| > 3.0 | 63        | 4.2      | 29       | 34       |
+| \|z\| > 1.5 | 403       | 31.0     | 194      | 209       |
+| \|z\| > 2.0 | 187       | 14.4     | 94       | 93        |
+| \|z\| > 2.5 | 95        | 7.3      | 47       | 48       |
+| \|z\| > 3.0 | 50        | 3.9      | 27       | 23       |
 
 **Lag-1 autocorrelation:**
 
 | Component | Lag-1 AC |
 |-----------|----------|
-| PC1       | -0.0033  |
-| PC2       | -0.0371  |
-| PC3       | -0.0158  |
+| PC1       | -0.0067  |
+| PC2       | -0.0366  |
+| PC3       | -0.0129  |
 
 Findings: PC2 skewness of -1.197 is the most consequential distributional finding beyond kurtosis. The minimum PC2 score of -0.0874 is 2.2 times larger in magnitude than the maximum of +0.0399, confirming that carry crash drawdowns are structurally asymmetric — downside moves are both more frequent and larger than upside recoveries. PC1 and PC3 skew near zero, confirming symmetric factor behavior. These two factors require different risk models.
 
-At a 2σ threshold, PC2 produces 14.6 crossings per year — sufficient event frequency to support signal construction. At 3σ, this falls to 4.2 per year, approaching the sample size floor for reliable inference. However, lag-1 autocorrelation of -0.037 indicates that PC2 factor shocks have no meaningful daily persistence. A momentum rule entering the day after a threshold crossing has no statistical basis. Any threshold-based signal requires same-day or intraday execution at the point of crossing, not the following open.
+At a 2σ threshold, PC2 produces 14.4 crossings per year — sufficient event frequency to support signal construction. At 3σ, this falls to 3.9 per year, approaching the sample size floor for reliable inference. However, lag-1 autocorrelation of -0.0366 indicates that PC2 factor shocks have no meaningful daily persistence. A momentum rule entering the day after a threshold crossing has no statistical basis. Any threshold-based signal requires same-day or intraday execution at the point of crossing, not the following open.
 
 ## 7. Alternative Explanations
 

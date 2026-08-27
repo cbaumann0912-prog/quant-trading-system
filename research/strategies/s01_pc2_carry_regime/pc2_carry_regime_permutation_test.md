@@ -30,7 +30,7 @@ The PC2 Carry Regime Signal is currently the strongest confirmed candidate in th
 - Positive/negative subsets: within each regime, PC2 and forward returns co-move in the same direction, motivated by PC2's economic role as a cross-pair carry/risk-off factor and its documented negative skew and crash asymmetry
 
 ## 6. Findings
-**Sample size:** n = 1,638 (pooled, test period, post-alignment). Positive-signal subset: n = 890. Negative-signal subset: n = 748.
+**Sample size:** n = 934 (pooled, test period, post-alignment). Positive-signal subset: n = 505. Negative-signal subset: n = 429.
 
 **PC2 loadings (train period, sign-normalized to USD/JPY positive):**
 

@@ -14,7 +14,7 @@ Pre-registered in Section 10 before this script was run; no threshold was chosen
   - Momentum: R_{t+26} = b0 + b1*momentum_signal + b2*turbulent_dummy + b3*(momentum_signal x turbulent_dummy) + eps
   - Reversion: R_{t+26} = b0 + b1*price_z + b2*calm_dummy + b3*(price_z x calm_dummy) + eps
   Fit via `interaction_regression_centered`, which mean-centers both main effects before forming the interaction termand reports both a condition-number and a VIF diagnostic per fit.
-- **Reliability gate**: condition number of X'X < 1e10 and every VIF < 10, both per leg. Precedent: the Day 41 PC2 interaction regression returned condition number 2.27e10 and was discarded as unreliable regardless of its p-value.
+- **Reliability gate**: condition number of X'X < 1e10 and every VIF < 10, both per leg. Precedent: the Day 41 PC2 interaction regression returned condition number 2.10e10 and was discarded as unreliable regardless of its p-value.
 - **Regime construction**: 2-feature PCA composite refit inside every walk-forward training fold, hard-switch classified at \|z\| > 1.5 (turbulent) / < 1.0 (calm) / between (deadzone).
 - **Signal construction**: `momentum_signal` (78-day sign-of-return), `price_zscore_signal` (26-day rolling z-score).
 - **Robustness check 1** (alternate regime window): identical pipeline with the regime composite's volatility feature recomputed on a 156-day window instead of 78-day.

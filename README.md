@@ -49,7 +49,7 @@ Six hypotheses, each pre-registered in writing before any test was run. Each str
 
 | # | Strategy | Closed | Verdict |
 |---|---|---|---|
-| 1 | PC2 Carry Regime | Day 41 | Three independent tests null. Pooled IC −0.0017, p = 0.951. Conditional predictability discarded at condition number 2.27e10 |
+| 1 | PC2 Carry Regime | Day 41 | Three independent tests null. Pooled IC +0.0378, p = 0.2557. Conditional predictability discarded at condition number 2.10e10 |
 | 2 | Momentum with ML Regime Filter | Day 42 | No base momentum IC survived once a window-alignment bug was corrected |
 | 3 | OU Half-Life Mean Reversion | Day 42 | Tests 2, 2b and 2c all failed |
 | 4 | Volatility Regime Breakout / Mean-Reversion | Day 49 | Reversion leg null at p = 0.563 once the lockbox is correctly excluded from the walk-forward windows. Section 10 requires both legs |
@@ -84,7 +84,7 @@ The contribution here is the machinery that killed six strategies, and four find
 | Pairs | Series | History | Use |
 |---|---|---|---|
 | EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY, EUR/CHF | 1-minute OHLCV | ~13 years development (2011-2023) | Signal construction; resampled to daily log returns for statistical work |
-| 8 three-month interbank rates | Daily | matched | Carry and rate-differential factors |
+| 8 three-month interbank rates | Monthly, 156 obs each | 2011-01 to 2023-12 | Carry and rate-differential factors |
 
 Development window is 2011–2023. The 2024-01-01 to 2026-05-01 slice is held as a lockbox: no research script reads it, no strategy was evaluated or selected on it, and no parameter was fit to it. Raw data lives outside the repo at a configurable path.
 

@@ -1,7 +1,7 @@
 # Day 41 Research Audit — PC2 Carry Regime Conditional Predictability
 
 ## Question
-Does the PC2 Carry Regime signal, which showed null unconditional predictive power (Day 38: pooled IC = -0.0017, p = 0.951; Day 39: no detectable leakage-inflation artifact from overlap-purging), carry conditional predictive power once the sample is split by a volatility regime? I.e., is PC2's average null IC masking a regime in which the signal genuinely predicts forward returns, diluted in the pooled estimate by a regime in which it does not?
+Does the PC2 Carry Regime signal, which showed null unconditional predictive power (Day 38: pooled IC = 0.0378, p = 0.2557; Day 39: no detectable leakage-inflation artifact from overlap-purging), carry conditional predictive power once the sample is split by a volatility regime? I.e., is PC2's average null IC masking a regime in which the signal genuinely predicts forward returns, diluted in the pooled estimate by a regime in which it does not?
 
 ## Why It Matters
 This question determines whether the PC2 Carry Regime strategy — currently the leading candidate for the third strategy slot, framed as an ML-gated signal (classifier on rolling volatility, rate differentials, vol index proxy) — has any genuine statistical basis to build on, or whether the entire candidate should be retired before any classifier-gating work begins. Since the classifier's proposed role was to identify exactly this kind of conditional regime, this test is a direct evaluation of whether that premise is worth pursuing at all.
@@ -23,7 +23,7 @@ PC2 signal construction (train/test split at 2021-01-01, sign normalization to U
 - Regime definitions (rolling-window and median-split) are treated as two independent operationalizations of the same underlying hypothesis, not as two separate hypotheses each deserving its own multiple-testing correction — consistent with the pre-registration's intent to prevent post-hoc threshold selection, not to inflate the number of tested hypotheses.
 
 ## Findings
-**Primary test (interaction regression, n = 1613):**
+**Primary test (interaction regression, n = 909):**
 
 | Term | Coefficient | Std. Error | t-stat | p-value |
 |---|---|---|---|---|

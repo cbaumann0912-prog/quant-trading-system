@@ -95,11 +95,13 @@ for name, vals in stats.items():
 pc2 = Z[:, 1]
 pc2_z = (pc2 - pc2.mean()) / pc2.std(ddof=1)
 
+span_years = (returns.index.max() - returns.index.min()).days / 365.25
+
 for threshold in [1.5, 2.0, 2.5, 3.0]:
     n_above = (pc2_z > threshold).sum()
     n_below = (pc2_z < -threshold).sum()
     total = n_above + n_below
-    per_year = total / 15
+    per_year = total / span_years
     print(f"|z| > {threshold}: {total} events ({per_year:.1f}/year)  "
           f"[+{n_above} / -{n_below}]")
     

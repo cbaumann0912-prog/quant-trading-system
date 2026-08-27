@@ -2,6 +2,7 @@
 
 **Date drafted:** Day 57 (2026-07-25)
 **Status:** Pre-registered. Written before any test was run.
+**Correction, Day 72:** one figure in Section 10 item 4 was amended. The Day 41 PC2 condition number was written here as 2.27e10; re-running that audit's script returns 2.0951e10, and the audit itself reports 2.10e10. The reference now reads 2.10e10. This is the only edit to this document's body since it was written, it changes a citation of another day's result rather than any threshold or criterion of this specification, and it is recorded here so the change is visible rather than silent.
 
 ## Provenance
 Nothing in `research/` has examined month-end effects, fix windows, or calendar-timed flows. Every threshold and window in Section 4 is fixed here, before the first test.
@@ -28,7 +29,7 @@ Falsification criteria, binding:
 1. Test statistic: the month-end × fix-window interaction coefficient from the Section 10 primary regression.
 2. Direction requirement: the coefficient must be significant and carry the predicted sign. A significant coefficient of the wrong sign is a FAIL. Added in response to Day 48/57, where a significance-only rule passed a leg whose effect ran backwards.
 3. Primary threshold: p < 0.05, uncorrected.
-4. Reliability gate: condition number < 1e10, all VIF < 10, main effects mean-centered before the interaction. Precedent: Day 41 PC2 discarded at condition number 2.27e10.
+4. Reliability gate: condition number < 1e10, all VIF < 10, main effects mean-centered before the interaction. Precedent: Day 41 PC2 discarded at condition number 2.10e10.
 5. Robustness: primary plus both robustness checks must agree unanimously, same sign. Any single null kills it.
 6. Multiple testing: must survive Benjamini-Hochberg across 5 strategies. The other 4 are null, so this needs p < 0.01 at rank 1 of 5.
 7. Cost gate: net-of-cost annualized return must stay positive at 1.0 pip round trip. Added because the Day 57 session variant produced a positive gross Sharpe entirely consumed by turnover.

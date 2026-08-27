@@ -445,7 +445,12 @@ def risk_parity_weights(returns: pd.DataFrame, ann_factor: float) -> dict:
         weights : np.ndarray, shape (n,)
             ERC portfolio weights, strictly positive, sums to 1.
         risk_contributions : np.ndarray, shape (n,)
-            Per-asset risk contributions, sums to portfolio_vol.
+            Per-asset risk contributions, equal to one another at the ERC
+            solution. These are divided by the annualized ``portfolio_vol``,
+            so they sum to ``portfolio_vol / ann_factor`` rather than to
+            ``portfolio_vol``. For contributions expressed as shares of
+            portfolio variance, which sum to 1, see
+            ``_risk_contribution_shares``.
         portfolio_vol : float
             Annualized portfolio volatility at ERC weights.
     """

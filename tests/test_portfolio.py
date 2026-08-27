@@ -46,6 +46,9 @@ from src.framework.data_loader import DEFAULT_DATA_DIR
 
 DATA_DIR = DEFAULT_DATA_DIR
 
+DEV_START = "2011-01-01"
+DEV_END = "2023-12-31"
+
 FILES = {
     "EURUSD": "EURUSD.csv",
     "GBPUSD": "GBPUSD.csv",
@@ -53,26 +56,17 @@ FILES = {
 }
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def fx_returns():
-    pairs = {}
-    for pair_name, filename in FILES.items():
-        path = Path(DATA_DIR) / filename
-        df = pd.read_csv(path)
-        df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-        df = df.set_index("Datetime")
+    from src.framework.data_loader import DataLoader
 
-        daily_close = df["Close"].resample("D").last().dropna()
-        log_returns = np.log(daily_close / daily_close.shift(1)).dropna()
-
-        pairs[pair_name] = log_returns
-
-    returns = pd.concat(pairs, axis=1, join="inner")
-    returns.columns = list(FILES.keys())
-    return returns
+    panel = DataLoader(
+        list(FILES.keys()), DEV_START, DEV_END, data_dir=DATA_DIR
+    ).load()
+    return np.log(panel).diff().dropna()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def target_return_forces_short(fx_returns):
     from src.analysis.portfolio import _markowitz_weights_closed_form
     p_bar = fx_returns.mean().to_numpy()
@@ -365,6 +359,7 @@ def test_closed_form_matches_scipy_on_synthetic_returns(sample_returns):
     assert np.isclose(closed_form_result["weights"].sum(), 1.0, atol=1e-10)
 
 
+@pytest.mark.slow
 def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
     scipy_result = markowitz_weights(fx_returns, target_return_forces_short, ann_factor=252.0, allow_short=True)
     closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
@@ -376,12 +371,14 @@ def test_scipy_matches_numpy_result(fx_returns, target_return_forces_short):
     )
 
 
+@pytest.mark.slow
 def test_long_only_no_negative_weights(fx_returns, target_return_forces_short):
     result = markowitz_weights(fx_returns, target_return_forces_short, ann_factor=252.0, allow_short=False)
 
     assert np.all(result["weights"] >= -1e-6)
 
 
+@pytest.mark.slow
 def test_long_only_diverges_from_unconstrained(fx_returns, target_return_forces_short):
     closed_form_result = _markowitz_weights_closed_form(fx_returns, target_return_forces_short)
 

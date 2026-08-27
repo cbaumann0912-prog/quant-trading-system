@@ -36,7 +36,7 @@ So far six strategies have gone through this process. All six were closed as inv
 | Universe | 10 FX pairs of 1-minute OHLCV, plus 8 three-month interbank rate series |
 | Strategies pre-registered | 6 |
 | Strategies surviving validation | 0 |
-| Lockbox (2024-01 to 2026-05) | Never opened for evaluation — four real-data tests parse the full file, see Data |
+| Lockbox (2024-01 to 2026-05) | Never opened |
 | Commits | 221 |
 
 The lockbox is the part I'd point to first. It is a reserved slice of unseen data that the spec permits opening only on a PASS. Six candidates have failed without it being touched, which means the project still holds one clean shot at an out-of-sample test. Opening it to confirm a failure would spend that for nothing, and would create a live temptation to revive a dead strategy if the result came back positive by chance.
@@ -88,7 +88,9 @@ The contribution here is the machinery that killed six strategies, and four find
 
 Development window is 2011–2023. The 2024-01-01 to 2026-05-01 slice is held as a lockbox: no research script reads it, no strategy was evaluated or selected on it, and no parameter was fit to it. Raw data lives outside the repo at a configurable path.
 
-One qualification, because the stronger claim would not survive a reader running the suite. Four tests parse the raw CSVs with no end date and therefore load the lockbox rows into memory: `test_johansen_real_data_three_pairs`, and the three tests fed by the `fx_returns` fixture in `test_portfolio.py` (`test_scipy_matches_numpy_result`, `test_long_only_no_negative_weights`, `test_long_only_diverges_from_unconstrained`). All four are numerical-equivalence checks — Johansen against the hand-derived eigenvalue problem, `scipy` Markowitz against the closed-form KKT solution — and none of them produces a strategy result, a verdict, or a fitted parameter. The holdout is unspent for inference. It is not unread, and `grep -rn "DEV_END" tests/` returns nothing.
+Until Day 72 that claim had a hole in it. Four real-data tests — `test_johansen_real_data_three_pairs` and the three fed by the `fx_returns` fixture in `test_portfolio.py` — parsed the raw CSVs with no end date, so `pytest` computed on the reserved rows on every run. They are numerical-equivalence checks rather than strategy tests, so nothing was ever selected or fitted on that data, but the reads were real. All four now load through `DataLoader` bounded to `2023-12-31`, sit behind a `@pytest.mark.slow` marker, and share a session-scoped fixture instead of re-parsing ~900 MB once per test. `python -m pytest -m "not slow"` skips them entirely.
+
+What remains is true of the whole project rather than of these tests: reading a CSV loads all of its rows before any date filter applies. No computation anywhere in this repository uses a row dated after 2023-12-31.
 
 Annualization is computed empirically everywhere from each series' own DatetimeIndex, never hardcoded to 252. The daily series measures 312.30 observations per year because the vendor buckets the Sunday FX open as its own date; the intraday session book measures 259.44. Both are correct for their own series, and the discrepancy is the kind of thing that quietly corrupts a Sharpe ratio if you assume a constant.
 

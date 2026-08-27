@@ -121,7 +121,7 @@ Overlapping forward returns remain a design limitation. Consecutive h-bar forwar
 
 The interval from 1 January 2024 onward is reserved for a single unbiased evaluation of a strategy that has survived every development test. No research script reads it, no strategy was evaluated or selected on it, no parameter was fit to it, and no result in this paper is computed on it.
 
-One qualification, because the stronger claim would not survive a reader running the test suite. Four tests in the repository parse the raw CSVs with no end date and therefore load the reserved rows into memory. All four are numerical-equivalence checks — a Johansen trace test against the hand-derived eigenvalue problem, and three comparisons of the `scipy` Markowitz solution against the closed-form KKT solution — and none produces a strategy result, a verdict, or a fitted parameter. The holdout is unspent for inference. It is not literally unread.
+One qualification belongs on the record even though it has since been closed. Until late in the project four real-data tests parsed the raw files with no end date, so the test suite computed on the reserved rows on every run. All four are numerical-equivalence checks — a Johansen trace test against the hand-derived eigenvalue problem, and three comparisons of the `scipy` Markowitz solution against the closed-form KKT solution — so nothing was ever selected, fitted or evaluated on that data, but the claim as originally written was stronger than the code supported. Those tests are now bounded to the development window like every research script. What remains true of the whole project is that reading a file loads all of its rows before a date filter applies; no computation anywhere uses a row dated after 29 December 2023.
 
 ### The universe was chosen without checking its cost
 
@@ -1242,7 +1242,7 @@ Module inventory by package:
 - `src/framework/` — `DataLoader` with composition-root embargo and leakage-safe splitting; `WalkForwardValidator` window generation and slicing.
 - `src/utils/` — centralized logging configuration and a single project-level random seed with a `get_rng` factory.
 
-Two coverage caveats belong here rather than in a footnote. Test coverage has never been measured, so the suite passing is evidence that nothing obviously broke and not evidence that the branches added are correct. And four tests in the suite are real-data integration tests living in the unit suite: they parse roughly 900 MB of minute CSVs, they are not behind a marker, and they read the reserved holdout (§2).
+Two coverage caveats belong here rather than in a footnote. Test coverage has never been measured, so the suite passing is evidence that nothing obviously broke and not evidence that the branches added are correct. And four of these tests are real-data integration tests living in the unit suite: they parse roughly 900 MB of minute bars through a shared session-scoped fixture, are bounded to the development window, and sit behind a `slow` marker so the rest of the suite runs without them.
 
 ## Appendix C — What is not implemented from scratch
 

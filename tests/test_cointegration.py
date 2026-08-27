@@ -158,24 +158,14 @@ def test_johansen_rejects_nan_input():
         johansen_test(df)
 
 
+@pytest.mark.slow
 def test_johansen_real_data_three_pairs():
-    data_dir = Path(DEFAULT_DATA_DIR)
+    from src.framework.data_loader import DataLoader
 
-    pairs = {
-        "EURUSD": data_dir / "EURUSD.csv",
-        "GBPUSD": data_dir / "GBPUSD.csv",
-        "USDJPY": data_dir / "USDJPY.csv",
-    }
-
-    series = {}
-    for name, path in pairs.items():
-        df = pd.read_csv(path)
-        df["Datetime"] = pd.to_datetime(df["Datetime"], format="%Y%m%d %H%M%S")
-        df = df.set_index("Datetime")
-        daily_close = df["Close"].resample("D").last().dropna()
-        series[name] = daily_close
-
-    combined = pd.DataFrame(series).dropna()
+    combined = DataLoader(
+        ["EURUSD", "GBPUSD", "USDJPY"], "2011-01-01", "2023-12-31",
+        data_dir=Path(DEFAULT_DATA_DIR),
+    ).load().dropna()
 
     assert combined.shape[0] > 100
     assert combined.shape[1] == 3

@@ -28,17 +28,19 @@ The 2024–2026 lockbox stays sealed. Section 10 permits opening only on a PASS.
 Statistics come from the repo's tested modules: `block_bootstrap`, `paired_sign_permutation_test`, `benjamini_hochberg_correction`, `interaction_regression_centered`, `PerformanceAnalyzer.run_report`, `compute_achieved_power`, `compute_required_sample_size`.
 
 ## R1 cannot resolve what it claims to test
-| k | trades | mean bp | hit rate | gross SR |
-|---|---|---|---|---|
-| 1.5 | 6,706 | +0.135 | 50.2% | +0.993 |
-| 2.0 | 3,211 | +0.832 | 51.4% | +1.046 |
-| 2.5 | 1,588 | +0.874 | 52.0% | +0.757 |
+| k | trades | mean bp | SE bp | t | 95% CI bp | hit rate | gross SR |
+|---|---|---|---|---|---|---|---|
+| 1.5 | 6,706 | +0.135 | 0.346 | +0.39 | [−0.543, +0.813] | 50.2% | +0.993 |
+| 2.0 | 3,211 | +0.832 | 0.547 | +1.52 | [−0.240, +1.904] | 51.4% | +1.046 |
+| 2.5 | 1,588 | +0.874 | 0.853 | +1.03 | [−0.799, +2.547] | 52.0% | +0.757 |
 
 The ladder rises with k, so R1 passes. **It should not be read as evidence, and the reason is the point of this section.**
 
-The deciding gap, k=2.0 to k=2.5, is +0.042 bp. On the Day 57 trade set the per-k standard errors were 0.346, 0.548 and 0.853 bp, every 95% interval spanned zero, and that gap carried t = 0.05. Trade counts have moved by 2, 5 and 4 respectively, so the standard errors are not materially different, but they were not re-derived in this run — the script does not print per-k standard errors. [VERIFY: per-k SE and CI on the Day 72 trade set, not recomputed here.]
+Every one of the three intervals spans zero. The deciding gap, k=2.0 to k=2.5, is **+0.042 bp against a standard error of 1.013, a t-statistic of +0.04**. The ladder's ordering is therefore decided at four one-hundredths of a standard error. Four trades out of 1,588 flip it, and at excess kurtosis +22.5 a handful of extremes sets it. Year by year the ladder is monotone in 2 of 11 tradeable years.
 
-Four trades out of 1,588 flip the ordering, and at excess kurtosis +22.5 a handful of extremes sets it. Year by year the ladder is monotone in 2 of 11 tradeable years. The criterion has been observed to return FAIL on the Day 57 run, PASS on a Linux rebuild, and PASS here, on the same data and the same pre-registered rule.
+These standard errors are now emitted by the validation script itself rather than derived elsewhere and copied in, which is the provenance gap that let the Day 57 figures drift undetected. They are also almost exactly the Day 57 values — 0.346, 0.548 and 0.853 then against 0.346, 0.547 and 0.853 now — so the dispersion of this ladder never moved. Only its ordering did.
+
+The criterion has now returned FAIL on the Day 57 run, PASS on a Linux rebuild, and PASS on the declared Windows environment, on the same data under the same pre-registered rule.
 
 The superseded note called this ladder "the single strongest piece of evidence that the effect is real." That reading was not supportable then and is not supportable now that it passes. **Treat R1 as uninformative in both directions.** What survives from Section 9 is narrower: the effect isn't concentrated at low k, so bid-ask bounce stays ruled out.
 

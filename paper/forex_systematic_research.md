@@ -759,8 +759,8 @@ Two of these were originally scoped for first-principles implementation and ende
 Python 3.12. Dependencies pinned in `requirements.txt`: `numpy` 1.26.4, `pandas` 2.2.2, `scipy` 1.13.0, `statsmodels` 0.14.2, `scikit-learn` 1.4.2, `matplotlib` 3.8.4, `click` 8.4.1, `pytest` 8.2.0.
 
 ```bash
-git clone https://github.com/cbaumann0912-prog/summer2026.git
-cd summer2026
+git clone https://github.com/cbaumann0912-prog/quant-trading-system.git
+cd quant-trading-system
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m pytest
@@ -795,3 +795,4 @@ Harvey, C. R., Y. Liu and H. Zhu (2016). "…and the Cross-Section of Expected R
 Lo, A. W. (2002). "The Statistics of Sharpe Ratios." *Financial Analysts Journal* 58(4), 36–52. Derives the distribution of the Sharpe ratio and shows that √K annualization holds only under restrictive conditions, with the error reaching 65% in a hedge-fund example once serial correlation is accounted for.
 
 López de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley. Source of the purged k-fold cross-validation with embargo implemented in `src/evaluation/cross_validation.py` (§7.4, pp. 105–108, with the embargo at p. 107) and of the triple-barrier labelling in `src/signals/triple_barrier.py` (§3.4, p. 45).
+

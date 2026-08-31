@@ -14,6 +14,10 @@ The last of them names a design error I made before the first test ran. I chose 
 
 ---
 
+**Data and code availability.** Every figure in this paper is produced by a script in a public repository at `github.com/cbaumann0912-prog/quant-trading-system`, with dependencies pinned and a Docker image that fixes the interpreter. The 1-minute bars are commercial vendor data and are not redistributed here; Appendix D gives the reproduction procedure and the two caveats that attach to it.
+
+---
+
 ## 1. Introduction
 
 This paper reports a research program that produced no strategy.
@@ -46,7 +50,7 @@ One author, one retail data vendor, no replication, and nobody else has read the
 
 ### Source and coverage
 
-Ten currency pairs of 1-minute OHLCV bars: EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY and EUR/CHF. The development sample runs 2 January 2011 to 29 December 2023, 12.99 years, and holds 47,287,601 minute bars. Timestamps are local-time-naive, formatted `%Y%m%d %H%M%S`.
+Ten currency pairs of 1-minute OHLCV bars: EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, EUR/JPY and EUR/CHF. The development sample runs from 2 January 2011 to 29 December 2023, 12.99 years, and holds 47,287,601 minute bars. Timestamps are local-time-naive, formatted `%Y%m%d %H%M%S`.
 
 | Pair | Minute bars | Daily closes | Flat bars | Duplicate stamps |
 |---|---:|---:|---:|---:|
@@ -60,6 +64,8 @@ Ten currency pairs of 1-minute OHLCV bars: EUR/USD, GBP/USD, USD/JPY, USD/CHF, A
 | EUR/GBP | 4,725,060 | 4,055 | 1.96% | 300 |
 | EUR/JPY | 4,782,753 | 4,056 | 0.55% | 300 |
 | EUR/CHF | 4,673,646 | 4,055 | 3.65% | 300 |
+
+: Table 1. Development sample coverage by pair, 2 January 2011 to 29 December 2023.
 
 Coverage is continuous. The largest gap between consecutive daily observations is 3 days in every pair, which is ordinary weekend closure, and nothing anywhere exceeds 4. Across all 47.3 million bars there are no missing closes, no non-positive prices, and no bars that violate the OHLC ordering constraints.
 
@@ -81,7 +87,7 @@ Statistical work outside §4.6 runs at daily frequency. Minute bars are resample
 
 Returns are log differences of consecutive daily closes. Log returns add across time, which is what lets me aggregate over arbitrary lookback and holding windows by summation, and they sit closer to normal for small daily FX moves. Where returns have to be aggregated across pairs at a single date instead of across time I use simple returns, since log returns do not add across a portfolio.
 
-My evaluation window is 2011-01-01 to 2023-12-31. An earlier draft named 2015–2022; that window describes no result in this study and is gone. Twenty-six research scripts carry `DEV_END = "2023-12-31"` as a module constant with `START = "2011-01-01"` alongside it, and every verdict in §4 was computed on that range. Two 2015 dates survive in the repository and neither defines an evaluation window: a GARCH warm-up boundary in the figure generators, and a command-line default for `--train-start`.
+My evaluation window is 2011-01-01 to 2023-12-31. An earlier draft named 2015–2022; that window describes no result in this study and is gone. Twenty-six research scripts carry `DEV_END = "2023-12-31"` as a module constant with `START = "2011-01-01"` alongside it, and every verdict in §4 was computed on that range.
 
 ### The Sunday session, and two annualization factors
 
@@ -89,9 +95,7 @@ FX trading opens at 17:00 ET on Sunday. Median minute-bar counts per calendar da
 
 Every pair's daily index consequently gives an empirical annualization factor of 312.19 or 312.27 for every pair, against the 260.57 a weekday-only index would produce. I annualize using the factor computed from each series' own index rather than any fixed convention.
 
-The larger factor is not a bias, and the arithmetic is counterintuitive enough to spell out. Dropping Sunday bars does not remove the Sunday price move; it merges that move into the Friday-to-Monday return. Both partitions describe the same path, with total EUR/USD log return of −0.1861 including Sunday bars and −0.1904 excluding them. Annual variance is the sum of per-period variances and that sum does not care how you partition the year, so σ√K estimates the same annual volatility either way: the coarser partition raises the per-period standard deviation from 0.004718 to 0.005116 by almost exactly the factor by which it lowers √K. Annualized Sharpe comes out −0.1719 including Sunday bars and −0.1776 excluding them, a ratio of 0.97. The residual three percent is aggregation and serial dependence rather than session structure, an instance of Lo's result that √K annualization is sensitive to autocorrelation, and §6 returns to it.
-
-What the empirical factor buys is protection from a fixed constant. Annualizing the same series with a hardcoded 252 gives −0.1544 against the measured −0.1719, a discrepancy with nothing behind it.
+The larger factor is not a bias. Dropping Sunday bars does not remove the Sunday price move; it merges that move into the Friday-to-Monday return, and annual variance is a sum of per-period variances that does not care how the year is partitioned. So σ√K estimates the same annual volatility either way: annualized Sharpe comes out −0.1719 including Sunday bars and −0.1776 excluding them, a ratio of 0.97, and the remaining three percent is serial dependence rather than session structure, an instance of Lo's result that √K annualization is sensitive to autocorrelation. What the empirical factor buys is protection from a fixed constant: annualizing the same series with a hardcoded 252 gives −0.1544 against the measured −0.1719, a discrepancy with nothing behind it.
 
 Two different factors appear in this paper and the distinction matters. The daily panel measures 312.19–312.27 observations per year because the vendor buckets the Sunday open as its own date. The intraday session book of §4.6 measures 259.44 sessions per year over the same 12.99 years, because that strategy trades one 09:00–13:00 session per weekday and never touches the Sunday stub. Neither corrects the other. They describe two observation streams drawn from the same bars, each computed from its own index, and applying either to the other's returns misstates the annualized Sharpe by roughly 10%. That is the kind of error that survives review because both constants look plausible.
 
@@ -107,7 +111,7 @@ Everything from 1 January 2024 onward is reserved for one unbiased evaluation of
 
 Keeping it sealed through six failures deserves a sentence, because the opposite instinct is strong. Opening the holdout to confirm a failure spends the only unseen data in the project and buys nothing, since the strategy is already dead by its own criteria. Worse, it creates a live temptation: if the confirmation came back positive by chance, I would be left holding a dead strategy with a flattering out-of-sample number attached and no clean way to discount it afterwards.
 
-One qualification belongs on the record even though it is now closed. Until late in the project four real-data tests parsed the raw files with no end date, so the test suite computed on the reserved rows every run. All four are numerical-equivalence checks, a Johansen trace test against the hand-derived eigenvalue problem and three comparisons of the `scipy` Markowitz solution against the closed-form KKT solution, so nothing was ever selected, fitted or evaluated on that data. But the claim as I originally wrote it was stronger than the code supported. Those tests are now bounded to the development window like every research script. What stays true of the whole project is that reading a file loads all of its rows before a date filter applies, and no computation anywhere uses a row dated after 29 December 2023.
+One qualification belongs on the record even though it is now closed. Until late in the project four real-data tests parsed the raw files with no end date, so the test suite computed on the reserved rows every run. All four are numerical-equivalence checks, a Johansen trace test against the hand-derived eigenvalue problem and three comparisons of the `scipy` Markowitz solution against the closed-form KKT solution, so nothing was ever selected, fitted or evaluated on that data. But the claim as I originally wrote it was stronger than the code supported. Those tests are now bound to the development window like every research script. What stays true of the whole project is that reading a file loads all of its rows before a date filter applies, and no computation anywhere uses a row dated after 29 December 2023.
 
 ---
 
@@ -149,9 +153,7 @@ And the power gate became binding only at day 57, after five of the six candidat
 
 ### What is computed from scratch, and what is not
 
-Almost all of the statistical machinery is derived and implemented rather than imported: regression and regularization, eigendecomposition and principal components, GARCH by maximum likelihood, purged cross-validation, block bootstrap, permutation testing, multiple-testing correction, deflated Sharpe, information coefficient and ratio, Markowitz and risk parity, Kelly, VaR and CVaR, and Brownian and Ornstein-Uhlenbeck simulation.
-
-A short list is called through established libraries instead, and Appendix C names all of it. In every case the imported part is a critical-value table or a solver and the objective function is mine. Two components were originally scoped for first-principles implementation and ended up on that list; they are listed rather than quietly reclassified.
+Almost all of the statistical machinery is derived and implemented rather than imported, and Appendix B inventories it by package. A short list is called through established libraries instead, and Appendix C names all of it. In every case the imported part is a critical-value table or a solver and the objective function is mine. Two components were originally scoped for first-principles implementation and ended up on that list; they are listed rather than quietly reclassified.
 
 ---
 
@@ -171,6 +173,8 @@ There is no common performance table. The six criteria are heterogeneous by desi
 | 5 | Month-End FX Rebalancing Flow | Day 57 | Significant with the sign inverted |
 | 6 | Intraday Overshoot Reversal | Day 57 | Per-trade permutation and the mechanism test |
 
+: Table 2. The roster, and the pre-registered criterion each candidate failed.
+
 ### 4.1 PC2 Carry Regime
 
 Does the second principal component of daily returns on EUR/USD, GBP/USD and USD/JPY predict its own subsequent returns?
@@ -183,7 +187,6 @@ Three independent tests, all null. Loadings are fit on training returns to 2020-
 
 What killed it was not the p-values, which are merely unremarkable, but the design that produced them. The interaction regression's condition number is 2.10 × 10¹⁰, past the point where the design matrix counts as near-singular, so its standard errors and the p-values derived from them are numerically unreliable in either direction. A model explaining a third of one percent of forward-return variance, from a near-singular fit, with four unanimous robustness nulls behind it, has nothing in it.
 
-Two smaller things belong on the record. An entry rule was drafted on threshold crossings of the standardised score, with 403, 187, 95 and 50 events at 1.5σ, 2.0σ, 2.5σ and 3.0σ, and the 2σ level was chosen from those four. That selection is a trial and never entered the count. The rule was also never tested: every result above uses the raw continuous score. The σ in that table is a full-sample standard deviation, which is lookahead, and it fails to contaminate the reported results only because they are rank-based and invariant to monotone rescaling.
 
 ### 4.2 Momentum with ML Regime Filter
 
@@ -261,7 +264,10 @@ Either failure would have been enough, but the mechanism one matters more. The s
 
 Leakage usually gets argued about rather than measured, because the leaked and unleaked versions of a study are rarely both available. Here they both are, on identical data, identical code and identical fold geometry. The only thing that moves is where the volatility-regime classifier is fit.
 
-Strategy 4's classifier was originally fit once on the full sample and applied across all folds. Refitting it inside each walk-forward training window, which is the correct construction and the one the specification had always called for, changes the out-of-sample regime label on a large share of days. On the three pairs where it was first measured, walk-forward and full-sample labels agree on 49.41%, 55.74% and 20.52% of out-of-sample days, so 44% to 79% of labels flip. In absolute terms that is 1,107 of 2,188 bars on EUR/USD, 968 of 2,187 on GBP/USD and 1,739 of 2,188 on USD/JPY. The same check across all ten pairs gives agreement between 32.2% and 60.8%, so 39% to 68% flip. Both ranges are legitimate: they are the three-pair and ten-pair runs of one procedure.
+Strategy 4's classifier was originally fit once on the full sample and applied across all folds. Refitting it inside each walk-forward training window, which is the correct construction and the one the specification had always called for, changes the out-of-sample regime label on a large share of days. On the three pairs where it was first measured, walk-forward and full-sample labels agree on 49.41%, 55.74% and 20.52% of out-of-sample days, so 44% to 79% of labels flip. In absolute terms that is 1,107 of 2,188 bars on EUR/USD, 968 of 2,187 on GBP/USD and 1,739 of 2,188 on USD/JPY. The same check across all ten pairs gives agreement between 32.2% and 60.8%, so 39% to 68% flip. Both ranges are legitimate: they are the three-pair and ten-pair runs of one procedure. Figure 1 shows the three-pair case against what chance among three labels would give.
+
+
+![Out-of-sample regime-label agreement between a walk-forward classifier and the full-sample fit it replaced, on identical data and identical fold geometry. USD/JPY agrees on fewer days than chance among three labels would produce.](figures/fig3_leakage.png){width=95%}
 
 USD/JPY is the worst case. Agreement of 20.52% means the two classifiers disagree roughly four days in five, which is worse than a coin flip among three labels would produce.
 
@@ -281,7 +287,10 @@ Correlation reconciles the two. Mean cross-pair correlation of the daily book co
 
     BR_eff = N / (1 + (N − 1) ρ) = 10 / (1 + 9 × 0.3652) = 2.33
 
-rather than 10. Had the trades been independent within a day, the same per-trade statistics would imply a book Sharpe of +0.4221. The observed +1.0464 is therefore mostly the difference between treating ten correlated series as ten independent draws and treating them as 2.33.
+![Effective breadth against mean pairwise correlation for a ten-component book. At the observed correlation the book carries the independent information of 2.33 signals, not ten.](figures/fig2_breadth.png){width=95%}
+
+
+rather than 10, which Figure 2 puts on the curve it sits on. Had the trades been independent within a day, the same per-trade statistics would imply a book Sharpe of +0.4221. The observed +1.0464 is therefore mostly the difference between treating ten correlated series as ten independent draws and treating them as 2.33.
 
 Diversification is a real source of risk-adjusted return and I am not claiming otherwise. The narrower claim is that the p-value is the artifact. A book-level significance test that ignores cross-sectional dependence asks whether the aggregate beat zero given a sample size it does not have, and what it leaves behind is a strategy resting on a directional edge that nothing in the analysis separates from zero.
 
@@ -317,7 +326,7 @@ The t-statistic on an annualized Sharpe ratio is approximately
 
     t ≈ SR × √(years)
 
-so thirteen years needs a true Sharpe near 0.555 to reach t = 2. That is not a modelling choice; it falls out of the estimator's standard error and it does not care what the hypothesis is.
+so thirteen years needs a true Sharpe near 0.555 to reach t = 2 (Figure 3). That is not a modelling choice; it falls out of the estimator's standard error and it does not care what the hypothesis is.
 
 Intraday sampling does not relax it, because sampling the same calendar span every minute rather than every day multiplies observations without multiplying elapsed years, and elapsed years are what the expression contains. Strategy 6 makes the point: an intraday session strategy with 3,211 trades still reaches achieved power of only 0.6419, against a requirement of 1,860 active days where it has 1,279.
 
@@ -331,6 +340,11 @@ And the fix was available the whole time. My 2011 start is a download choice rat
 | Vendor maximum | 10 | 2005.58 | 18.4 | 0.466 | 1,811 | no |
 | Drop NZD/USD | 9 | 2002.17 | 21.8 | 0.428 | 2,147 | yes |
 | USD majors only | 6 | 2000.42 | 23.6 | 0.412 | 2,319 | yes |
+
+: Table 3. What each available universe would have cost in breadth and bought in calendar span.
+
+![The power ceiling. The true Sharpe an estimate must carry to reach $t = 2$ falls as the square root of elapsed calendar years, so the binding constraint is span rather than observation count. Marked points are the four universes of Table 3.](figures/fig1_power.png){width=95%}
+
 
 Active-day counts assume the overshoot book's realised trigger rate and 259.44 sessions per year, reproduced from the project's span-constraint note, which was computed against the strategy's closing figures. The regenerated run of §4.6 gives 1,279 active days against an 80% threshold of 1,860 rather than 1,278 against 1,871. Neither difference moves a row's verdict.
 
@@ -382,10 +396,13 @@ The holdout is still worth one clean out-of-sample test. The temptation to spend
 
 Six specifications for seven entries in the roster. Strategy 1 has none, for the reason given in §3: it originated in the day 18–19 factor work and was evaluated through daily audits rather than the spec-first process, and writing one now with the results known would produce a document formally indistinguishable from the genuine ones.
 
-The text below is reproduced mechanically from the repository rather than retyped. The specifications are unedited from when they were written; only the status line is amended on closure. The authority for that claim is the git history, not this copy — `git log --follow` on each file shows the content commit and the status amendment separately.
+What follows is **excerpted** from the repository rather than reproduced in full. For each specification I keep the header, the Provenance note where one exists, Section 1 (the hypothesis and the binding falsification criteria) and Section 10 (the statistical validation plan and its executed record). Sections 2 through 9, 11 and 12 are omitted: they cover economic rationale, data sourcing, signal construction, entry, exit, sizing, risk controls and judgmental adjustments, and in most of these specifications the later ones say some version of "never designed, moot given discard." The omitted text is not summarised or paraphrased anywhere; the kept text is verbatim.
+
+Sections 1 and 10 are the ones that carry evidential weight, because they are what "pre-registered" has to mean: the conditions for declaring the strategy dead, fixed before the first test, and the record of what happened when those conditions were applied. The specifications are unedited from when they were written; only the status line is amended on closure. The authority for that claim is the git history rather than this copy — `git log --follow` on each file shows the content commit and the status amendment separately, and the full text of every specification is in the repository.
 
 
 ### `research/strategies/s02_momentum_ml_regime/spec.md`
+
 
 #### Strategy Specification — FX Momentum with ML Regime Filter
 
@@ -407,85 +424,6 @@ The text below is reproduced mechanically from the repository rather than retype
 | Test B — Regime-dependence | Does an ML regime filter improve momentum's predictive power in trending vs. choppy states? | **NOT RUN — moot**, no base effect to condition |
 
 Test A failing was pre-registered as fatal to the base momentum claim, which in turn makes Claim B untestable in any meaningful sense — a regime filter cannot rescue a signal that does not exist unconditionally, and searching for regime-conditional effects in the absence of an unconditional one is a known path to manufacturing spurious findings from noise.
-
----
-
-##### 2. Economic Rationale
-
-**Why should this edge exist?**
-Framed by Menkhoff et al. as "limits to arbitrage" — exploiting the momentum anomaly exposes traders to risks (crash risk, funding risk, unpredictable reversals) not captured by simple covariance-based risk measures, which is why professional capital hasn't arbitraged it away. **This project's implementation did not find evidence of the base effect in the tested construction (Section 1); see Section 10 for the full record, including a construction bug that initially produced a spurious positive result.**
-
-**Who are the natural counterparties?** Not explicitly stated in the source write-up.
-
-**Why hasn't this been arbitraged away already?**
-Limits to arbitrage — crash risk, funding risk, and unpredictable reversal risk are not captured by simple covariance-based risk measures.
-
-**What known macro/structural regime does this depend on?**
-Momentum tends to work better in trending macro environments and tends to fail or reverse violently around regime transitions or crowded-trade unwinds. This was the explicit motivation for the ML regime gate — the classifier was meant to capture exactly the condition under which momentum's underlying mechanism (slow information diffusion, underreaction) is actually operative versus not. **Moot given Test A's failure — there is no base mechanism for a regime filter to condition on.**
-
----
-
-##### 3. Data Required
-
-**Instruments:** EUR/USD, GBP/USD, USD/JPY (all three).
-
-**Data frequency:** Daily close, resampled from 1-minute OHLCV via `.resample('D').last()`.
-
-**Lookback window required:** 26 trading days (1 month, per project's 26-days/month convention, standardized with OU Half-Life strategy work).
-
-**Any external/exogenous data needed?** None used in Test A. Candidate ML classifier features for a regime filter (Claim B) were never specified or sourced, since that stage was never reached.
-
----
-
-##### 4. Signal Logic
-
-**What was computed, step by step (Test A only; live signal never designed):**
-
-1. Compute daily log returns: `log_returns_t = log(price_t / price_{t-1})`
-2. Compute cumulative sum of log returns for index-based windowing: `cumsum_t = sum(log_returns_{1..t})`
-3. Trailing signal: `trailing_return_t = cumsum_t - cumsum_{t-26}` (26-day cumulative log return)
-4. Forward outcome: `forward_return_t = cumsum_{t+5} - cumsum_t` (5-day forward cumulative log return, zero overlap with trailing window)
-5. Test A computed Spearman IC between trailing_return and forward_return across all valid rows
-
-**Signal frequency:** Would recompute daily in a live signal; Test A itself was evaluated both as a non-overlapping weekly subsample (Method 1) and as full daily overlapping observations with block-based permutation (Method 2).
-
-**Parameters and values used:**
-
-| Parameter | Value | Justification |
-|-----------|-------|----------------|
-| Lookback | 26 trading days | 1 month, per project's 26-days/month convention |
-| Holding period | 5 trading days | 1 week |
-| Significance threshold | α = 0.05, permutation-based | Consistent with framework convention given confirmed fat tails/volatility clustering |
-
----
-
-##### 5. Entry Rule
-
-**Never designed — moot given discard.** No live entry rule was built; Test A operated only on the trailing/forward return relationship, not on an executable signal.
-
----
-
-##### 6. Exit Rule
-
-**Never designed — moot given discard.**
-
----
-
-##### 7. Position Sizing Rule
-
-**Never designed — moot given discard.**
-
----
-
-##### 8. Risk Controls
-
-**Never designed — moot given discard.**
-
----
-
-##### 9. Failure Conditions
-
-**Realized.** Per the pre-registered falsification criterion (Section 1), Test A found no significant positive IC between trailing and forward returns after correcting a construction bug — condition met, strategy discarded.
 
 ---
 
@@ -514,23 +452,8 @@ Momentum tends to work better in trending macro environments and tends to fail o
 
 ---
 
-##### 11. Open Questions / Known Gaps
-
-- Strategy is discarded; Sections 5–9 were never completed, consistent with not investing further design effort in a strategy whose base premise failed.
-- Claim B (ML regime-dependence) was never tested — this was a deliberate methodological choice (testing a regime filter on a non-existent base effect risks manufacturing a spurious regime-conditional finding from noise), not an oversight.
-- The initial construction bug (window-alignment error producing spurious IC ~0.30) is a useful cautionary case for future strategy work: an unusually strong result relative to published literature benchmarks should trigger verification before being trusted, not be accepted as a good outcome.
-- If momentum is revisited in a future 90-day cycle or as a new candidate, the corrected cumsum-based windowing construction (Section 4) is reusable, validated infrastructure — independent of this specific strategy's failed result.
-
----
-
-##### 12. Judgmental Adjustments to Statistical Inputs
-
-**Adjustment:** None applied. No statistically-derived input was ever adjusted based on forward-looking judgment, since no return-generating signal was built before the strategy was discarded.
-
-**Reasoning:** N/A.
----
-
 ### `research/strategies/s03_ou_halflife_mean_reversion/spec.md`
+
 
 #### Strategy Specification — OU Half-Life Mean-Reversion (Z-Score Threshold)
 
@@ -554,91 +477,6 @@ Momentum tends to work better in trending macro environments and tends to fail o
 | Test 2c — Nonlinearity (forward return rank) | Is there a significant positive Spearman IC between peak \|z\| magnitude and signed 5-day forward return? (permutation test on IC) | **FAILED** — all 3 pairs, all wrong-signed |
 
 Any one of these tests failing was pre-registered as fatal to the strategy as specified. All three nonlinearity operationalizations failed. Per standing research-integrity rules, this is treated as a closed, discarded result — not retuned or retried further.
-
----
-
-##### 2. Economic Rationale
-
-**Why should this edge exist?**
-Deviations from equilibrium exchange rate levels are constrained by transaction costs and capital requirements on international arbitrage — small deviations aren't worth correcting given those costs, but larger dislocations eventually attract capital that pulls price back. This implementation targeted a related but distinct claim: even without modeling true PPP fair value, the *degree* of statistical dislocation from a smoothed price anchor should predict reversion behavior, because large deviations more plausibly reflect genuine order-flow imbalance (forced hedging, temporary liquidity shortfalls) than small deviations, which are more likely routine noise around a slow-moving equilibrium. **This claim was tested three ways and did not hold in any of them (Section 1).**
-
-**Who are the natural counterparties?**
-Hedgers and corporates transacting at prevailing rates regardless of short-term deviation (inelastic flow), other systematic mean-reversion strategies competing for the same edge, and momentum-driven flow that pushes price further from equilibrium in the short run (the source of the dislocations this strategy waits out).
-
-**Why hasn't this been arbitraged away already?**
-Capacity constraints and the difficulty of confidently distinguishing "large deviation about to revert" from "start of a genuine trend/regime shift" in real time — this was precisely the discrimination problem Tests 2/2b/2c were designed to validate. Transaction costs on frequent small-deviation trading make pure noise-trading unprofitable, which was part of why this strategy explicitly avoided acting on small deviations. **Given the test results, an equally plausible reading is that this discrimination problem is not actually solvable at this magnitude scale using this z-score construction — i.e., there may be no exploitable difference between "large dislocation" and "ordinary noise" for these three pairs at this timescale.**
-
-**What known macro/structural regime does this depend on?**
-Requires a regime where price genuinely reverts to a moving-average-defined equilibrium rather than trending persistently (e.g., sustained rate-differential-driven currency trends, as in strong dollar cycles, would violate this). No explicit regime filter was ever built into this strategy — moot now given the strategy's discard, but worth noting as a possible confound: without a regime filter, the excursion sample (Section 4) pools observations across whatever mix of trending and mean-reverting regimes occurred in this data, which could partially explain why the magnitude-conditioning signal didn't emerge cleanly.
-
----
-
-##### 3. Data Required
-
-**Instruments:** EUR/USD, GBP/USD, USD/JPY (all three; framework does not support USD/CHF).
-
-**Data frequency:** Daily close. Resampled from 1-minute OHLCV via `.resample('D').last()`. Justification: MA/vol-window construction and OU half-life estimates (~32–35 days) operate on a multi-week timescale, making daily resolution appropriate; intraday noise would not meaningfully improve signal quality at this holding-period scale.
-
-**Lookback window required:** Minimum ~100 trading days before a valid MA/vol-window reading is available (MA_WINDOW = VOL_WINDOW = 100, working values used for hypothesis testing; never advanced to optimization given the discard).
-
-**Any external/exogenous data needed?** None used. True PPP-based fair value (CPI differentials) was considered and explicitly rejected in favor of a moving-average anchor due to frequency mismatch (monthly CPI vs. daily FX) and added data-acquisition burden not justified for this implementation.
-
----
-
-##### 4. Signal Logic
-
-**What was computed, step by step (for hypothesis-testing purposes; never advanced to a live signal):**
-
-1. Compute rolling moving average of daily close price: `MA_t = mean(price, window=100)`
-2. Compute deviation: `deviation_t = price_t - MA_t`
-3. Compute rolling volatility of the deviation series: `vol_t = std(deviation, window=100)`
-4. Compute z-score: `z_t = deviation_t / vol_t`
-5. Track excursions: an excursion begins when `|z_t| ≥ 1.0`, continues while same-sign, tracking a running same-sign peak; a peak-segment ends when magnitude reverts by 1.0 z-unit from the current peak (fixed-absolute reversion rule), or a new peak is set
-6. Tests 2/2b/2c each computed a different outcome variable (reversion time, 5-day forward return, IC) conditional on this excursion structure
-
-**Signal frequency:** Recomputed daily, using only trailing data (rolling windows are one-sided/backward-looking — confirmed no lookahead in MA/vol construction).
-
-**Parameters and working values used (hypothesis-testing only, never optimized further):**
-
-| Parameter | Value | Justification |
-|-----------|-------|----------------|
-| MA window | 100 days | Working value; purged-CV grid search never run given discard |
-| Vol window | 100 days | Matched to MA window after diagnosing that a shorter window (originally 20) mechanically undersized the denominator relative to the slow-moving deviation series, inflating z-scores (76–80% of observations above \|z\|=1.0, vs. expected ~32%). Resulting z-score std (~1.7) is elevated above the naive target of 1.0, accepted as an expected property of z-scoring an autocorrelated series (34-day half-life), not treated as a residual bug. |
-| Entry threshold | \|z\| ≥ 1.0 | — |
-| Large/small pool split | peak \|z\| ≥ 1.5 | Confirmed via threshold-separation script to produce a balanced split (36–38% of observations above, consistent across all three pairs) |
-| Reversion-confirmation distance (X) | 1.0 z-unit | Chosen by convention (matches entry threshold scale) after an empirical diagnostic (varying X from 0.3–1.0) showed no plateau, only a monotonic decline attributable to a distance-to-target mechanical confound, not genuine signal |
-| Censoring cap | 3× pair-specific OU half-life (~95–106 days) | Computed directly on the z-score series, replacing an earlier, materially longer (~1 year) half-life computed on a different, unrelated price-level deviation object from Day 26 |
-| Forward horizon (Test 2b/2c) | 5 trading days | Chosen because it approximated Test 2's observed mean reversion time; **flagged as informed by already-observed data, not independently pre-registered** — logged honestly as a minor deviation from strict pre-registration discipline |
-
----
-
-##### 5. Entry Rule
-
-**Not finalized — moot given discard.** The hypothesis-testing entry threshold (|z| ≥ 1.0) was used only for excursion detection in Tests 1–2c. No live trading entry rule was ever designed, since the strategy was discarded before reaching that stage.
-
----
-
-##### 6. Exit Rule
-
-**Not finalized — moot given discard.** The excursion-end construction (Section 4) was retrospective/analytical only, never translated into a real-time exit rule.
-
----
-
-##### 7. Position Sizing Rule
-
-**Never designed — moot given discard.**
-
----
-
-##### 8. Risk Controls
-
-**Never designed — moot given discard.**
-
----
-
-##### 9. Failure Conditions
-
-**Realized.** Per the pre-registered falsification criteria (Section 1), Tests 2, 2b, and 2c all failed to support the nonlinearity claim central to this strategy's differentiation from vanilla mean-reversion. Per standing rule, a failed pre-registered test is fatal and not subject to retuning — this condition was met and the strategy is discarded accordingly.
 
 ---
 
@@ -677,25 +515,8 @@ Requires a regime where price genuinely reverts to a moving-average-defined equi
 
 ---
 
-##### 11. Open Questions / Known Gaps
-
-- Strategy is discarded; Sections 5–8 were never completed and are not being completed retroactively, consistent with not investing further design effort in a falsified strategy.
-- Three independent, pre-registered tests of the nonlinearity claim (reversion time, forward-return magnitude, forward-return rank) all failed — this is treated as a well-evidenced negative result, not an inconclusive one.
-- Forward horizon (5 days, Tests 2b/2c) was chosen informed by Test 2's observed reversion times — a minor deviation from strict pre-registration, logged honestly rather than treated as a fully blind choice.
-- No regime filter or ML component was ever incorporated (Tony's standing requirement) — moot given the discard, but would have been a gap had the strategy survived.
-- Reusable groundwork from this candidate, in case referenced by future strategy work: the corrected z-score construction methodology (MA/vol window sizing diagnosis), the OU half-life-on-z-score-series approach to deriving a censoring cap, and the excursion-detection algorithm itself (Section 4) — all validated as sound infrastructure, independent of this specific strategy's failed hypothesis.
-- Two earlier diagnostic dead-ends (MA-window-via-half-life-plateau search; X-confirmation-buffer search) were also negative results, documented in the Rolling Decision Log, and are relevant if similar window/threshold-selection procedures are attempted for other candidates — both failed for a related mechanical-confound reason (distance-to-target scaling dominating the signal being measured).
-
----
-
-##### 12. Judgmental Adjustments to Statistical Inputs
-
-**Adjustment:** None applied. No statistically-derived input was ever adjusted based on forward-looking judgment, since no return-generating signal was built before the strategy was discarded.
-
-**Reasoning:** N/A.
----
-
 ### `research/strategies/s04_vol_regime_breakout/spec.md`
+
 
 #### Strategy Specification: Volatility Regime Breakout/Mean-Reversion
 
@@ -712,85 +533,6 @@ FX volatility and correlation structure go through genuine regime shifts (Ang & 
 3. Reliability gate (from the Day 41 PC2 failure): interaction regression condition number < ~1e10 (VIF < 10), main effects mean-centered before the interaction term. This strategy needs two such regressions, one per leg (`signal x regime_indicator`), since it has two signals rather than PC2's one.
 4. Robustness: primary test + both robustness checks (Section 10) must unanimously agree. Any single null kills the hypothesis.
 5. Multiple-testing: final PASS/FAIL must survive Benjamini-Hochberg correction across all 4 strategies tested project-wide. Since the other 3 are already null, a real finding here needs p < 0.0125 (BH critical value, rank 1 of 4) to survive.
-
-##### 2. Economic Rationale
-If the edge exists, it comes from identifying a regime switch before the market fully adjusts. Natural counterparties and why this hasn't been arbitraged away are not addressed in the source write-up. Depends on there being two genuinely distinct regimes, per Ang & Bekaert's state-change claim.
-
-##### 3. Data Required
-**Instruments:** EUR/USD, GBP/USD, USD/JPY, daily, via existing DataLoader.
-
-**Rate differentials:** FRED OECD 3-month interbank rates (US: IR3TIB01USM156N, Euro Area: IR3TIB01EZM156N, UK: IR3TIB01GBM156N, Japan: IR3TIB01JPM156N), monthly, in `data/{region}_3m_interbank.csv`. Refresh via `fetch_rate_differentials()` in `src/framework/data_loader.py`.
-
-`eurusd_rate_diff = r_EA - r_US`, `gbpusd_rate_diff = r_UK - r_US`, `usdjpy_rate_diff = r_US - r_JP`. Shifted forward 2 months before forward-filling to daily (OECD publication lag, ~6 weeks) to avoid look-ahead. Creates a 59-day warm-up gap; first valid value 2011-03-01.
-
-Full-sample means are not centered near zero or symmetric across pairs (`eurusd_rate_diff` -1.00, `gbpusd_rate_diff` -0.16, `usdjpy_rate_diff` +1.49), which is why the regime threshold below is z-scored rather than an absolute cutoff.
-
-##### 4. Signal Logic
-A simple rolling-threshold classifier, not a Hamilton-filter Markov-switching model (that's put off for a later date per the roadmap). This tests a simplified proxy for Ang & Bekaert's regime concept, not their actual model.
-
-1. **Regime features:** 78-day (1 quarter, `trading_days_per_year // 12 * 3`) rolling realized volatility of log returns, plus the rate differential (2-month-lagged, forward-filled).
-2. **Regime combination:** both z-scored and combined via PCA (1st component), sign-normalized so volatility loading is positive. Must be refit inside each walk-forward window in production; the Day 43 script fits full-sample for threshold selection only. Full findings and numbers: `research/strategies/validation_falsification/vol_regime_composite_threshold_selection.md`.
-3. **Regime classification (hard switch):** `|composite z| > 1.5` = turbulent, `< 1.0` = calm, `1.0-1.5` = deadzone (no trade). Threshold of 1.5 preserves test power (turbulent is 9.2-15.9% of observations vs. 3.4-5.0% at 2.0).
-4. **Turbulent rule, time-series momentum** (Moskowitz, Ooi & Pedersen 2012): `signal_t = sign(P_t/P_{t-78} - 1)`.
-5. **Calm rule, price z-score mean-reversion:** `z_price_t = (P_t - mean_26(P)) / std_26(P)`, entry `|z_price| > 2.0`. Threshold chosen from conditional-forward-return evidence (audit doc addendum), not rarity alone. GBP/USD and USD/JPY show a real, increasing reversion effect; EUR/USD shows none, a real finding, not something to explain away.
-
-**Caveat:** thresholds above (1.0/1.5/2.0) were chosen from full-sample descriptive analysis, a mild form of look-ahead in the design process. The actual test of whether the strategy works is Section 10's out-of-sample validation.
-
-**Parameters:**
-
-| Parameter | Value |
-|---|---|
-| `trading_days_per_year` | 312 |
-| Regime window / momentum lookback | 78 trading days |
-| Regime thresholds | turbulent > 1.5, calm < 1.0, deadzone 1.0-1.5 |
-| Mean-reversion window | 26 trading days |
-| Mean-reversion entry threshold | \|price z\| > 2.0 |
-
-##### 5. Entry Rule
-Regime classifier (Section 4) gates which rule is active; no trade in the deadzone.
-
-**Momentum (turbulent):** `sign(P_t/P_{t-78} - 1)`, re-evaluated daily, no confirmation lag. Literal MOP convention.
-
-**Mean-reversion (calm), 3-rung ladder:** each rung independent, all conditioned on `|composite z| < 1.0`.
-
-| Rung | Trigger |
-|---|---|
-| 1 (initial) | `\|price z\| > 2.0` |
-| 2 (add) | `\|price z\| > 2.5` |
-| 3 (add, cap) | `\|price z\| > 3.0` |
-
-Rung 1 is exceedance-triggered (from flat); rungs 2-3 are crossing-triggered (fire once, on first cross above that level, not every day price stays there). The ladder has no direct academic citation, Gatev, Goetzmann & Rouwenhorst (2006) use single-shot entry. This is a practitioner convention that adds 3 free parameters (rung count, spacing, cap) versus the single-threshold version. Sizing per rung is in Section 7.
-
-##### 6. Exit Rule
-**Deadzone is not a forced-exit zone.** An open position rides through the deadzone; it only force-closes on a flip to the *opposite* regime (turbulent to calm, or vice versa).
-
-**Momentum exit:** sign flip only (mirrors entry, no separate stop-loss at this layer).
-
-**Mean-reversion exit, whichever hits first:**
-1. Reversion to target band: `|price z| < 0.5`, closes all rungs together (not staged).
-2. Time-stop: 26 trading days from the initial rung-1 entry, force-close regardless of price.
-
-If a position rides through the deadzone and the regime never flips before the data ends, mark-to-market and close at the data boundary (bookkeeping, not a trading decision).
-
-##### 7. Position Sizing Rule
-**Base method (both legs), ex-ante vol targeting:** `size_t = (target_vol / realized_vol_t) x base_capital`, target vol 40% annualized (MOP's own value, a normalization convention, not a capital recommendation). Uses the same 78-day rolling vol already computed for the classifier rather than MOP's literal EWMA estimate, for parameter parsimony.
-
-**Ladder sizing:** equal weight per rung, `size_t / 3` each, so a fully-built ladder sums to the same `size_t` a momentum position would get at the same vol.
-
-**Hard cap:** required in addition to vol-targeting (which can otherwise blow up as realized vol -> 0). Value set in Section 8.
-
-**Cross-pair:** shared capital pool. If `n` pairs have live positions simultaneously, each position's `size_t` is additionally scaled by `1/n`, rescaled dynamically as positions open/close across pairs.
-
-##### 8. Risk Controls
-- **Position-size cap:** 2x the vol-targeted size at this strategy's own historical median realized vol (per pair).
-- **Max drawdown:** 25% from peak (strategy-level) triggers an automatic halt for manual review. Looser than a typical 15% single-sleeve default, to accommodate this strategy's regime-timing risk.
-- **Concentration:** the Section 7 `1/n` scaling is treated as sufficient; no separate net-USD-exposure cap. Known blind spot (doesn't distinguish 3 independent bets from 3 correlated USD bets), accepted for now.
-- **Capital allocation:** not set here, deferred to portfolio-construction time. No capital gets committed before Section 10 clears.
-
-##### 9. Failure Conditions
-**Strategy decay:** realized live Sharpe falling materially below the backtest's deflated-Sharpe confidence band (Day 13 standard). Chosen over a pure IC re-test since it also catches execution/cost decay, not just statistical decay.
-
-**Classifier decay:** live regime proportions drifting from the Day 43 baselines (turbulent ~9.2-15.9%, deadzone ~13.6-24.6%). A classifier producing, say, 40%+ turbulent days means the thresholds no longer match current conditions, a distinct failure from the trading rules themselves breaking.
 
 ##### 10. Statistical Validation Plan
 No separate full-sample screening stage. The primary test runs directly inside each `WalkForwardValidator` test fold, out-of-sample from the start.
@@ -809,30 +551,8 @@ Both mean-centered before the interaction term. `b3` is the term of interest. Fo
 
 **Lockbox holdout:** a recent slice (e.g. 2024-2026) is reserved and never enters the walk-forward folds at all, development or robustness checks. It is opened once, only if this strategy passes everything above and becomes a genuine deployment candidate. This is a single-use test per hypothesis, not another round of tuning; if the lockbox result disagrees with the walk-forward verdict, that disagreement is reported as-is, not explained away.
 
-##### 11. Open Questions / Known Gaps
-- PCA adds no real value over equal-weighting (kept for citability/consistency with PC2, not because it's doing work).
-- The ladder (Section 5) has no academic citation; adds 3 free parameters versus single-threshold entry.
-- Sizing's vol estimator deviates from MOP's literal EWMA convention (parsimony trade-off).
-- Cross-pair concentration doesn't distinguish independent bets from correlated USD bets (accepted gap, Section 8).
-- EUR/USD shows no reversion signal; Section 10's per-leg (not per-pair) verdict could mask a pair-level failure if EUR/USD alone fails.
-- Threshold selection (1.0/1.5/2.0) has a look-ahead caveat: chosen from the same descriptive data the strategy will later be tested against.
-- Dynamic `1/n` rescaling and per-window classifier refitting are not yet implemented; both are real work for SignalBuilder, put off for a later date.
-
-##### 12. Judgmental Adjustments to Statistical Inputs
-None of these come from a hypothesis test; each is a documented judgment call.
-
-| Adjustment | Value | Basis |
-|---|---|---|
-| Position-size hard cap | 2x vol-targeted size at median vol | Risk convention, multiple not tested |
-| Max drawdown halt | 25% from peak | Judgmental, accommodates regime-timing risk |
-| Ladder rung count/spacing | 3 rungs, z=2.0/2.5/3.0, equal-weighted | Simplicity judgment |
-| Cross-pair concentration limit | 1/n scaling only | Accepted blind spot |
-| Mean-reversion exit target | \|z\| < 0.5 | Judgmental, trades citability for practicality |
-| Fixed time-stop | 26 trading days | Reuses tested horizon, not a derived half-life |
-| Shared forward-return horizon (Section 10) | 26 trading days, both legs | Comparability over leg-specific precision |
----
-
 ### `research/strategies/s04b_momentum_only_book/spec.md`
+
 
 #### Strategy Specification: Momentum-Only, Pooled 3-Pair Book
 
@@ -848,54 +568,13 @@ Consequence: this spec does not reset the project-wide multiple-testing count. `
 ##### 1. Hypothesis
 Time-series momentum (Moskowitz, Ooi & Pedersen 2012) has a real, regime-conditional edge in FX: `sign(P_t/P_{t-78}-1)` predicts 26-day forward returns specifically when the 2-feature volatility/rate-differential composite classifies the pair as turbulent (`|composite z| > 1.5`). Already tested and passed at the leg level (Day 48).
 
-##### 2. Economic Rationale
-Unchanged from strategy #4: trend persistence following initial under-reaction to news, plausibly concentrated in turbulent periods when information flow and repricing are both faster. Same unaddressed gap as before — natural counterparties and why this hasn't been arbitraged away are not established, only assumed from the regime-dependence literature.
-
-##### 3. Data Required
-Unchanged from strategy #4 Section 3: EUR/USD, GBP/USD, USD/JPY daily via `DataLoader`; rate differentials per the same construction (2-month publication lag, forward-filled).
-
-##### 4. Signal Logic
-Unchanged from strategy #4 Sections 4.1–4.3 and 4.4: same 2-feature composite regime classifier (refit per walk-forward window per Day 47), same `|z|>1.5` turbulent threshold, same momentum signal. No reversion leg, no calm-regime logic, no deadzone handling (deadzone and calm are both simply flat for this strategy).
-
-##### 5. Entry Rule
-`sign(P_t/P_{t-78}-1)` when `|composite z| > 1.5`, re-evaluated daily, no confirmation lag. Unchanged from strategy #4 Section 5's momentum branch.
-
-##### 6. Exit Rule
-Sign flip, or regime flip out of turbulent (to calm or deadzone) forces a close. Unchanged from strategy #4 Section 6's momentum branch — no separate stop-loss at this layer.
-
-##### 7. Position Sizing Rule — OPEN, needs explicit decision
-Strategy #4's vol-targeting formula (`target_vol / realized_vol_t x base_capital`, 40% annualized target) and cross-pair `1/n` shared-capital scaling both generalize cleanly to a single-leg book and can likely carry over unchanged. Not yet decided:
-- A single pair is turbulent 9.2–15.9% of the time. Pooled across 3 pairs, days with *at least one* pair active are more frequent, but turbulent episodes are not independent across pairs (they share global vol shocks) — the realized pooled activity rate hasn't been measured, only assumed to be higher than any single pair's number. Needs an empirical check before sizing assumptions are trusted.
-- Whether idle capital during non-turbulent stretches is acceptable as-is, or needs a secondary use (e.g., a genuinely separate, independently-tested sleeve) — out of scope for this spec, flagged for later.
-
-##### 8. Risk Controls
-Carried over unchanged from strategy #4 Section 8 (position-size cap 2x vol-targeted size at median realized vol, 25% max drawdown halt, `1/n` as the only concentration control). These were judgmental, not derived, in the original spec, and momentum-only doesn't change that — they haven't been re-examined for a single-leg book specifically. The correlated-turbulence gap noted in Section 7 above also weakens the `1/n` concentration control here: if turbulent regimes cluster across pairs, `1/n` understates true concentration risk more than it did for the original 2-leg design.
-
-##### 9. Failure Conditions
-Same as strategy #4 Section 9 (live Sharpe decay vs. DSR band, classifier regime-proportion drift). Worth flagging plainly: momentum's DSR was 0.1646 (n_trials=4) against an input observed Sharpe of only +0.0289 — the p-value passed cleanly, but the raw signal-level Sharpe this is built on is weak. A passed significance test is not the same claim as "this is a strong edge." Sizing decisions in Section 7 should account for that, not just for the p-value.
-
 ##### 10. Statistical Validation Plan
 No new test is run. Momentum's primary regression, both robustness checks, and the reliability gate already passed under strategy #4's Section 10 (`research/strategies/validation_falsification/vol_regime_two_leg_section10_validation.md`) — reused here, not repeated.
 
 **Open decision, not resolved by this spec:** the lockbox holdout (2024-2026) was reserved for "this strategy," meaning the original 2-leg design. Momentum-only is a redefinition — narrower scope, different sizing/risk assumptions once Section 7 is settled. Whether momentum's already-passed per-leg test is sufficient to treat this as cleared for the lockbox, or whether the redefinition itself needs a full review pass first, is a judgment call to make explicitly before opening it — not something to default into either direction.
 
-##### 11. Open Questions / Known Gaps
-- Pooled-book turbulent-activity rate (Section 7) is asserted, not measured.
-- Cross-pair concentration during correlated turbulence episodes is unaddressed (same blind spot as strategy #4, arguably worse here since there's no reversion leg to be active when momentum isn't).
-- DSR is weak (0.1646) despite a clean p-value — sizing shouldn't be set as if this were a high-conviction edge.
-- Lockbox-eligibility decision (Section 10) not yet made.
-
-##### 12. Judgmental Adjustments to Statistical Inputs
-| Adjustment | Value | Basis |
-|---|---|---|
-| Position-size hard cap | 2x vol-targeted size at median vol | Carried over from strategy #4, not re-derived for single-leg book |
-| Max drawdown halt | 25% from peak | Carried over, not re-derived |
-| Cross-pair concentration limit | 1/n scaling only | Carried over; weaker justification here per Section 8 |
-| Turbulent-regime threshold | \|composite z\| > 1.5 | Reused from Day 43, unchanged |
-
----
-
 ### `research/strategies/s05_month_end_fx_flow/spec.md`
+
 
 #### Strategy Specification: Month-End FX Rebalancing Flow
 
@@ -932,64 +611,6 @@ Falsification criteria, binding:
 5. Robustness: primary plus both robustness checks must agree unanimously, same sign. Any single null kills it.
 6. Multiple testing: must survive Benjamini-Hochberg across 5 strategies. The other 4 are null, so this needs p < 0.01 at rank 1 of 5.
 7. Cost gate: net-of-cost annualized return must stay positive at 1.0 pip round trip. Added because the Day 57 session variant produced a positive gross Sharpe entirely consumed by turnover.
-
-##### 2. Economic rationale
-The mechanism is a structural, non-informational flow. Institutions holding foreign equity and bond portfolios hedge the currency exposure with forwards. When foreign markets rise over a month, the hedge is now too small relative to the asset position, so the hedger sells foreign currency to restore the ratio. These adjustments cluster at month end and execute disproportionately at the 16:00 London fix, because the fix is the benchmark most hedging mandates are judged against.
-
-Documented in Melvin & Prins (Journal of Empirical Finance, 2015) and related BIS work on fix-window liquidity. Unlike the momentum hypothesis this project spent Days 42-57 on, there is a named counterparty and a reason the flow persists: the hedgers are price-insensitive and mandate-bound, executing at a benchmark regardless of level.
-
-Why it may still fail. Post-2013 manipulation scandals changed fix execution, the window widened from 1 minute to 5 in 2015, and banks changed how they internalize flow. Any effect may have decayed or moved. The sample spans that break, which is why the structural-break check in Section 10 is required rather than optional.
-
-What would make it uninteresting even if significant: an effect smaller than the round-trip spread is a fact about microstructure, not a strategy. Criterion 7 binds.
-
-##### 3. Data
-All 10 pairs from the outset, so universe selection cannot become a post-hoc degree of freedom the way it did in `momentum_book_regime_conditional_robustness.md`.
-
-1-minute bars, `data/{pair}.csv`, 2011-01-01 to 2023-12-31 development. Lockbox 2024-01-01 to 2026-05-01 sealed.
-
-Timestamps: files are fixed-offset UTC-5, so convert per `src/features/sessions.py` then DST-aware convert to Europe/London. The fix is a London-local 16:00 event and moves in UTC across the year; a naive UTC cut would smear it.
-
-No rate or equity data needed. The hedging-need proxy is built from FX returns alone, which avoids the publication-lag machinery that complicated the previous strategy.
-
-##### 4. Signal logic
-All parameters fixed as of this document. None may be tuned after seeing results.
-
-1. Fix window: 15:30-16:15 Europe/London. Wider than the official 5-minute window because pre-positioning and unwind fall outside it, and 5 minutes of 1-minute bars is too thin to estimate on.
-2. Control window: 10:00-10:45 Europe/London. Same duration, liquid, no scheduled benchmark event.
-3. Month end: the last 2 trading days of the calendar month. Binary indicator.
-4. Hedging-need proxy: `sign(cumulative log return from month start through t-1)`. Uses only information available before the window opens. A month where the base currency appreciated implies hedgers must sell it, so the predicted direction is opposite the month's accumulated move.
-5. Signal: `-hedge_need_t` on month-end days, 0 otherwise.
-6. Return measured: log return of the fix window, and separately the control window, per pair per day.
-
-| Parameter | Value |
-|---|---|
-| Fix window | 15:30-16:15 Europe/London |
-| Control window | 10:00-10:45 Europe/London |
-| Month end | last 2 trading days |
-| Hedge-need lookback | month-to-date through t-1 |
-| Universe | all 10 pairs |
-| Development sample | 2011-01-01 to 2023-12-31 |
-
-##### 5. Entry rule
-On each of the last 2 trading days of a month, enter at the open of the 15:30 London bar in the direction `-sign(month-to-date return through t-1)`. No entry otherwise. The control window is measured, never traded.
-
-##### 6. Exit rule
-Flat at the close of the 16:15 London bar. No overnight holding, no stop, no discretionary exit. Holding period is 45 minutes by construction.
-
-##### 7. Position sizing
-Not decided here, deliberately. Sizing only matters if Section 10 passes, and pre-committing a sizing scheme to an unvalidated signal was a documented weakness of the previous book, whose Section 7 stayed open right through invalidation. If this validates, sizing gets specified in an amendment before any sized backtest runs.
-
-For validation only, the test uses unit exposure per pair, equal-weighted. That is a measurement convention, not a sizing proposal.
-
-##### 8. Risk controls
-Deferred with Section 7. The structural risk worth naming now: the strategy is concentrated in about 24 trading days per year with a 45-minute holding period, so sample size accumulates slowly. Expect roughly 312 pair-days per pair in development, 3,120 pooled.
-
-##### 9. Failure conditions
-- Net-of-cost return non-positive at 1.0 pip round trip.
-- Effect present in the control window at similar magnitude, which would mean general month-end drift rather than fix-specific flow.
-- Effect present on non-month-end days at similar magnitude, same reasoning.
-- Sign opposite to prediction, regardless of significance.
-- Post-2015 subsample null while pre-2015 carries the result, dating the effect to the old fix regime and making it untradeable now.
 
 ##### 10. Statistical validation plan
 
@@ -1029,21 +650,8 @@ This is not a fifth hypothesis. It is a second construction of the same signal, 
 
 **Lockbox.** 2024-2026 stays sealed until the development verdict is written down. Opened once, for a PASS, and the result stands either way.
 
-##### 11. Open questions and known gaps
-The hedge-need proxy is a crude stand-in for actual equity-portfolio hedging demand, which would properly need foreign equity index returns and holdings data. A pure-FX proxy may be too noisy to detect the flow even if it is real. Most likely route to a false negative.
-
-45-minute holding on 1-minute bars raises execution-realism questions, particularly slippage inside a high-volume window, that unit-exposure backtesting does not capture. H2's fade trade is worse on this count, since it trades immediately after the most crowded window of the day.
-
-The 2-day month-end definition comes from the literature rather than being derived here. Fixed, not tuned, but also not optimized, and the true flow window may differ.
-
-H3 splits an already-thin sample. Roughly 3,120 pooled pair-days become two halves of about 1,560, and the power calculation from `day57_momentum_book_invalidation.md` applies with full force. A null H3 is close to uninformative and should not be read as evidence against the volatility mechanism.
-
-The cross-sectional variant needs at least 6 pairs with valid signals on a given date to form 3-and-3 legs. Days failing that are dropped, which is a mild selection effect on which dates enter that book.
-
-
----
-
 ### `research/strategies/s06_intraday_overshoot/spec.md`
+
 
 #### Strategy Specification: Intraday Overshoot Reversal, London-NY Overlap
 
@@ -1089,64 +697,6 @@ Falsification criteria, binding:
 5. Cost gate: net-of-cost Sharpe positive at **2.0 pips** round trip on realized trade count.
 6. Power disclosure: achieved power and realized effective breadth reported alongside every result.
 
-##### 2. Economic rationale
-The counterparty is a market maker with unwanted inventory. When a large directional order arrives in a three-hour window, dealers absorb it, price moves further than the information warrants, and dealers unwind into the reversion. The trader on the other side is buying immediacy and is price-insensitive about it.
-
-This mechanism does not get arbitraged away because the liquidity demander is not trying to predict anything, and the compensation is payment for bearing inventory risk. That is a structurally different situation from the momentum hypothesis this project spent Days 42-57 on, which never identified a counterparty at all.
-
-Choosing 09:00-12:00 ET is not arbitrary within that story: it is the London-New York overlap, the highest-flow window of the FX day, so it should carry both the most liquidity demand and the most dealer inventory turnover.
-
-**What would falsify the mechanism rather than the effect.** If reversal is equally strong for slow and fast displacement (H2 null), the story about impatient flow is wrong even if H1 passes, and the write-up must say the effect exists for reasons this spec does not explain.
-
-##### 3. Data
-All 10 pairs from the outset, so universe selection cannot become a post-hoc degree of freedom as it did in `momentum_book_regime_conditional_robustness.md`.
-
-1-minute bars, `data/{pair}.csv`. Timestamps carry a fixed UTC-5 file offset, converted per `src/features/sessions.py` then DST-aware converted to America/New_York, since 09:00 ET is a local-clock event.
-
-Development 2011-01-01 to 2023-12-31. Lockbox 2024-01-01 to 2026-05-01, sealed.
-
-##### 4. Signal logic
-All parameters fixed as of this document. None may be tuned after seeing results.
-
-1. Entry scan runs 09:00 to 12:00 ET, exit at 13:00 ET. Reference price is the 09:00 bar open.
-2. Fit `fit_garch` on daily log returns per pair, walk-forward refit per the Day 47 finding that full-sample fitting shifts regime labels by 39-68%. Scale to a session-equivalent sigma.
-3. Entry threshold is `k x sigma_t` where sigma_t is the GARCH conditional vol as of t-1, with **k = 2.0**.
-4. Entry fires the first time within the window that `|log(P_t / P_open)| > k x sigma_t`. Direction is the fade: short if price is above the open, long if below.
-5. One entry per pair per day, maximum. No re-entry after exit.
-
-GARCH is used to **scale the threshold, not to gate trading**. A fixed threshold fires constantly in high vol and never in low vol, so trade count and risk swing by regime. Scaling holds the trigger rate roughly stable across regimes, which is what a liquidity-provision book requires.
-
-| Parameter | Value |
-|---|---|
-| Entry scan window | 09:00-12:00 America/New_York |
-| Exit | 13:00 America/New_York |
-| Reference | 09:00 bar open |
-| Threshold k | 2.0 conditional sigma |
-| Max entries | 1 per pair per day |
-| Universe | all 10 pairs |
-| Development sample | 2011-01-01 to 2023-12-31 |
-
-##### 5. Entry rule
-Enter at the close of the first 1-minute bar whose displacement from the 09:00 open exceeds `2.0 x sigma_t`, in the direction opposite the displacement. Unit exposure per pair.
-
-##### 6. Exit rule
-Flat at the 13:00 ET bar close. No target, no stop, no discretion. Holding period is whatever remains after entry.
-
-This is deliberately parameter-free. A reversion target or stop would improve the return distribution but each adds a tunable degree of freedom to a pre-registered test, and the project's history is that free parameters are where results go to die.
-
-##### 7. Position sizing
-Deferred until H1 passes, per the pattern that left the momentum book's Section 7 open through invalidation. Validation uses unit exposure per pair, equal weighted, as a measurement convention.
-
-##### 8. Risk controls
-Deferred with Section 7. Named now, because this strategy's risk profile is its central weakness: liquidity provision is structurally negative skew. Many small wins, occasional large losses when the move keeps running, and a hard 13:00 exit with no stop guarantees the left tail is uncapped within the holding period. Report realized skew, excess kurtosis, and CVaR (`src/analysis/portfolio.py`) alongside Sharpe, not after.
-
-##### 9. Failure conditions
-- Net-of-cost Sharpe non-positive at 2.0 pips on realized trade count.
-- Effect present only in the smallest displacement bucket, which would suggest bid-ask bounce rather than genuine overshoot.
-- Realized effective breadth near 1, collapsing the power argument.
-- H2 null, falsifying the impatient-flow mechanism even if H1 survives.
-- Trade count materially below 15/year/pair, which would leave too few observations to say anything.
-
 ##### 10. Statistical validation plan
 Gatekeeping. H2 runs only if H1 passes.
 
@@ -1163,16 +713,6 @@ Gatekeeping. H2 runs only if H1 passes.
 **Verdict.** PASS requires reliability gate on H1 and robustness 1; H1 p < 0.05 on block-bootstrap errors with the predicted sign; all three robustness checks agreeing in sign with robustness 1 and the post-break half both p < 0.05; permutation p < 0.05; and the 2.0-pip cost gate. Any single failure kills it.
 
 **Lockbox.** Opened once, only on a PASS, only after the development verdict is written down.
-
-##### 11. Open questions and known gaps
-Entry slippage is the biggest threat. Fading a fast move means crossing the spread into adverse flow, and realized slippage on a 2-sigma displacement bar will exceed the quoted spread by an unknown amount. The 2.0-pip gate is a guess at this, not a measurement, and only tick data would settle it.
-
-1-minute OHLCV closes are not tradeable prices. At a 2-sigma threshold the displacement is around 55bp against a 0.9bp spread, so bid-ask bounce should not dominate, but robustness check 1's monotonicity is the actual test of that and it should be read carefully.
-
-GARCH conditional vol is fit on daily returns and rescaled to a session horizon, which assumes the daily-to-intraday vol ratio is stable. It is not, since intraday vol has strong time-of-day structure. A session-native vol estimate would be better and is not built here.
-
-The hard 13:00 exit is honest but almost certainly suboptimal. If H1 passes, the first extension worth specifying is an exit study, as its own hypothesis with its own trial count.
----
 
 ## Appendix B — Framework inventory and test coverage
 

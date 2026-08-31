@@ -47,7 +47,10 @@ def contents_block(text):
             out.append(f"**{title}**{brk}")
         else:
             out.append(f"{title}{brk}")
-    return "\n".join(out) + "\n\n---\n"
+    inner = "\n".join(out[2:])
+    return ("## Contents\n\n"
+            '::: {custom-style="TOCEntry"}\n'
+            + inner + "\n:::\n\n---\n")
 
 
 pathlib.Path("build_pdf.md").write_text(
@@ -79,7 +82,7 @@ for _ in range(2):
 
 subprocess.run(["pandoc", "build_docx.md",
                 "-o", "Underpowered by Design - Baumann.docx",
-                "--reference-doc=ref.docx", "--standalone"], check=True)
+                "--reference-doc=reference.docx", "--standalone"], check=True)
 subprocess.run(["cp", "paper.pdf", "Underpowered by Design - Baumann.pdf"],
                check=True)
 print("built")

@@ -8,7 +8,7 @@
 
 I pre-registered six strategy hypotheses in writing and tested them against thirteen years of 1-minute data on ten currency pairs. All six closed as invalidated. The reserved 2024–2026 holdout was never used to evaluate anything.
 
-The nulls are not the contribution. §5 is: four failure modes that were instrumented and measured on this program as they happened, rather than described from outside one.
+The nulls are not the contribution. Section 5 is: four failure modes that were instrumented and measured on this program as they happened, rather than described from outside one.
 
 The last of them names a design error I made before the first test ran. I chose ten pairs for breadth without checking what breadth cost in calendar span. Dropping one pair would have bought 8.8 years and moved the Sharpe needed for t = 2 from 0.555 to 0.428, which is the difference between a study that could resolve its own effect sizes and one that could not.
 
@@ -36,7 +36,7 @@ Each of these failure modes is already documented. What I can add is narrower: a
 
 Harvey, Liu and Zhu collect 316 factors from the published literature and argue that a new factor needs a t-ratio above 3.0 rather than the conventional 2.0, given how much searching sits behind the record. Their sharpest line for my purposes is about what that record cannot show: "we do not observe the factors that were tested but failed to pass the usual significance levels." This paper is a small piece of the complementary record.
 
-Bailey, Borwein, López de Prado and Zhu formalise how fast a search over configurations manufactures an in-sample result with zero expected out-of-sample Sharpe. Their Theorem 1 gives a minimum backtest length as a function of configurations tried, and the illustration is stark: with five years of data, trying more than 45 independent configurations makes an in-sample Sharpe of 1 with an expected out-of-sample Sharpe of zero close to guaranteed. §5.4 is the same trade from the other side, asking not how many configurations a fixed sample supports but how much sample a fixed effect size demands.
+Bailey, Borwein, López de Prado and Zhu formalise how fast a search over configurations manufactures an in-sample result with zero expected out-of-sample Sharpe. Their Theorem 1 gives a minimum backtest length as a function of configurations tried, and the illustration is stark: with five years of data, trying more than 45 independent configurations makes an in-sample Sharpe of 1 with an expected out-of-sample Sharpe of zero close to guaranteed. Section 5.4 is the same trade from the other side, asking not how many configurations a fixed sample supports but how much sample a fixed effect size demands.
 
 Bailey and López de Prado introduce the deflated Sharpe ratio, correcting for selection bias under multiple testing and for non-normal returns, and the process rule I adopted is theirs: not controlling for the number of trials behind a discovery leads to over-optimistic expectations. My count is cumulative across the roster and includes failed tests, and §3 records one trial that should have entered it and did not.
 
@@ -103,7 +103,7 @@ Two different factors appear in this paper and the distinction matters. The dail
 
 Walk-forward evaluation enforces a directional gap between the end of each training window and the start of the matching test window. The embargo is 5 rows of the resampled daily index throughout, sized to exceed the longest feature lookback so no test-set feature can read training data; weekends are already dropped, so an embargo "day" here is a row rather than a calendar day. The gap runs one way, since features are causal and the leakage risk only runs forward.
 
-A second channel comes from the target. Forward returns over h bars look forward by construction, so for the final h bars of any test window the target price sits past the boundary. Those observations are masked rather than scored, and every scored bar resolves its full holding horizon inside its own test window. Overlapping forward returns are the limitation I did not escape: consecutive h-bar returns share h−1 bars, so the effective number of independent observations in a window of n scored bars is roughly n/h. §4.2 shows what ignoring that costs.
+A second channel comes from the target. Forward returns over h bars look forward by construction, so for the final h bars of any test window the target price sits past the boundary. Those observations are masked rather than scored, and every scored bar resolves its full holding horizon inside its own test window. Overlapping forward returns are the limitation I did not escape: consecutive h-bar returns share h−1 bars, so the effective number of independent observations in a window of n scored bars is roughly n/h. Section 4.2 shows what ignoring that costs.
 
 ### Reserved holdout
 
@@ -121,7 +121,7 @@ One qualification belongs on the record even though it is now closed. Until late
 
 Each strategy has a specification written before any test was run, in twelve fixed sections: hypothesis, economic rationale, prior evidence, signal definition, entry, exit, sizing, risk controls, cost assumptions, the falsification battery, the failure conditions, and the verdict rule. Appendix A reproduces all six verbatim. Their bodies are unedited apart from one figure in strategy 5's, which cited another day's condition number wrongly and is corrected with a dated note inside the document itself; the status line is amended on closure.
 
-Section 11, which names the conditions under which the strategy is declared dead, is the one doing the work. Fixing those in advance is what turns a disappointing result into a verdict instead of a reason to keep looking. §5.3 reports two cases where that machinery ran exactly as designed and still produced the wrong answer, because the conditions themselves could not discriminate.
+Section 11, which names the conditions under which the strategy is declared dead, is the one doing the work. Fixing those in advance is what turns a disappointing result into a verdict instead of a reason to keep looking. Section 5.3 reports two cases where that machinery ran exactly as designed and still produced the wrong answer, because the conditions themselves could not discriminate.
 
 ### The seven-stage pipeline
 
@@ -149,7 +149,7 @@ Strategy 1 never got a specification at all. It came out of principal-component 
 
 Strategy 4b's specification is still marked draft on sizing and risk. It redeployed an existing leg rather than proposing a new hypothesis, and I never finished it to the standard of the other five.
 
-And the power gate became binding only at day 57, after five of the six candidates had already been tested. It sits at stage 2 of the pipeline above because that is where it belongs, not because it was there from the start. It is the largest process change the six nulls produced and it arrived too late to be any use to the program that produced it. §5.4 is the argument for why it should have come first.
+And the power gate became binding only at day 57, after five of the six candidates had already been tested. It sits at stage 2 of the pipeline above because that is where it belongs, not because it was there from the start. It is the largest process change the six nulls produced and it arrived too late to be any use to the program that produced it. Section 5.4 is the argument for why it should have come first.
 
 ### What is computed from scratch, and what is not
 
@@ -252,7 +252,7 @@ Nine checks: a block-bootstrap p on the book Sharpe, the predicted sign, thresho
 
 It failed on two, on figures regenerated in the project's declared environment. The primary result looks strong, and §5.2 gives those numbers and explains why they are an artifact; the cost gate also cleared comfortably, at 4.54× with a maximum viable round-trip spread of 9.078 pips against a 2.0-pip gate. What failed: the per-trade permutation, which is the test the specification actually named, gives p = 0.1349, with the plain t-test agreeing at t = +1.52, p = 0.1281. The speed interaction gives b3 = −0.0465 at p = 0.679 with Cohen's d = −0.2686, where the prediction was b3 > 0 and significant. The point estimate runs backwards.
 
-A third check, threshold monotonicity, was recorded as a failure when the strategy closed and passes on regeneration. §5.3 treats that reversal as a finding rather than a correction.
+A third check, threshold monotonicity, was recorded as a failure when the strategy closed and passes on regeneration. Section 5.3 treats that reversal as a finding rather than a correction.
 
 Either failure would have been enough, but the mechanism one matters more. The specification pre-committed to treating a null speed interaction as fatal to the mechanism story even if the primary hypothesis passed, and a second candidate mechanism, an NYSE-open effect, failed as well. That leaves no working explanation for an effect that was already not clearing its own permutation test.
 
@@ -368,7 +368,7 @@ Justifying the block length is where my answer goes partial. I used 21 days. The
 
 Then reproducibility, which is the limitation one of my own results failed outright. No number in this paper has been independently reproduced and nobody else has reviewed the code behind it. Coverage was never measured, so "tests pass" is weaker evidence than it looks, and results are platform-sensitive in places: two of the ten pairs in strategy 6's book produce different trade counts under a different linear-algebra backend, because the volatility model is fit by maximum likelihood.
 
-Worse, strategy 6's closing figures cannot be regenerated from any committed state of the repository, on my own machine or elsewhere, and §5.3 works through what that rules out. §4.6 and §5.2 publish the regenerated figures; the closing set is recorded as superseded. An earlier audit in this project found the same defect one level down, in a bootstrap confidence interval drawing from an unseeded global generator. It is the strongest argument in this paper for treating reproducibility as something to test for rather than assume.
+Worse, strategy 6's closing figures cannot be regenerated from any committed state of the repository, on my own machine or elsewhere, and §5.3 works through what that rules out. Section 4.6 and §5.2 publish the regenerated figures; the closing set is recorded as superseded. An earlier audit in this project found the same defect one level down, in a bootstrap confidence interval drawing from an unseeded global generator. It is the strongest argument in this paper for treating reproducibility as something to test for rather than assume.
 
 Two strategies fall short of the pre-registration standard, both recorded in §3 and neither repaired, because a specification written after the results are known is formally indistinguishable from a genuine one and would devalue the four that are genuine.
 
